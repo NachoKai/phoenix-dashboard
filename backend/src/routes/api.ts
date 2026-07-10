@@ -1,15 +1,20 @@
 import { Router } from 'express';
 import { decrypt, encrypt, getEncryptionKey, maskSecret } from '../config/encryption.js';
 import {
+  addSection,
   deleteEncryptedKeysForWidget,
+  deleteSection,
   getDashboardState,
   getEncryptedKey,
+  getSections,
   getWidgets,
+  renameSection,
   saveEncryptedKey,
   saveGlobalSettings,
+  saveSections,
   saveWidgets,
 } from '../db/index.js';
-import type { GlobalSettings, WidgetInstance } from '../types.js';
+import type { DashboardSection, GlobalSettings, WidgetInstance } from '../types.js';
 import { getWidgetDefinition, widgetRegistry } from '../widgets/registry.js';
 import { aiQaHandler } from '../widgets/ai-qa/route.js';
 import { gifsHandler } from '../widgets/gifs/route.js';
@@ -48,6 +53,57 @@ apiRouter.put('/dashboard/widgets', (req, res) => {
   res.json({ ok: true, widgets: getWidgets() });
 });
 
+// ── Section management ──
+
+apiRouter.get('/dashboard/sections', (_req, res) => {
+  res.json(getSections());
+});
+
+apiRouter.post('/dashboard/sections', (req, res) => {
+  const { name } = req.body as { name?: string };
+  if (!name?.trim()) {
+    res.status(400).json({ error: 'name required' });
+    return;
+  }
+  const section = addSection(name.trim());
+  res.json({ ok: true, section });
+});
+
+apiRouter.put('/dashboard/sections/:id', (req, res) => {
+  const { name } = req.body as { name?: string };
+  if (!name?.trim()) {
+    res.status(400).json({ error: 'name required' });
+    return;
+  }
+  const ok = renameSection(req.params.id, name.trim());
+  if (!ok) {
+    res.status(404).json({ error: 'Section not found' });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+apiRouter.delete('/dashboard/sections/:id', (req, res) => {
+  const ok = deleteSection(req.params.id);
+  if (!ok) {
+    res.status(400).json({ error: 'Cannot delete last section' });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+apiRouter.put('/dashboard/sections/reorder', (req, res) => {
+  const sections = req.body.sections as DashboardSection[];
+  if (!Array.isArray(sections)) {
+    res.status(400).json({ error: 'sections array required' });
+    return;
+  }
+  saveSections(sections);
+  res.json({ ok: true, sections: getSections() });
+});
+
+// ── Settings ──
+
 apiRouter.put('/dashboard/settings', (req, res) => {
   const settings = req.body as GlobalSettings;
   if (!settings.theme || settings.defaultRefreshInterval == null) {
@@ -57,6 +113,8 @@ apiRouter.put('/dashboard/settings', (req, res) => {
   saveGlobalSettings(settings);
   res.json({ ok: true, settings });
 });
+
+// ── API keys ──
 
 apiRouter.post('/dashboard/keys', (req, res) => {
   const { widgetId, keyName, value } = req.body as {

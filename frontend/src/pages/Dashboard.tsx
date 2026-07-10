@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchDashboard, saveWidgets } from '../api';
-import { useDragReorder } from '../hooks/useDragReorder';
+import {
+  fetchDashboard,
+  saveWidgets,
+} from '../api';
+import { useSectionDragDrop } from '../hooks/useSectionDragDrop';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import type { DashboardState, WidgetInstance } from '../types';
 import { getWidgetComponent } from '../widgets/registry';
@@ -9,6 +12,7 @@ import { getWidgetComponent } from '../widgets/registry';
 export function Dashboard() {
   const [state, setState] = useState<DashboardState | null>(null);
   const [error, setError] = useState<string | null>(null);
+
   const online = useOnlineStatus();
 
   const load = async () => {
@@ -31,17 +35,17 @@ export function Dashboard() {
     if (online) void load();
   }, [online]);
 
-  const handleReorder = (reordered: WidgetInstance[]) => {
-    if (!state) return;
-    const updated = reordered.map((w, i) => ({ ...w, position: i }));
-    setState({ ...state, widgets: updated });
-    // Persist in background — don't block the UI
-    void saveWidgets(updated).catch(() => {
-      /* silent — will sync on next settings save */
-    });
-  };
+  const handleReorder = useCallback(
+    (reordered: WidgetInstance[]) => {
+      if (!state) return;
+      setState({ ...state, widgets: reordered });
+      void saveWidgets(reordered).catch(() => {});
+    },
+    [state],
+  );
 
-  const { containerRef, getItemProps } = useDragReorder(
+  const { getSectionProps, getGridRef, getWidgetProps } = useSectionDragDrop(
+    state?.sections ?? [],
     state?.widgets ?? [],
     handleReorder,
   );
@@ -65,31 +69,47 @@ export function Dashboard() {
     );
   }
 
+  const sortedSections = [...state.sections].sort((a, b) => a.position - b.position);
+
   return (
     <div className={`dashboard theme-${state.globalSettings.theme}`}>
       {!online && <div className="offline-banner">Offline — showing cached data</div>}
 
-      <div className="dashboard__grid" ref={containerRef}>
-        {state.widgets.map((widget, index) => {
-          const Component = getWidgetComponent(widget.type);
-          if (!Component) {
-            return (
-              <div key={widget.id} {...getItemProps(index)}>
-                <div className="widget-card widget-card--error">
-                  <p>Unknown widget: {widget.type}</p>
-                </div>
-              </div>
-            );
-          }
+      <div className="dashboard__sections">
+        {sortedSections.map((section) => {
+          const sectionWidgets = state.widgets
+            .filter((w) => w.section === section.id)
+            .sort((a, b) => a.position - b.position);
+
           return (
-            <div key={widget.id} {...getItemProps(index)}>
-              <Component
-                instance={widget}
-                globalSettings={state.globalSettings}
-              />
+            <div key={section.id} {...getSectionProps(section.id)}>
+              <div className="section__grid" ref={getGridRef(section.id)}>
+                {sectionWidgets.map((widget) => {
+                  const Component = getWidgetComponent(widget.type);
+                  if (!Component) {
+                    return (
+                      <div key={widget.id} {...getWidgetProps(widget.id, section.id)}>
+                        <div className="widget-card widget-card--error">
+                          <p>Unknown widget: {widget.type}</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={widget.id} {...getWidgetProps(widget.id, section.id)}>
+                      <Component instance={widget} globalSettings={state.globalSettings} />
+                    </div>
+                  );
+                })}
+                {sectionWidgets.length === 0 && (
+                  <div className="section__empty">Drop widgets here</div>
+                )}
+              </div>
             </div>
           );
         })}
+
+
       </div>
 
       <Link to="/settings" className="dashboard__settings-link" aria-label="Settings">

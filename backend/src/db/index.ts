@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import type { DashboardState, GlobalSettings, WidgetInstance } from '../types.js';
+import type { DashboardSection, DashboardState, GlobalSettings, WidgetInstance } from '../types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH ?? path.join(__dirname, '../../data/dashboard.db');
@@ -24,10 +24,17 @@ function migrate(database: Database.Database) {
       value TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS sections (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      position INTEGER NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS widgets (
       id TEXT PRIMARY KEY,
       type TEXT NOT NULL,
       position INTEGER NOT NULL,
+      section TEXT NOT NULL DEFAULT 'default',
       config TEXT NOT NULL DEFAULT '{}'
     );
 
@@ -46,8 +53,14 @@ function migrate(database: Database.Database) {
     );
   `);
 
-  const count = database.prepare('SELECT COUNT(*) as c FROM widgets').get() as { c: number };
-  if (count.c === 0) {
+  // Ensure section column exists for older databases
+  const cols = database.prepare("PRAGMA table_info(widgets)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === 'section')) {
+    database.exec("ALTER TABLE widgets ADD COLUMN section TEXT NOT NULL DEFAULT 'default'");
+  }
+
+  const sectionCount = database.prepare('SELECT COUNT(*) as c FROM sections').get() as { c: number };
+  if (sectionCount.c === 0) {
     seedDefaults(database);
   }
 }
@@ -62,23 +75,32 @@ function seedDefaults(database: Database.Database) {
     JSON.stringify(defaults),
   );
 
+  database.prepare('INSERT INTO sections (id, name, position) VALUES (?, ?, ?)').run(
+    'default',
+    'Dashboard',
+    0,
+  );
+
   const widgets: WidgetInstance[] = [
     {
       id: 'clock-1',
       type: 'clock',
       position: 0,
-      config: { format: '24h', timezone: 'local', showSeconds: true },
+      section: 'default',
+      config: { format: '24h', timezone: 'local', showSeconds: false },
     },
     {
       id: 'weather-1',
       type: 'weather',
       position: 1,
+      section: 'default',
       config: { location: 'London', units: 'metric', refreshInterval: 600 },
     },
     {
       id: 'gifs-1',
       type: 'gifs',
       position: 2,
+      section: 'default',
       config: {
         source: 'static',
         urls: [
@@ -92,10 +114,10 @@ function seedDefaults(database: Database.Database) {
   ];
 
   const insert = database.prepare(
-    'INSERT INTO widgets (id, type, position, config) VALUES (?, ?, ?, ?)',
+    'INSERT INTO widgets (id, type, position, section, config) VALUES (?, ?, ?, ?, ?)',
   );
   for (const w of widgets) {
-    insert.run(w.id, w.type, w.position, JSON.stringify(w.config));
+    insert.run(w.id, w.type, w.position, w.section, JSON.stringify(w.config));
   }
 }
 
@@ -115,14 +137,76 @@ export function saveGlobalSettings(settings: GlobalSettings): void {
     .run('settings', JSON.stringify(settings));
 }
 
+export function getSections(): DashboardSection[] {
+  const rows = getDb()
+    .prepare('SELECT id, name, position FROM sections ORDER BY position ASC')
+    .all() as { id: string; name: string; position: number }[];
+  return rows.map((r) => ({ id: r.id, name: r.name, position: r.position }));
+}
+
+export function saveSections(sections: DashboardSection[]): void {
+  const database = getDb();
+  const tx = database.transaction(() => {
+    database.prepare('DELETE FROM sections').run();
+    const insert = database.prepare(
+      'INSERT INTO sections (id, name, position) VALUES (?, ?, ?)',
+    );
+    for (const s of sections) {
+      insert.run(s.id, s.name, s.position);
+    }
+  });
+  tx();
+}
+
+export function addSection(name: string): DashboardSection {
+  const sections = getSections();
+  const maxPos = sections.reduce((max, s) => Math.max(max, s.position), -1);
+  const id = `section-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const section: DashboardSection = { id, name, position: maxPos + 1 };
+  getDb()
+    .prepare('INSERT INTO sections (id, name, position) VALUES (?, ?, ?)')
+    .run(id, name, section.position);
+  return section;
+}
+
+export function renameSection(id: string, name: string): boolean {
+  const result = getDb()
+    .prepare('UPDATE sections SET name = ? WHERE id = ?')
+    .run(name, id);
+  return result.changes > 0;
+}
+
+export function deleteSection(id: string): boolean {
+  const database = getDb();
+  const sections = getSections();
+  if (sections.length <= 1) return false;
+
+  const tx = database.transaction(() => {
+    const targetSection = sections.find((s) => s.id !== id);
+    if (targetSection) {
+      database
+        .prepare('UPDATE widgets SET section = ? WHERE section = ?')
+        .run(targetSection.id, id);
+    }
+    database.prepare('DELETE FROM sections WHERE id = ?').run(id);
+    const remaining = getSections();
+    remaining.forEach((s, i) => {
+      database.prepare('UPDATE sections SET position = ? WHERE id = ?').run(i, s.id);
+    });
+  });
+  tx();
+  return true;
+}
+
 export function getWidgets(): WidgetInstance[] {
   const rows = getDb()
-    .prepare('SELECT id, type, position, config FROM widgets ORDER BY position ASC')
-    .all() as { id: string; type: string; position: number; config: string }[];
+    .prepare('SELECT id, type, position, section, config FROM widgets ORDER BY position ASC')
+    .all() as { id: string; type: string; position: number; section: string; config: string }[];
   return rows.map((r) => ({
     id: r.id,
     type: r.type,
     position: r.position,
+    section: r.section,
     config: JSON.parse(r.config),
   }));
 }
@@ -130,6 +214,7 @@ export function getWidgets(): WidgetInstance[] {
 export function getDashboardState(): DashboardState {
   return {
     widgets: getWidgets(),
+    sections: getSections(),
     globalSettings: getGlobalSettings(),
   };
 }
@@ -139,10 +224,10 @@ export function saveWidgets(widgets: WidgetInstance[]): void {
   const tx = database.transaction(() => {
     database.prepare('DELETE FROM widgets').run();
     const insert = database.prepare(
-      'INSERT INTO widgets (id, type, position, config) VALUES (?, ?, ?, ?)',
+      'INSERT INTO widgets (id, type, position, section, config) VALUES (?, ?, ?, ?, ?)',
     );
-    widgets.forEach((w, i) => {
-      insert.run(w.id, w.type, i, JSON.stringify(w.config));
+    widgets.forEach((w) => {
+      insert.run(w.id, w.type, w.position, w.section, JSON.stringify(w.config));
     });
   });
   tx();

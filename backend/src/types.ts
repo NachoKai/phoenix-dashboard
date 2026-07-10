@@ -22,7 +22,14 @@ export interface WidgetInstance {
   id: string;
   type: string;
   position: number;
+  section: string;
   config: Record<string, unknown>;
+}
+
+export interface DashboardSection {
+  id: string;
+  name: string;
+  position: number;
 }
 
 export interface GlobalSettings {
@@ -33,5 +40,6 @@ export interface GlobalSettings {
 
 export interface DashboardState {
   widgets: WidgetInstance[];
+  sections: DashboardSection[];
   globalSettings: GlobalSettings;
 }

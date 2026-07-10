@@ -8,7 +8,7 @@ export const clockWidget: WidgetDefinition = {
   defaultConfig: {
     format: '24h',
     timezone: 'local',
-    showSeconds: true,
+    showSeconds: false,
   },
   configSchema: [
     {
@@ -32,7 +32,7 @@ export const clockWidget: WidgetDefinition = {
       key: 'showSeconds',
       label: 'Show seconds',
       type: 'boolean',
-      default: true,
+      default: false,
     },
   ],
 };

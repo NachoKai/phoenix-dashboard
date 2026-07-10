@@ -2,15 +2,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   checkStoredKey,
+  createSection,
+  deleteSection as apiDeleteSection,
   fetchDashboard,
   fetchWidgetRegistry,
   isPinRequired,
+  renameSection as apiRenameSection,
   saveApiKey,
   saveGlobalSettings,
   saveWidgets,
   verifyPin,
 } from '../api';
-import type { ConfigFieldSchema, DashboardState, WidgetDefinition, WidgetInstance } from '../types';
+import type { ConfigFieldSchema, DashboardSection, DashboardState, WidgetDefinition, WidgetInstance } from '../types';
 import { v4 as uuid } from '../utils/id';
 
 export function Settings() {
@@ -77,10 +80,12 @@ export function Settings() {
     if (!state) return;
     const def = registry.find((r) => r.type === type);
     if (!def) return;
+    const firstSection = state.sections[0];
     const newWidget: WidgetInstance = {
       id: `${type}-${uuid()}`,
       type,
-      position: state.widgets.length,
+      position: state.widgets.filter((w) => w.section === (firstSection?.id ?? 'default')).length,
+      section: firstSection?.id ?? 'default',
       config: { ...def.defaultConfig },
     };
     setState({ ...state, widgets: [...state.widgets, newWidget] });
@@ -99,6 +104,59 @@ export function Settings() {
     const widgets = [...state.widgets];
     [widgets[idx], widgets[newIdx]] = [widgets[newIdx], widgets[idx]];
     setState({ ...state, widgets });
+  };
+
+  const changeWidgetSection = (id: string, sectionId: string) => {
+    if (!state) return;
+    setState({
+      ...state,
+      widgets: state.widgets.map((w) =>
+        w.id === id ? { ...w, section: sectionId } : w,
+      ),
+    });
+  };
+
+  const handleAddSection = async () => {
+    if (!state) return;
+    const name = `Section ${state.sections.length + 1}`;
+    try {
+      const { section } = await createSection(name);
+      setState({ ...state, sections: [...state.sections, section] });
+    } catch {
+      /* silent */
+    }
+  };
+
+  const handleDeleteSection = async (sectionId: string) => {
+    if (!state || state.sections.length <= 1) return;
+    try {
+      await apiDeleteSection(sectionId);
+      const updatedWidgets = state.widgets.map((w) =>
+        w.section === sectionId ? { ...w, section: state.sections.find((s) => s.id !== sectionId)?.id ?? 'default' } : w,
+      );
+      setState({
+        ...state,
+        sections: state.sections.filter((s) => s.id !== sectionId),
+        widgets: updatedWidgets,
+      });
+    } catch {
+      /* silent */
+    }
+  };
+
+  const handleRenameSection = async (sectionId: string, name: string) => {
+    if (!state || !name.trim()) return;
+    try {
+      await apiRenameSection(sectionId, name.trim());
+      setState({
+        ...state,
+        sections: state.sections.map((s) =>
+          s.id === sectionId ? { ...s, name: name.trim() } : s,
+        ),
+      });
+    } catch {
+      /* silent */
+    }
   };
 
   const handleSave = async () => {
@@ -224,6 +282,36 @@ export function Settings() {
       </section>
 
       <section className="settings__section">
+        <h2>Sections</h2>
+        <div className="settings__sections-list">
+          {state.sections.map((section) => (
+            <div key={section.id} className="settings__section-item">
+              <SectionNameInput
+                section={section}
+                onRename={(name) => void handleRenameSection(section.id, name)}
+              />
+              {state.sections.length > 1 && (
+                <button
+                  type="button"
+                  className="settings__remove-btn"
+                  onClick={() => void handleDeleteSection(section.id)}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            className="settings__add-btn"
+            onClick={() => void handleAddSection()}
+          >
+            + Section
+          </button>
+        </div>
+      </section>
+
+      <section className="settings__section">
         <h2>Widgets</h2>
         <div className="settings__add-widgets">
           {registry.map((def) => (
@@ -238,38 +326,60 @@ export function Settings() {
           ))}
         </div>
 
-        {state.widgets.map((widget) => {
-          const def = registry.find((r) => r.type === widget.type);
+        {state.sections.map((section) => {
+          const sectionWidgets = state.widgets.filter((w) => w.section === section.id);
+          if (sectionWidgets.length === 0) return null;
           return (
-            <div key={widget.id} className="settings__widget-card">
-              <div className="settings__widget-header">
-                <h3>{def?.name ?? widget.type}</h3>
-                <div className="settings__widget-actions">
-                  <button type="button" onClick={() => moveWidget(widget.id, -1)} aria-label="Move up">
-                    ↑
-                  </button>
-                  <button type="button" onClick={() => moveWidget(widget.id, 1)} aria-label="Move down">
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    className="settings__remove-btn"
-                    onClick={() => removeWidget(widget.id)}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-              {def?.configSchema.map((field) => (
-                <ConfigField
-                  key={field.key}
-                  field={field}
-                  value={widget.config[field.key]}
-                  mask={keyMasks[`${widget.id}:${field.key}`]}
-                  onChange={(val) => updateWidgetConfig(widget.id, field.key, val)}
-                  onSecretSave={(val) => void handleSecretSave(widget.id, field.key, val)}
-                />
-              ))}
+            <div key={section.id} className="settings__section-group">
+              <h3 className="settings__section-group-title">{section.name}</h3>
+              {sectionWidgets.map((widget) => {
+                const def = registry.find((r) => r.type === widget.type);
+                return (
+                  <div key={widget.id} className="settings__widget-card">
+                    <div className="settings__widget-header">
+                      <h3>{def?.name ?? widget.type}</h3>
+                      <div className="settings__widget-actions">
+                        {state.sections.length > 1 && (
+                          <select
+                            className="settings__section-select"
+                            value={widget.section}
+                            onChange={(e) => changeWidgetSection(widget.id, e.target.value)}
+                          >
+                            {state.sections.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        <button type="button" onClick={() => moveWidget(widget.id, -1)} aria-label="Move up">
+                          ↑
+                        </button>
+                        <button type="button" onClick={() => moveWidget(widget.id, 1)} aria-label="Move down">
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          className="settings__remove-btn"
+                          onClick={() => removeWidget(widget.id)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                    {def?.configSchema.map((field) => (
+                      <ConfigField
+                        key={field.key}
+                        field={field}
+                        value={widget.config[field.key]}
+                        mask={keyMasks[`${widget.id}:${field.key}`]}
+                        onChange={(val) => updateWidgetConfig(widget.id, field.key, val)}
+                        onSecretSave={(val) => void handleSecretSave(widget.id, field.key, val)}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           );
         })}
@@ -404,5 +514,51 @@ function ConfigField({
       />
       {field.description && <small>{field.description}</small>}
     </label>
+  );
+}
+
+function SectionNameInput({
+  section,
+  onRename,
+}: {
+  section: DashboardSection;
+  onRename: (name: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(section.name);
+
+  if (editing) {
+    return (
+      <input
+        className="settings__section-name-input"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={() => {
+          onRename(name);
+          setEditing(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            onRename(name);
+            setEditing(false);
+          }
+          if (e.key === 'Escape') {
+            setName(section.name);
+            setEditing(false);
+          }
+        }}
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <span
+      className="settings__section-name"
+      onDoubleClick={() => setEditing(true)}
+      title="Double-click to rename"
+    >
+      {section.name}
+    </span>
   );
 }

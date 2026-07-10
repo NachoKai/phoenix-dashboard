@@ -75,6 +75,49 @@ export async function verifyPin(pin: string): Promise<boolean> {
   return data.ok === true;
 }
 
+// ── Section management ──
+
+export async function fetchSections(): Promise<import('./types').DashboardSection[]> {
+  const res = await fetch(`${API_BASE}/dashboard/sections`);
+  if (!res.ok) throw new Error('Failed to load sections');
+  return res.json();
+}
+
+export async function createSection(name: string): Promise<{ section: import('./types').DashboardSection }> {
+  const res = await fetch(`${API_BASE}/dashboard/sections`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error('Failed to create section');
+  return res.json();
+}
+
+export async function renameSection(id: string, name: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/dashboard/sections/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error('Failed to rename section');
+}
+
+export async function deleteSection(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/dashboard/sections/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete section');
+}
+
+export async function reorderSections(sections: import('./types').DashboardSection[]): Promise<void> {
+  const res = await fetch(`${API_BASE}/dashboard/sections/reorder`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sections }),
+  });
+  if (!res.ok) throw new Error('Failed to reorder sections');
+}
+
 export async function fetchWithRetry<T>(
   url: string,
   options?: RequestInit,
