@@ -8,6 +8,7 @@ import {
   fetchWidgetRegistry,
   isPinRequired,
   renameSection as apiRenameSection,
+  reorderSections,
   saveApiKey,
   saveGlobalSettings,
   saveWidgets,
@@ -159,6 +160,16 @@ export function Settings() {
     }
   };
 
+  const handleTogglePaired = (sectionId: string) => {
+    if (!state) return;
+    setState({
+      ...state,
+      sections: state.sections.map((s) =>
+        s.id === sectionId ? { ...s, paired: !s.paired } : s,
+      ),
+    });
+  };
+
   const handleSave = async () => {
     if (!state) return;
     setSaving(true);
@@ -166,6 +177,7 @@ export function Settings() {
     try {
       await saveWidgets(state.widgets);
       await saveGlobalSettings(state.globalSettings);
+      await reorderSections(state.sections.map((s, i) => ({ ...s, position: i })));
       setMessage('Saved successfully');
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Save failed');
@@ -286,10 +298,20 @@ export function Settings() {
         <div className="settings__sections-list">
           {state.sections.map((section) => (
             <div key={section.id} className="settings__section-item">
-              <SectionNameInput
-                section={section}
-                onRename={(name) => void handleRenameSection(section.id, name)}
-              />
+              <div className="settings__section-item-left">
+                <SectionNameInput
+                  section={section}
+                  onRename={(name) => void handleRenameSection(section.id, name)}
+                />
+                <label className="settings__paired-toggle">
+                  <input
+                    type="checkbox"
+                    checked={section.paired ?? false}
+                    onChange={() => void handleTogglePaired(section.id)}
+                  />
+                  <span>Pair with next</span>
+                </label>
+              </div>
               {state.sections.length > 1 && (
                 <button
                   type="button"

@@ -30,6 +30,8 @@ export interface DashboardSection {
   id: string;
   name: string;
   position: number;
+  flex?: number;
+  paired?: boolean;
 }
 
 export interface GlobalSettings {

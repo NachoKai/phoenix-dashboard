@@ -27,7 +27,9 @@ function migrate(database: Database.Database) {
     CREATE TABLE IF NOT EXISTS sections (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      position INTEGER NOT NULL
+      position INTEGER NOT NULL,
+      flex REAL NOT NULL DEFAULT 1,
+      paired INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS widgets (
@@ -54,8 +56,18 @@ function migrate(database: Database.Database) {
   `);
 
   // Ensure section column exists for older databases
-  const cols = database.prepare("PRAGMA table_info(widgets)").all() as { name: string }[];
-  if (!cols.some((c) => c.name === 'section')) {
+  const cols = database.prepare("PRAGMA table_info(sections)").all() as { name: string }[];
+  const colNames = cols.map(c => c.name);
+  if (!colNames.includes('flex')) {
+    database.exec("ALTER TABLE sections ADD COLUMN flex REAL NOT NULL DEFAULT 1");
+  }
+  if (!colNames.includes('paired')) {
+    database.exec("ALTER TABLE sections ADD COLUMN paired INTEGER NOT NULL DEFAULT 0");
+  }
+
+  const widgetCols = database.prepare("PRAGMA table_info(widgets)").all() as { name: string }[];
+  const widgetColNames = widgetCols.map(c => c.name);
+  if (!widgetColNames.some((n) => n === 'section')) {
     database.exec("ALTER TABLE widgets ADD COLUMN section TEXT NOT NULL DEFAULT 'default'");
   }
 
@@ -75,8 +87,10 @@ function seedDefaults(database: Database.Database) {
     JSON.stringify(defaults),
   );
 
-  database.prepare('INSERT INTO sections (id, name, position) VALUES (?, ?, ?)').run(
+  database.prepare('INSERT INTO sections (id, flex, paired, name, position) VALUES (?, ?, ?, ?, ?)').run(
     'default',
+    1,
+    0,
     'Dashboard',
     0,
   );
@@ -139,9 +153,9 @@ export function saveGlobalSettings(settings: GlobalSettings): void {
 
 export function getSections(): DashboardSection[] {
   const rows = getDb()
-    .prepare('SELECT id, name, position FROM sections ORDER BY position ASC')
-    .all() as { id: string; name: string; position: number }[];
-  return rows.map((r) => ({ id: r.id, name: r.name, position: r.position }));
+    .prepare('SELECT id, name, position, flex, paired FROM sections ORDER BY position ASC')
+    .all() as { id: string; name: string; position: number; flex: number; paired: number }[];
+  return rows.map((r) => ({ id: r.id, name: r.name, position: r.position, flex: r.flex, paired: Boolean(r.paired) }));
 }
 
 export function saveSections(sections: DashboardSection[]): void {
@@ -149,10 +163,10 @@ export function saveSections(sections: DashboardSection[]): void {
   const tx = database.transaction(() => {
     database.prepare('DELETE FROM sections').run();
     const insert = database.prepare(
-      'INSERT INTO sections (id, name, position) VALUES (?, ?, ?)',
+      'INSERT INTO sections (id, name, position, flex, paired) VALUES (?, ?, ?, ?, ?)',
     );
     for (const s of sections) {
-      insert.run(s.id, s.name, s.position);
+      insert.run(s.id, s.name, s.position, s.flex ?? 1, s.paired ? 1 : 0);
     }
   });
   tx();
@@ -162,10 +176,10 @@ export function addSection(name: string): DashboardSection {
   const sections = getSections();
   const maxPos = sections.reduce((max, s) => Math.max(max, s.position), -1);
   const id = `section-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-  const section: DashboardSection = { id, name, position: maxPos + 1 };
+  const section: DashboardSection = { id, name, position: maxPos + 1, flex: 1, paired: false };
   getDb()
-    .prepare('INSERT INTO sections (id, name, position) VALUES (?, ?, ?)')
-    .run(id, name, section.position);
+    .prepare('INSERT INTO sections (id, name, position, flex, paired) VALUES (?, ?, ?, ?, ?)')
+    .run(id, name, section.position, 1, 0);
   return section;
 }
 

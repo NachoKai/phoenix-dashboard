@@ -246,10 +246,7 @@ export function useSectionDragDrop(
     (sectionId: string) => ({
       onDragOver: handleDragOver(sectionId),
       onDrop: handleDrop(sectionId),
-      className:
-        state.overSection === sectionId && state.dragWidgetId !== null
-          ? 'dashboard__section dashboard__section--over'
-          : 'dashboard__section',
+      isOver: state.overSection === sectionId && state.dragWidgetId !== null,
     }),
     [handleDragOver, handleDrop, state.overSection, state.dragWidgetId],
   );
