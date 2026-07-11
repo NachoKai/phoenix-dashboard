@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   fetchDashboardWithCache,
   persistDashboardState,
+  reorderSections,
   saveGlobalSettings,
   saveWidgets,
 } from "../api";
@@ -212,6 +213,7 @@ export function Dashboard() {
       };
       setState(updated);
       persistDashboardState(updated);
+      void reorderSections(updated.sections).catch(() => {});
     },
     [state],
   );

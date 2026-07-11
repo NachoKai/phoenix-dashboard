@@ -108,6 +108,7 @@ export function deleteSection(id: string): boolean {
   sections.forEach((s, i) => {
     s.position = i;
   });
+  persistToDisk();
   return true;
 }
 
