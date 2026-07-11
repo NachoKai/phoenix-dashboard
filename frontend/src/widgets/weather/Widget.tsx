@@ -38,7 +38,7 @@ const WEATHER_ICONS: Record<string, string> = {
 };
 
 export function WeatherWidget({ instance }: WidgetProps) {
-  const location = (instance.config.location as string) ?? "London";
+  const location = (instance.config.location as string) ?? "Buenos Aires";
   const units = (instance.config.units as string) ?? "metric";
   const lang = (instance.config.lang as string) ?? "en";
   const refreshInterval = ((instance.config.refreshInterval as number) ?? 600) * 1000;

@@ -56,7 +56,7 @@ const DEFAULTS: PersistedState = {
       type: "weather",
       position: 0,
       section: "weather-group",
-      config: { location: "London", units: "metric", refreshInterval: 600 },
+      config: { location: "Buenos Aires", units: "metric", refreshInterval: 600 },
     },
     {
       id: "gifs-1",

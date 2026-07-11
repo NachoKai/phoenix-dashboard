@@ -1,25 +1,30 @@
 # Phoenix Dashboard
 
-A self-hosted, always-on widget dashboard designed to turn any phone into a smart display. Built as a progressive web app with a modular widget system, encrypted API key storage, and a responsive grid that adapts from phones to desktops.
+A self-hosted, always-on widget dashboard designed to turn any phone into a smart display. Built as a progressive web app with a modular widget system, section-based layout, encrypted API key storage, and a responsive grid that adapts from phones to desktops.
 
 ## Features
 
 - **PWA** — installable on any device, works offline with cached data
-- **Responsive grid** — CSS Grid layout adapts from phone landscape to desktop
-- **Drag & drop** — reorder widgets with mouse or touch
+- **Section-based layout** — organize widgets into named sections with flexible layouts (full-width, left/right splits, left-full-height, right-full-height)
+- **4-group tabs** — separate dashboard views into up to 4 independent groups
+- **Drag & drop** — reorder widgets across sections with mouse or touch
 - **Dark / light theme** — toggle from settings
+- **Orientation lock** — force portrait, landscape, or auto
 - **Encrypted secrets** — API keys stored with AES-256-GCM encryption
 - **PIN-protected settings** — optional lock on the settings page
 - **localStorage persistence** — settings survive server restarts and cold starts
 - **Per-widget refresh** — configurable refresh intervals with stale data detection
 - **Safe area support** — respects notches, rounded corners, and system insets
+- **Offline banner** — shows cached data indicator when connectivity is lost
+- **Retry with backoff** — automatic retry on failed API requests
 
 ## Widgets
 
 | Widget | Description | API Required |
 |--------|-------------|:------------:|
 | **Clock** | Time and date with 12h/24h format, timezone, seconds toggle | No |
-| **Weather** | Current conditions + 6-period forecast with geocoding | [OpenWeatherMap](https://openweathermap.org/api) |
+| **Weather** | Current conditions with geocoding | [OpenWeatherMap](https://openweathermap.org/api) |
+| **Weather Forecast** | Upcoming hours forecast with geocoding | [OpenWeatherMap](https://openweathermap.org/api) |
 | **Animated GIFs** | Rotating GIF display from static URLs or Giphy API | [Giphy](https://developers.giphy.com/) (optional) |
 | **AI Q&A** | LLM-powered question answering | Coming soon |
 
@@ -47,8 +52,8 @@ cp .env.example .env
 Edit `.env` with your settings:
 
 ```env
-# Required — minimum 16 characters, used to encrypt stored API keys
-ENCRYPTION_KEY=your-random-string-at-least-16-chars
+# Required — used to encrypt stored API keys
+ENCRYPTION_KEY=change-me-to-a-32-byte-random-string!!
 
 # Optional — global fallback API keys (can also be set per-widget in Settings)
 OPENWEATHER_API_KEY=
@@ -85,22 +90,32 @@ phoenix-dashboard/
 ├── backend/
 │   └── src/
 │       ├── server.ts              # Express entry point
+│       ├── types.ts               # Shared types (WidgetDefinition, DashboardSection, etc.)
 │       ├── config/encryption.ts   # AES-256-GCM encrypt/decrypt
-│       ├── db/index.ts            # In-memory storage (settings, widgets, cache)
+│       ├── db/index.ts            # JSON file persistence (dashboard-state.json)
 │       ├── routes/api.ts          # REST API routes
-│       └── widgets/               # Per-widget route handlers
+│       └── widgets/               # Per-widget route handlers + registry
+│           ├── registry.ts        # Widget definitions and config schemas
 │           ├── weather/route.ts   # OpenWeatherMap proxy + cache
-│           └── gifs/route.ts      # Giphy proxy + cache
+│           ├── gifs/route.ts      # Giphy proxy + cache
+│           └── ai-qa/route.ts     # AI Q&A (stubbed)
 ├── frontend/
 │   └── src/
 │       ├── main.tsx               # Bootstrap + PWA registration
 │       ├── App.tsx                # Routes
-│       ├── api.ts                 # API fetch helpers
+│       ├── api.ts                 # API fetch helpers with retry + stale-while-revalidate
+│       ├── types.ts               # Frontend types (WidgetProps, WidgetState, etc.)
 │       ├── styles/index.css       # All styles (CSS Grid, themes, responsive)
 │       ├── components/            # Shared components (WidgetCard)
-│       ├── hooks/                 # useWidgetData, useDragReorder, useOnlineStatus
+│       ├── hooks/                 # useWidgetData, useSectionDragDrop, useOnlineStatus
+│       ├── utils/                 # storage (cache layer), id (UUID generator)
 │       ├── pages/                 # Dashboard, Settings
-│       └── widgets/               # Widget components (clock, weather, gifs, ai-qa)
+│       └── widgets/               # Widget components
+│           ├── registry.ts        # Frontend widget registry
+│           ├── clock/Widget.tsx
+│           ├── weather/Widget.tsx, ForecastWidget.tsx
+│           ├── gifs/Widget.tsx
+│           └── ai-qa/Widget.tsx
 └── .env.example
 ```
 
@@ -111,10 +126,14 @@ All endpoints are prefixed with `/api`.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/health` | Health check |
-| `GET` | `/api/dashboard` | Full dashboard state (widgets + settings) |
+| `GET` | `/api/dashboard` | Full dashboard state (widgets + sections + settings) |
 | `GET` | `/api/widgets/registry` | Available widget definitions |
 | `PUT` | `/api/dashboard/widgets` | Save widget layout and config |
 | `PUT` | `/api/dashboard/settings` | Save global settings |
+| `GET` | `/api/dashboard/sections` | List dashboard sections |
+| `POST` | `/api/dashboard/sections` | Create a new section |
+| `PUT` | `/api/dashboard/sections/reorder` | Reorder sections |
+| `DELETE` | `/api/dashboard/sections/:id` | Delete a section |
 | `POST` | `/api/dashboard/keys` | Store an encrypted API key |
 | `GET` | `/api/dashboard/keys/:widgetId/:keyName` | Check if a key exists |
 | `DELETE` | `/api/dashboard/keys/:widgetId` | Delete keys for a widget |
@@ -128,9 +147,9 @@ All endpoints are prefixed with `/api`.
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 19, React Router 7, Vite 6, TypeScript 5.7 |
+| Frontend | React 19, React Router DOM 7, Vite 6, TypeScript 5.7 |
 | Backend | Express 4, TypeScript 5.7, tsx (dev) |
-| Storage | In-memory server, localStorage (client-side persistence) |
+| Storage | JSON file persistence (server), localStorage (client-side cache) |
 | PWA | vite-plugin-pwa, Workbox |
 | Encryption | Node.js crypto (AES-256-GCM) |
 

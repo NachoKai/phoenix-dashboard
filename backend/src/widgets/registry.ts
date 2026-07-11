@@ -1,6 +1,4 @@
-import type { WidgetDefinition } from "../types.js";
-
-export const clockWidget: WidgetDefinition = {
+import type { WidgetDefinition } from "../types.js";export const clockWidget: WidgetDefinition = {
   type: "clock",
   name: "Clock",
   description: "Current time and date",
@@ -43,7 +41,7 @@ export const weatherWidget: WidgetDefinition = {
   description: "Current conditions and short forecast",
   hasBackendRoute: true,
   defaultConfig: {
-    location: "London",
+    location: "Buenos Aires",
     units: "metric",
     lang: "en",
     refreshInterval: 600,
@@ -53,7 +51,7 @@ export const weatherWidget: WidgetDefinition = {
       key: "location",
       label: "Location",
       type: "string",
-      default: "London",
+      default: "Buenos Aires",
       description: "City name or lat,lon",
     },
     {
@@ -101,7 +99,7 @@ export const weatherForecastWidget: WidgetDefinition = {
   description: "Upcoming hours forecast",
   hasBackendRoute: true,
   defaultConfig: {
-    location: "London",
+    location: "Buenos Aires",
     units: "metric",
     lang: "en",
     refreshInterval: 600,
@@ -111,7 +109,7 @@ export const weatherForecastWidget: WidgetDefinition = {
       key: "location",
       label: "Location",
       type: "string",
-      default: "London",
+      default: "Buenos Aires",
       description: "City name or lat,lon",
     },
     {
