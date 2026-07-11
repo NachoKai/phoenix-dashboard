@@ -254,6 +254,25 @@ export function Settings() {
             <option value="landscape">Landscape</option>
           </select>
         </label>
+        <label className="settings__field">
+          Auto-rotate groups (seconds)
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={state.globalSettings.autoRotateInterval ?? 0}
+            onChange={e =>
+              setState({
+                ...state,
+                globalSettings: {
+                  ...state.globalSettings,
+                  autoRotateInterval: Math.max(0, Number(e.target.value)),
+                },
+              })
+            }
+          />
+          <small>0 = disabled. Cycles through groups with widgets automatically.</small>
+        </label>
       </section>
 
       <section className="settings__section">

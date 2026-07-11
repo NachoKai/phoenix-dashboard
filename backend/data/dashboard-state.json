@@ -2,8 +2,9 @@
   "globalSettings": {
     "theme": "dark",
     "defaultRefreshInterval": 60,
-    "orientation": "auto",
-    "activeGroup": 1
+    "orientation": "landscape",
+    "activeGroup": 1,
+    "autoRotateInterval": 5
   },
   "sections": [
     {

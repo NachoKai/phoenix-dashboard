@@ -1,4 +1,5 @@
-export type ConfigFieldType =  | "string"
+export type ConfigFieldType =
+  | "string"
   | "number"
   | "boolean"
   | "select"
@@ -52,6 +53,7 @@ export interface GlobalSettings {
   defaultRefreshInterval: number;
   orientation: "auto" | "portrait" | "landscape";
   activeGroup: number;
+  autoRotateInterval: number;
 }
 
 export interface DashboardState {

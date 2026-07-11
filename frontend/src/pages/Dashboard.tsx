@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   fetchDashboard,
@@ -101,6 +101,62 @@ export function Dashboard() {
     }
   }, [state?.globalSettings?.activeGroup]);
 
+  const sortedSections = useMemo(
+    () => [...(state?.sections ?? [])].sort((a, b) => a.position - b.position),
+    [state?.sections],
+  );
+
+  const hasGroups = useMemo(
+    () => sortedSections.some(s => s.group != null),
+    [sortedSections],
+  );
+
+  const occupiedGroups = useMemo(
+    () =>
+      [
+        ...new Set(
+          sortedSections.filter(s => s.group != null).map(s => s.group as number),
+        ),
+      ].sort((a, b) => a - b),
+    [sortedSections],
+  );
+
+  const rotateTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const resetRotateTimer = useCallback(() => {
+    if (rotateTimerRef.current != null) {
+      clearInterval(rotateTimerRef.current);
+      rotateTimerRef.current = null;
+    }
+    const interval = state?.globalSettings?.autoRotateInterval ?? 0;
+    if (interval > 0 && occupiedGroups.length >= 2) {
+      rotateTimerRef.current = setInterval(() => {
+        setActiveGroup(prev => {
+          const idx = occupiedGroups.indexOf(prev);
+          const nextIdx = (idx + 1) % occupiedGroups.length;
+          const nextGroup = occupiedGroups[nextIdx];
+          if (state) {
+            const updated = {
+              ...state,
+              globalSettings: { ...state.globalSettings, activeGroup: nextGroup },
+            };
+            setState(updated);
+            void saveGlobalSettings(updated.globalSettings).catch(() => {});
+            persistDashboardState(updated);
+          }
+          return nextGroup;
+        });
+      }, interval * 1000);
+    }
+  }, [state, occupiedGroups]);
+
+  useEffect(() => {
+    resetRotateTimer();
+    return () => {
+      if (rotateTimerRef.current != null) clearInterval(rotateTimerRef.current);
+    };
+  }, [resetRotateTimer]);
+
   const handleGroupChange = useCallback(
     (group: number) => {
       setActiveGroup(group);
@@ -113,8 +169,9 @@ export function Dashboard() {
         void saveGlobalSettings(updated.globalSettings).catch(() => {});
         persistDashboardState(updated);
       }
+      resetRotateTimer();
     },
-    [state],
+    [state, resetRotateTimer],
   );
 
   const handleSectionGroupChange = useCallback(
@@ -160,16 +217,6 @@ export function Dashboard() {
       void saveWidgets(reordered).catch(() => {});
     },
     [state],
-  );
-
-  const sortedSections = useMemo(
-    () => [...(state?.sections ?? [])].sort((a, b) => a.position - b.position),
-    [state?.sections],
-  );
-
-  const hasGroups = useMemo(
-    () => sortedSections.some(s => s.group != null),
-    [sortedSections],
   );
 
   const visibleSections = useMemo(

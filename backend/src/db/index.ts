@@ -24,6 +24,7 @@ const DEFAULTS: PersistedState = {
     defaultRefreshInterval: 60,
     orientation: "auto",
     activeGroup: 1,
+    autoRotateInterval: 0,
   },
   sections: [
     {
