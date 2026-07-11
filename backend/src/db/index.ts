@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import type {
   DashboardSection,
   DashboardState,
@@ -5,49 +8,107 @@ import type {
   WidgetInstance,
 } from "../types.js";
 
-let globalSettings: GlobalSettings = {
-  theme: "dark",
-  defaultRefreshInterval: 60,
-  orientation: "auto",
-  activeGroup: 1,
+const __filename = fileURLToPath(import.meta.url);
+const DATA_DIR = path.resolve(path.dirname(__filename), "../../data");
+const PERSIST_FILE = path.join(DATA_DIR, "dashboard-state.json");
+
+interface PersistedState {
+  globalSettings: GlobalSettings;
+  sections: DashboardSection[];
+  widgets: WidgetInstance[];
+}
+
+const DEFAULTS: PersistedState = {
+  globalSettings: {
+    theme: "dark",
+    defaultRefreshInterval: 60,
+    orientation: "auto",
+    activeGroup: 1,
+  },
+  sections: [
+    {
+      id: "default",
+      name: "Dashboard",
+      position: 0,
+      flex: 1,
+      layout: "full-width",
+      group: 1,
+    },
+    {
+      id: "weather-group",
+      name: "Weather",
+      position: 1,
+      flex: 1,
+      layout: "full-width",
+      group: 2,
+    },
+  ],
+  widgets: [
+    {
+      id: "clock-1",
+      type: "clock",
+      position: 0,
+      section: "default",
+      config: { format: "24h", timezone: "local", showSeconds: false },
+    },
+    {
+      id: "weather-1",
+      type: "weather",
+      position: 0,
+      section: "weather-group",
+      config: { location: "London", units: "metric", refreshInterval: 600 },
+    },
+    {
+      id: "gifs-1",
+      type: "gifs",
+      position: 1,
+      section: "default",
+      config: {
+        source: "static",
+        urls: [
+          "https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif",
+          "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
+        ],
+        rotationInterval: 30,
+        tag: "nature",
+      },
+    },
+  ],
 };
 
-let sections: DashboardSection[] = [
-  { id: "default", name: "Dashboard", position: 0, flex: 1, layout: "full-width", group: 1 },
-  { id: "weather-group", name: "Weather", position: 1, flex: 1, layout: "full-width", group: 2 },
-];
+function loadFromDisk(): PersistedState {
+  try {
+    const raw = fs.readFileSync(PERSIST_FILE, "utf-8");
+    const parsed = JSON.parse(raw) as Partial<PersistedState>;
+    return {
+      globalSettings: { ...DEFAULTS.globalSettings, ...parsed.globalSettings },
+      sections: parsed.sections ?? DEFAULTS.sections,
+      widgets: parsed.widgets ?? DEFAULTS.widgets,
+    };
+  } catch {
+    return DEFAULTS;
+  }
+}
 
-let widgets: WidgetInstance[] = [
-  {
-    id: "clock-1",
-    type: "clock",
-    position: 0,
-    section: "default",
-    config: { format: "24h", timezone: "local", showSeconds: false },
-  },
-  {
-    id: "weather-1",
-    type: "weather",
-    position: 0,
-    section: "weather-group",
-    config: { location: "London", units: "metric", refreshInterval: 600 },
-  },
-  {
-    id: "gifs-1",
-    type: "gifs",
-    position: 1,
-    section: "default",
-    config: {
-      source: "static",
-      urls: [
-        "https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif",
-        "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
-      ],
-      rotationInterval: 30,
-      tag: "nature",
-    },
-  },
-];
+function saveToDisk(): void {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(
+      PERSIST_FILE,
+      JSON.stringify({ globalSettings, sections, widgets }, null, 2),
+    );
+  } catch (err) {
+    console.error("Failed to persist dashboard state:", err);
+  }
+}
+
+const initial = loadFromDisk();
+
+let globalSettings: GlobalSettings = initial.globalSettings;
+let sections: DashboardSection[] = initial.sections;
+let widgets: WidgetInstance[] = initial.widgets;
 
 const encryptedKeys = new Map<string, string>();
 const apiCache = new Map<string, { value: string; expiresAt: number }>();
@@ -58,6 +119,7 @@ export function getGlobalSettings(): GlobalSettings {
 
 export function saveGlobalSettings(settings: GlobalSettings): void {
   globalSettings = { ...settings };
+  saveToDisk();
 }
 
 export function getSections(): DashboardSection[] {
@@ -70,6 +132,7 @@ export function saveSections(newSections: DashboardSection[]): void {
     position: i,
     name: s.name || `Section ${i + 1}`,
   }));
+  saveToDisk();
 }
 
 export function addSection(): DashboardSection {
@@ -84,6 +147,7 @@ export function addSection(): DashboardSection {
     layout: "full-width",
   };
   sections.push(section);
+  saveToDisk();
   return section;
 }
 
@@ -94,6 +158,7 @@ export function deleteSection(id: string): boolean {
   sections.forEach((s, i) => {
     s.position = i;
   });
+  saveToDisk();
   return true;
 }
 
@@ -103,6 +168,7 @@ export function getWidgets(): WidgetInstance[] {
 
 export function saveWidgets(newWidgets: WidgetInstance[]): void {
   widgets = [...newWidgets];
+  saveToDisk();
 }
 
 export function getDashboardState(): DashboardState {
