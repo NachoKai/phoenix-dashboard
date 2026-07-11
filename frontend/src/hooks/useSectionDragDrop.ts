@@ -210,7 +210,9 @@ export function useSectionDragDrop(
   );
 
   const handleGroupDragLeave = useCallback(
-    (_group: number) => (_e: React.DragEvent<HTMLElement>) => {
+    (group: number) => (e: React.DragEvent<HTMLElement>) => {
+      const btn = groupButtonsRef.current.get(group);
+      if (btn && e.relatedTarget && btn.contains(e.relatedTarget as Node)) return;
       setState(s => ({ ...s, overGroup: null }));
     },
     [],
@@ -362,6 +364,31 @@ export function useSectionDragDrop(
     [moveWidget, widgets, onSectionGroupChange],
   );
 
+  const handleTouchCancel = useCallback(() => {
+    const clone = touchCloneRef.current;
+    const dragEl = touchDragElRef.current;
+
+    if (clone) {
+      clone.remove();
+      touchCloneRef.current = null;
+    }
+    if (dragEl) {
+      dragEl.style.opacity = "";
+      dragEl.style.transform = "";
+      touchDragElRef.current = null;
+    }
+
+    setState({
+      dragWidgetId: null,
+      dragFromSection: null,
+      overSection: null,
+      overIndex: null,
+      overGroup: null,
+    });
+    dragDataRef.current = null;
+    overGroupRef.current = null;
+  }, []);
+
   // ── Public API ──
 
   const getSectionProps = useCallback(
@@ -406,6 +433,7 @@ export function useSectionDragDrop(
         onTouchStart: handleTouchStart(widgetId, sectionId),
         onTouchMove: handleTouchMove,
         onTouchEnd: handleTouchEnd,
+        onTouchCancel: handleTouchCancel,
         className,
       };
     },
@@ -417,6 +445,7 @@ export function useSectionDragDrop(
       handleTouchStart,
       handleTouchMove,
       handleTouchEnd,
+      handleTouchCancel,
     ],
   );
 

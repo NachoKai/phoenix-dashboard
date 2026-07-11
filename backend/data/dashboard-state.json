@@ -41,17 +41,6 @@
   ],
   "widgets": [
     {
-      "id": "clock-104fa742-932a-4572-8f3d-9bd89e221954",
-      "type": "clock",
-      "position": 0,
-      "section": "section-1783740987792-ip5r",
-      "config": {
-        "format": "24h",
-        "timezone": "local",
-        "showSeconds": false
-      }
-    },
-    {
       "id": "weather-d2feb905-3e3d-48e9-a751-d34d67242055",
       "type": "weather",
       "position": 0,
@@ -64,18 +53,6 @@
       }
     },
     {
-      "id": "gifs-72ff6d1b-fe46-4d96-a5e7-8f7ed34c5c01",
-      "type": "gifs",
-      "position": 0,
-      "section": "section-1783740988675-auzg",
-      "config": {
-        "source": "static",
-        "urls": [],
-        "rotationInterval": 30,
-        "tag": "nature"
-      }
-    },
-    {
       "id": "weather-forecast-493f0511-4f80-49ef-9fc2-821a75a84984",
       "type": "weather-forecast",
       "position": 0,
@@ -85,6 +62,29 @@
         "units": "metric",
         "lang": "en",
         "refreshInterval": 600
+      }
+    },
+    {
+      "id": "clock-104fa742-932a-4572-8f3d-9bd89e221954",
+      "type": "clock",
+      "position": 0,
+      "section": "section-1783740987792-ip5r",
+      "config": {
+        "format": "24h",
+        "timezone": "local",
+        "showSeconds": false
+      }
+    },
+    {
+      "id": "gifs-72ff6d1b-fe46-4d96-a5e7-8f7ed34c5c01",
+      "type": "gifs",
+      "position": 0,
+      "section": "section-1783740988675-auzg",
+      "config": {
+        "source": "static",
+        "urls": [],
+        "rotationInterval": 30,
+        "tag": "nature"
       }
     }
   ]
