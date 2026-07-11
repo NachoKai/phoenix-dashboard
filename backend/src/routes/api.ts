@@ -18,6 +18,7 @@ import { getWidgetDefinition, widgetRegistry } from "../widgets/registry.js";
 import { aiQaHandler } from "../widgets/ai-qa/route.js";
 import { gifsHandler } from "../widgets/gifs/route.js";
 import { weatherHandler } from "../widgets/weather/route.js";
+import { weatherWeeklyHandler } from "../widgets/weather/weeklyRoute.js";
 
 export const apiRouter = Router();
 
@@ -152,5 +153,6 @@ apiRouter.delete("/dashboard/keys/:widgetId", (req, res) => {
 });
 
 apiRouter.get("/weather", weatherHandler);
+apiRouter.get("/weather-weekly", weatherWeeklyHandler);
 apiRouter.get("/gifs", gifsHandler);
 apiRouter.post("/ask", aiQaHandler);

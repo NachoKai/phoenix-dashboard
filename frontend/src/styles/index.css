@@ -602,6 +602,90 @@ a {
 }
 
 /* =============================================
+   WEATHER WEEKLY — daily min/max temperatures
+   ============================================= */
+
+.weather-weekly-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.drag-item:has(.weather-weekly-widget) {
+  grid-column: 1 / -1;
+}
+
+.weather-weekly-widget__location {
+  font-size: clamp(0.6rem, 3.5cqw, 1rem);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weather-weekly-widget__grid {
+  display: flex;
+  gap: 6px;
+}
+
+.weather-weekly-widget__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  background: var(--bg-elevated);
+  padding: 8px 4px;
+  border-radius: 8px;
+}
+
+.weather-weekly-widget__day {
+  font-size: clamp(0.6rem, 3.5cqw, 1rem);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.weather-weekly-widget__icon {
+  font-size: clamp(1.1rem, 8cqw, 2.5rem);
+  line-height: 1;
+}
+
+.weather-weekly-widget__temps {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+}
+
+.weather-weekly-widget__temp-max {
+  font-size: clamp(0.6rem, 4cqw, 1.1rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.weather-weekly-widget__temp-sep {
+  font-size: clamp(0.6rem, 4cqw, 1.1rem);
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.weather-weekly-widget__temp-min {
+  font-size: clamp(0.6rem, 4cqw, 1.1rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.weather-weekly-widget__desc {
+  font-size: clamp(0.5rem, 2.8cqw, 0.85rem);
+  color: var(--text-muted);
+  text-transform: capitalize;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* =============================================
    GIFs — compact landscape
    ============================================= */
 

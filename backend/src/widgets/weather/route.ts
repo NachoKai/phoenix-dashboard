@@ -111,17 +111,22 @@ export async function weatherHandler(req: Request, res: Response) {
     if (forecastRes.ok) {
       const forecastData = (await forecastRes.json()) as {
         list: {
+          dt: number;
           dt_txt: string;
           main: { temp: number };
           weather: { description: string; icon: string }[];
         }[];
       };
-      forecast = forecastData.list.slice(0, 6).map(item => ({
-        time: item.dt_txt.split(" ")[1]?.slice(0, 5) ?? item.dt_txt,
-        temp: Math.round(item.main.temp),
-        description: item.weather[0]?.description ?? "",
-        icon: item.weather[0]?.icon ?? "01d",
-      }));
+      const now = Math.floor(Date.now() / 1000);
+      forecast = forecastData.list
+        .filter(item => item.dt > now)
+        .slice(0, 6)
+        .map(item => ({
+          time: item.dt_txt.split(" ")[1]?.slice(0, 5) ?? item.dt_txt,
+          temp: Math.round(item.main.temp),
+          description: item.weather[0]?.description ?? "",
+          icon: item.weather[0]?.icon ?? "01d",
+        }));
     }
 
     const result: WeatherResponse = {

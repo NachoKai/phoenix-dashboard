@@ -3,6 +3,7 @@ import { fetchWithRetry } from "../../api";
 import { WidgetCard } from "../../components/WidgetCard";
 import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
+import { WEATHER_ICONS } from "./icons";
 
 interface WeatherData {
   location: string;
@@ -16,27 +17,6 @@ interface WeatherData {
   forecast: { time: string; temp: number; description: string; icon: string }[];
   cachedAt: string;
 }
-
-const WEATHER_ICONS: Record<string, string> = {
-  "01d": "☀️",
-  "01n": "🌙",
-  "02d": "⛅",
-  "02n": "☁️",
-  "03d": "☁️",
-  "03n": "☁️",
-  "04d": "☁️",
-  "04n": "☁️",
-  "09d": "🌧️",
-  "09n": "🌧️",
-  "10d": "🌦️",
-  "10n": "🌧️",
-  "11d": "⛈️",
-  "11n": "⛈️",
-  "13d": "❄️",
-  "13n": "❄️",
-  "50d": "🌫️",
-  "50n": "🌫️",
-};
 
 export function WeatherForecastWidget({ instance, sleeping }: WidgetProps) {
   const location = (instance.config.location as string) ?? "Buenos Aires";
