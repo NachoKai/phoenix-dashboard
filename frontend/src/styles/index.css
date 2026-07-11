@@ -240,6 +240,7 @@ a {
 .drag-item>article {
   min-width: unset;
   max-width: unset;
+  width: 100%;
   height: 100%;
 }
 
@@ -434,9 +435,10 @@ a {
 
 .weather-widget__detail-card {
   display: flex;
-  flex-direction: column;
+  flex-direction: row-reverse;
   align-items: center;
-  gap: 2px;
+  justify-content: space-between;
+  gap: 8px;
   background: var(--bg-elevated);
   padding: 8px 12px;
   border-radius: 8px;
@@ -445,7 +447,8 @@ a {
 }
 
 .weather-widget__detail-label {
-  font-size: clamp(0.55rem, 3cqw, 0.95rem);
+  font-size: clamp(0.65rem, 3.8cqw, 1.15rem);
+  font-weight: 400;
   opacity: 0.7;
 }
 
