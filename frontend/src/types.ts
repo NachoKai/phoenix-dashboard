@@ -1,4 +1,10 @@
-export type ConfigFieldType = 'string' | 'number' | 'boolean' | 'select' | 'secret' | 'string-list';
+export type ConfigFieldType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "select"
+  | "secret"
+  | "string-list";
 
 export interface ConfigFieldSchema {
   key: string;
@@ -26,19 +32,26 @@ export interface WidgetInstance {
   config: Record<string, unknown>;
 }
 
+export type SectionLayout =
+  | "full-width"
+  | "left"
+  | "right"
+  | "left-full-height"
+  | "right-full-height";
+
 export interface DashboardSection {
   id: string;
   name: string;
   position: number;
   flex?: number;
-  paired?: boolean;
+  layout?: SectionLayout;
 }
 
 export interface GlobalSettings {
-  theme: 'dark' | 'light';
+  theme: "dark" | "light";
   defaultRefreshInterval: number;
   settingsPin?: string;
-  orientation: 'auto' | 'portrait' | 'landscape';
+  orientation: "auto" | "portrait" | "landscape";
 }
 
 export interface DashboardState {
@@ -52,7 +65,7 @@ export interface WidgetProps {
   globalSettings: GlobalSettings;
 }
 
-export type WidgetStatus = 'loading' | 'success' | 'error' | 'stale';
+export type WidgetStatus = "loading" | "success" | "error" | "stale";
 
 export interface WidgetState<T> {
   data: T | null;

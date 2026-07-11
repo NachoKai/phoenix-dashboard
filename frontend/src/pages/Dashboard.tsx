@@ -1,30 +1,56 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  fetchDashboard,
-  saveWidgets,
-} from '../api';
-import { useSectionDragDrop } from '../hooks/useSectionDragDrop';
-import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import type { DashboardSection, DashboardState, WidgetInstance } from '../types';
-import { getWidgetComponent } from '../widgets/registry';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { fetchDashboard, saveWidgets } from "../api";
+import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import type { DashboardSection, DashboardState, WidgetInstance } from "../types";
+import { getWidgetComponent } from "../widgets/registry";
 
-function groupSections(sections: DashboardSection[]) {
-  const groups: { sections: DashboardSection[]; flex: number }[] = [];
-  let i = 0;
-  while (i < sections.length) {
-    const current = sections[i];
-    if (current.paired && i + 1 < sections.length && sections[i + 1].paired) {
-      const next = sections[i + 1];
-      const totalFlex = (current.flex ?? 1) + (next.flex ?? 1);
-      groups.push({ sections: [current, next], flex: totalFlex });
-      i += 2;
-    } else {
-      groups.push({ sections: [current], flex: current.flex ?? 1 });
-      i += 1;
+interface GridPlacement {
+  section: DashboardSection;
+  gridColumn: string;
+  gridRow: string;
+}
+
+function computeGridPlacements(sections: DashboardSection[]): GridPlacement[] {
+  const sorted = [...sections].sort((a, b) => a.position - b.position);
+  const fullWidths = sorted.filter(s => !s.layout || s.layout === "full-width");
+  const fullHeights = sorted.filter(
+    s => s.layout === "left-full-height" || s.layout === "right-full-height",
+  );
+  const leftOnly = sorted.filter(s => s.layout === "left");
+  const rightOnly = sorted.filter(s => s.layout === "right");
+
+  const totalRows = fullWidths.length + Math.max(leftOnly.length, rightOnly.length);
+  const placements: GridPlacement[] = [];
+
+  let row = 1;
+  for (const s of fullWidths) {
+    placements.push({ section: s, gridColumn: "1 / -1", gridRow: `${row}` });
+    row++;
+  }
+
+  const pairCount = Math.max(leftOnly.length, rightOnly.length);
+  for (let i = 0; i < pairCount; i++) {
+    const r = row + i;
+    if (i < leftOnly.length) {
+      placements.push({ section: leftOnly[i], gridColumn: "1", gridRow: `${r}` });
+    }
+    if (i < rightOnly.length) {
+      placements.push({ section: rightOnly[i], gridColumn: "2", gridRow: `${r}` });
     }
   }
-  return groups;
+
+  for (const s of fullHeights) {
+    const col = s.layout === "left-full-height" ? "1" : "2";
+    placements.push({
+      section: s,
+      gridColumn: col,
+      gridRow: totalRows > 0 ? `1 / ${totalRows + 1}` : "1",
+    });
+  }
+
+  return placements;
 }
 
 export function Dashboard() {
@@ -39,7 +65,7 @@ export function Dashboard() {
       setState(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
+      setError(err instanceof Error ? err.message : "Failed to load");
     }
   };
 
@@ -56,7 +82,7 @@ export function Dashboard() {
   useEffect(() => {
     const orientation = state?.globalSettings?.orientation;
     const so = screen.orientation as any;
-    if (!orientation || orientation === 'auto') {
+    if (!orientation || orientation === "auto") {
       so?.unlock?.();
     } else if (so?.lock) {
       so.lock(orientation).catch(() => {});
@@ -74,10 +100,13 @@ export function Dashboard() {
 
   const sortedSections = useMemo(
     () => [...(state?.sections ?? [])].sort((a, b) => a.position - b.position),
-    [state?.sections]
+    [state?.sections],
   );
 
-  const sectionGroups = useMemo(() => groupSections(sortedSections), [sortedSections]);
+  const gridPlacements = useMemo(
+    () => computeGridPlacements(sortedSections),
+    [sortedSections],
+  );
 
   const { getSectionProps, getGridRef, getWidgetProps } = useSectionDragDrop(
     state?.sections ?? [],
@@ -88,14 +117,14 @@ export function Dashboard() {
   const renderSection = (section: DashboardSection) => {
     const sectionWidgets = state
       ? state.widgets
-          .filter((w) => w.section === section.id)
+          .filter(w => w.section === section.id)
           .sort((a, b) => a.position - b.position)
       : [];
 
     return (
       <div className="section__content" key={section.id}>
         <div className="section__grid" ref={getGridRef(section.id)}>
-          {sectionWidgets.map((widget) => {
+          {sectionWidgets.map(widget => {
             const Component = getWidgetComponent(widget.type);
             if (!Component) {
               return (
@@ -143,46 +172,21 @@ export function Dashboard() {
     <div className={`dashboard theme-${state.globalSettings.theme}`}>
       {!online && <div className="offline-banner">Offline — showing cached data</div>}
 
-      <div className="dashboard__sections">
-        {sectionGroups.map((group) => (
-          <div
-            key={group.sections.map(s => s.id).join('-')}
-            className="dashboard__row"
-            style={{ flex: group.flex }}
-          >
-            {group.sections.length === 1 ? (() => {
-              const section = group.sections[0];
-              const sp = getSectionProps(section.id);
-              return (
-                <div
-                  className={`dashboard__section dashboard__section--single${sp.isOver ? ' dashboard__section--over' : ''}`}
-                  onDragOver={sp.onDragOver}
-                  onDrop={sp.onDrop}
-                >
-                  {renderSection(section)}
-                </div>
-              );
-            })() : (
-              group.sections.map((section) => {
-                const sp = getSectionProps(section.id);
-                return (
-                  <div
-                    className={`dashboard__section dashboard__section--half${sp.isOver ? ' dashboard__section--over' : ''}`}
-                    key={section.id}
-                    onDragOver={sp.onDragOver}
-                    onDrop={sp.onDrop}
-                  >
-                    {renderSection(section)}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        ))}
-
-        {sectionGroups.length === 0 && (
-          <div className="section__empty">Drop widgets here</div>
-        )}
+      <div className="dashboard__grid">
+        {gridPlacements.map(({ section, gridColumn, gridRow }) => {
+          const sp = getSectionProps(section.id);
+          return (
+            <div
+              key={section.id}
+              className={`dashboard__section${sp.isOver ? " dashboard__section--over" : ""}`}
+              style={{ gridColumn, gridRow }}
+              onDragOver={sp.onDragOver}
+              onDrop={sp.onDrop}
+            >
+              {renderSection(section)}
+            </div>
+          );
+        })}
       </div>
 
       <Link to="/settings" className="dashboard__settings-link" aria-label="Settings">

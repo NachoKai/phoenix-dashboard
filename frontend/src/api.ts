@@ -1,37 +1,39 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
-export async function fetchDashboard(): Promise<import('./types').DashboardState> {
+export async function fetchDashboard(): Promise<import("./types").DashboardState> {
   const res = await fetch(`${API_BASE}/dashboard`);
-  if (!res.ok) throw new Error('Failed to load dashboard');
+  if (!res.ok) throw new Error("Failed to load dashboard");
   return res.json();
 }
 
-export async function fetchWidgetRegistry(): Promise<import('./types').WidgetDefinition[]> {
+export async function fetchWidgetRegistry(): Promise<
+  import("./types").WidgetDefinition[]
+> {
   const res = await fetch(`${API_BASE}/widgets/registry`);
-  if (!res.ok) throw new Error('Failed to load widget registry');
+  if (!res.ok) throw new Error("Failed to load widget registry");
   return res.json();
 }
 
 export async function saveWidgets(
-  widgets: import('./types').WidgetInstance[],
+  widgets: import("./types").WidgetInstance[],
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/dashboard/widgets`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ widgets }),
   });
-  if (!res.ok) throw new Error('Failed to save widgets');
+  if (!res.ok) throw new Error("Failed to save widgets");
 }
 
 export async function saveGlobalSettings(
-  settings: import('./types').GlobalSettings,
+  settings: import("./types").GlobalSettings,
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/dashboard/settings`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(settings),
   });
-  if (!res.ok) throw new Error('Failed to save settings');
+  if (!res.ok) throw new Error("Failed to save settings");
 }
 
 export async function saveApiKey(
@@ -40,11 +42,11 @@ export async function saveApiKey(
   value: string,
 ): Promise<{ masked: string }> {
   const res = await fetch(`${API_BASE}/dashboard/keys`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ widgetId, keyName, value }),
   });
-  if (!res.ok) throw new Error('Failed to save API key');
+  if (!res.ok) throw new Error("Failed to save API key");
   return res.json();
 }
 
@@ -66,8 +68,8 @@ export async function isPinRequired(): Promise<boolean> {
 
 export async function verifyPin(pin: string): Promise<boolean> {
   const res = await fetch(`${API_BASE}/settings/verify-pin`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pin }),
   });
   if (!res.ok) return false;
@@ -77,45 +79,48 @@ export async function verifyPin(pin: string): Promise<boolean> {
 
 // ── Section management ──
 
-export async function fetchSections(): Promise<import('./types').DashboardSection[]> {
+export async function fetchSections(): Promise<import("./types").DashboardSection[]> {
   const res = await fetch(`${API_BASE}/dashboard/sections`);
-  if (!res.ok) throw new Error('Failed to load sections');
+  if (!res.ok) throw new Error("Failed to load sections");
   return res.json();
 }
 
-export async function createSection(name: string): Promise<{ section: import('./types').DashboardSection }> {
+export async function createSection(): Promise<{
+  section: import("./types").DashboardSection;
+}> {
   const res = await fetch(`${API_BASE}/dashboard/sections`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
   });
-  if (!res.ok) throw new Error('Failed to create section');
+  if (!res.ok) throw new Error("Failed to create section");
   return res.json();
 }
 
 export async function renameSection(id: string, name: string): Promise<void> {
   const res = await fetch(`${API_BASE}/dashboard/sections/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
   });
-  if (!res.ok) throw new Error('Failed to rename section');
+  if (!res.ok) throw new Error("Failed to rename section");
 }
 
 export async function deleteSection(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/dashboard/sections/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
-  if (!res.ok) throw new Error('Failed to delete section');
+  if (!res.ok) throw new Error("Failed to delete section");
 }
 
-export async function reorderSections(sections: import('./types').DashboardSection[]): Promise<void> {
+export async function reorderSections(
+  sections: import("./types").DashboardSection[],
+): Promise<void> {
   const res = await fetch(`${API_BASE}/dashboard/sections/reorder`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sections }),
   });
-  if (!res.ok) throw new Error('Failed to reorder sections');
+  if (!res.ok) throw new Error("Failed to reorder sections");
 }
 
 export async function fetchWithRetry<T>(
@@ -135,9 +140,9 @@ export async function fetchWithRetry<T>(
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       if (attempt < maxRetries - 1) {
-        await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000));
+        await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000));
       }
     }
   }
-  throw lastError ?? new Error('Request failed');
+  throw lastError ?? new Error("Request failed");
 }

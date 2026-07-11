@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   checkStoredKey,
   createSection,
@@ -7,21 +7,26 @@ import {
   fetchDashboard,
   fetchWidgetRegistry,
   isPinRequired,
-  renameSection as apiRenameSection,
   reorderSections,
   saveApiKey,
   saveGlobalSettings,
   saveWidgets,
   verifyPin,
-} from '../api';
-import type { ConfigFieldSchema, DashboardSection, DashboardState, WidgetDefinition, WidgetInstance } from '../types';
-import { v4 as uuid } from '../utils/id';
+} from "../api";
+import type {
+  ConfigFieldSchema,
+  DashboardState,
+  SectionLayout,
+  WidgetDefinition,
+  WidgetInstance,
+} from "../types";
+import { v4 as uuid } from "../utils/id";
 
 export function Settings() {
   const [state, setState] = useState<DashboardState | null>(null);
   const [registry, setRegistry] = useState<WidgetDefinition[]>([]);
   const [pinRequired, setPinRequired] = useState(false);
-  const [pinInput, setPinInput] = useState('');
+  const [pinInput, setPinInput] = useState("");
   const [pinOk, setPinOk] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -40,9 +45,9 @@ export function Settings() {
 
     const masks: Record<string, string> = {};
     for (const w of dashboard.widgets) {
-      const def = reg.find((r) => r.type === w.type);
+      const def = reg.find(r => r.type === w.type);
       for (const field of def?.configSchema ?? []) {
-        if (field.type === 'secret') {
+        if (field.type === "secret") {
           const result = await checkStoredKey(w.id, field.key);
           if (result.hasValue && result.masked) {
             masks[`${w.id}:${field.key}`] = result.masked;
@@ -63,7 +68,7 @@ export function Settings() {
       setPinOk(true);
       setMessage(null);
     } else {
-      setMessage('Invalid PIN');
+      setMessage("Invalid PIN");
     }
   };
 
@@ -71,7 +76,7 @@ export function Settings() {
     if (!state) return;
     setState({
       ...state,
-      widgets: state.widgets.map((w) =>
+      widgets: state.widgets.map(w =>
         w.id === id ? { ...w, config: { ...w.config, [key]: value } } : w,
       ),
     });
@@ -79,14 +84,15 @@ export function Settings() {
 
   const addWidget = (type: string) => {
     if (!state) return;
-    const def = registry.find((r) => r.type === type);
+    const def = registry.find(r => r.type === type);
     if (!def) return;
     const firstSection = state.sections[0];
     const newWidget: WidgetInstance = {
       id: `${type}-${uuid()}`,
       type,
-      position: state.widgets.filter((w) => w.section === (firstSection?.id ?? 'default')).length,
-      section: firstSection?.id ?? 'default',
+      position: state.widgets.filter(w => w.section === (firstSection?.id ?? "default"))
+        .length,
+      section: firstSection?.id ?? "default",
       config: { ...def.defaultConfig },
     };
     setState({ ...state, widgets: [...state.widgets, newWidget] });
@@ -94,12 +100,12 @@ export function Settings() {
 
   const removeWidget = (id: string) => {
     if (!state) return;
-    setState({ ...state, widgets: state.widgets.filter((w) => w.id !== id) });
+    setState({ ...state, widgets: state.widgets.filter(w => w.id !== id) });
   };
 
   const moveWidget = (id: string, direction: -1 | 1) => {
     if (!state) return;
-    const idx = state.widgets.findIndex((w) => w.id === id);
+    const idx = state.widgets.findIndex(w => w.id === id);
     const newIdx = idx + direction;
     if (idx < 0 || newIdx < 0 || newIdx >= state.widgets.length) return;
     const widgets = [...state.widgets];
@@ -111,17 +117,14 @@ export function Settings() {
     if (!state) return;
     setState({
       ...state,
-      widgets: state.widgets.map((w) =>
-        w.id === id ? { ...w, section: sectionId } : w,
-      ),
+      widgets: state.widgets.map(w => (w.id === id ? { ...w, section: sectionId } : w)),
     });
   };
 
   const handleAddSection = async () => {
     if (!state) return;
-    const name = `Section ${state.sections.length + 1}`;
     try {
-      const { section } = await createSection(name);
+      const { section } = await createSection();
       setState({ ...state, sections: [...state.sections, section] });
     } catch {
       /* silent */
@@ -132,12 +135,17 @@ export function Settings() {
     if (!state || state.sections.length <= 1) return;
     try {
       await apiDeleteSection(sectionId);
-      const updatedWidgets = state.widgets.map((w) =>
-        w.section === sectionId ? { ...w, section: state.sections.find((s) => s.id !== sectionId)?.id ?? 'default' } : w,
+      const updatedWidgets = state.widgets.map(w =>
+        w.section === sectionId
+          ? {
+              ...w,
+              section: state.sections.find(s => s.id !== sectionId)?.id ?? "default",
+            }
+          : w,
       );
       setState({
         ...state,
-        sections: state.sections.filter((s) => s.id !== sectionId),
+        sections: state.sections.filter(s => s.id !== sectionId),
         widgets: updatedWidgets,
       });
     } catch {
@@ -145,28 +153,11 @@ export function Settings() {
     }
   };
 
-  const handleRenameSection = async (sectionId: string, name: string) => {
-    if (!state || !name.trim()) return;
-    try {
-      await apiRenameSection(sectionId, name.trim());
-      setState({
-        ...state,
-        sections: state.sections.map((s) =>
-          s.id === sectionId ? { ...s, name: name.trim() } : s,
-        ),
-      });
-    } catch {
-      /* silent */
-    }
-  };
-
-  const handleTogglePaired = (sectionId: string) => {
+  const handleSetLayout = (sectionId: string, layout: SectionLayout) => {
     if (!state) return;
     setState({
       ...state,
-      sections: state.sections.map((s) =>
-        s.id === sectionId ? { ...s, paired: !s.paired } : s,
-      ),
+      sections: state.sections.map(s => (s.id === sectionId ? { ...s, layout } : s)),
     });
   };
 
@@ -177,10 +168,12 @@ export function Settings() {
     try {
       await saveWidgets(state.widgets);
       await saveGlobalSettings(state.globalSettings);
-      await reorderSections(state.sections.map((s, i) => ({ ...s, position: i })));
-      setMessage('Saved successfully');
+      await reorderSections(
+        state.sections.map((s, i) => ({ ...s, position: i, name: `Section ${i + 1}` })),
+      );
+      setMessage("Saved successfully");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Save failed');
+      setMessage(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -190,10 +183,10 @@ export function Settings() {
     if (!value.trim()) return;
     try {
       const result = await saveApiKey(widgetId, keyName, value);
-      setKeyMasks((m) => ({ ...m, [`${widgetId}:${keyName}`]: result.masked }));
-      setMessage('API key saved');
+      setKeyMasks(m => ({ ...m, [`${widgetId}:${keyName}`]: result.masked }));
+      setMessage("API key saved");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to save key');
+      setMessage(err instanceof Error ? err.message : "Failed to save key");
     }
   };
 
@@ -209,14 +202,16 @@ export function Settings() {
           type="password"
           inputMode="numeric"
           value={pinInput}
-          onChange={(e) => setPinInput(e.target.value)}
+          onChange={e => setPinInput(e.target.value)}
           placeholder="PIN"
           className="settings__input"
         />
         <button type="button" onClick={() => void handlePinSubmit()}>
           Unlock
         </button>
-        {message && <p className="settings__message settings__message--error">{message}</p>}
+        {message && (
+          <p className="settings__message settings__message--error">{message}</p>
+        )}
         <Link to="/">← Back to dashboard</Link>
       </div>
     );
@@ -232,7 +227,9 @@ export function Settings() {
       </header>
 
       {message && (
-        <p className={`settings__message ${message.includes('fail') || message.includes('Invalid') ? 'settings__message--error' : ''}`}>
+        <p
+          className={`settings__message ${message.includes("fail") || message.includes("Invalid") ? "settings__message--error" : ""}`}
+        >
           {message}
         </p>
       )}
@@ -243,12 +240,12 @@ export function Settings() {
           Theme
           <select
             value={state.globalSettings.theme}
-            onChange={(e) =>
+            onChange={e =>
               setState({
                 ...state,
                 globalSettings: {
                   ...state.globalSettings,
-                  theme: e.target.value as 'dark' | 'light',
+                  theme: e.target.value as "dark" | "light",
                 },
               })
             }
@@ -263,7 +260,7 @@ export function Settings() {
             type="number"
             min={10}
             value={state.globalSettings.defaultRefreshInterval}
-            onChange={(e) =>
+            onChange={e =>
               setState({
                 ...state,
                 globalSettings: {
@@ -277,13 +274,13 @@ export function Settings() {
         <label className="settings__field">
           Orientation
           <select
-            value={state.globalSettings.orientation ?? 'auto'}
-            onChange={(e) =>
+            value={state.globalSettings.orientation ?? "auto"}
+            onChange={e =>
               setState({
                 ...state,
                 globalSettings: {
                   ...state.globalSettings,
-                  orientation: e.target.value as 'auto' | 'portrait' | 'landscape',
+                  orientation: e.target.value as "auto" | "portrait" | "landscape",
                 },
               })
             }
@@ -297,8 +294,8 @@ export function Settings() {
           Settings PIN (optional)
           <input
             type="password"
-            value={state.globalSettings.settingsPin ?? ''}
-            onChange={(e) =>
+            value={state.globalSettings.settingsPin ?? ""}
+            onChange={e =>
               setState({
                 ...state,
                 globalSettings: {
@@ -315,21 +312,23 @@ export function Settings() {
       <section className="settings__section">
         <h2>Sections</h2>
         <div className="settings__sections-list">
-          {state.sections.map((section) => (
+          {state.sections.map(section => (
             <div key={section.id} className="settings__section-item">
               <div className="settings__section-item-left">
-                <SectionNameInput
-                  section={section}
-                  onRename={(name) => void handleRenameSection(section.id, name)}
-                />
-                <label className="settings__paired-toggle">
-                  <input
-                    type="checkbox"
-                    checked={section.paired ?? false}
-                    onChange={() => void handleTogglePaired(section.id)}
-                  />
-                  <span>Pair with next</span>
-                </label>
+                <span className="settings__section-name">{section.name}</span>
+                <select
+                  className="settings__layout-select"
+                  value={section.layout ?? "full-width"}
+                  onChange={e =>
+                    void handleSetLayout(section.id, e.target.value as SectionLayout)
+                  }
+                >
+                  <option value="full-width">Full width</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                  <option value="left-full-height">Left + Full height</option>
+                  <option value="right-full-height">Right + Full height</option>
+                </select>
               </div>
               {state.sections.length > 1 && (
                 <button
@@ -355,7 +354,7 @@ export function Settings() {
       <section className="settings__section">
         <h2>Widgets</h2>
         <div className="settings__add-widgets">
-          {registry.map((def) => (
+          {registry.map(def => (
             <button
               key={def.type}
               type="button"
@@ -367,14 +366,14 @@ export function Settings() {
           ))}
         </div>
 
-        {state.sections.map((section) => {
-          const sectionWidgets = state.widgets.filter((w) => w.section === section.id);
+        {state.sections.map(section => {
+          const sectionWidgets = state.widgets.filter(w => w.section === section.id);
           if (sectionWidgets.length === 0) return null;
           return (
             <div key={section.id} className="settings__section-group">
               <h3 className="settings__section-group-title">{section.name}</h3>
-              {sectionWidgets.map((widget) => {
-                const def = registry.find((r) => r.type === widget.type);
+              {sectionWidgets.map(widget => {
+                const def = registry.find(r => r.type === widget.type);
                 return (
                   <div key={widget.id} className="settings__widget-card">
                     <div className="settings__widget-header">
@@ -384,19 +383,27 @@ export function Settings() {
                           <select
                             className="settings__section-select"
                             value={widget.section}
-                            onChange={(e) => changeWidgetSection(widget.id, e.target.value)}
+                            onChange={e => changeWidgetSection(widget.id, e.target.value)}
                           >
-                            {state.sections.map((s) => (
+                            {state.sections.map(s => (
                               <option key={s.id} value={s.id}>
                                 {s.name}
                               </option>
                             ))}
                           </select>
                         )}
-                        <button type="button" onClick={() => moveWidget(widget.id, -1)} aria-label="Move up">
+                        <button
+                          type="button"
+                          onClick={() => moveWidget(widget.id, -1)}
+                          aria-label="Move up"
+                        >
                           ↑
                         </button>
-                        <button type="button" onClick={() => moveWidget(widget.id, 1)} aria-label="Move down">
+                        <button
+                          type="button"
+                          onClick={() => moveWidget(widget.id, 1)}
+                          aria-label="Move down"
+                        >
                           ↓
                         </button>
                         <button
@@ -408,14 +415,16 @@ export function Settings() {
                         </button>
                       </div>
                     </div>
-                    {def?.configSchema.map((field) => (
+                    {def?.configSchema.map(field => (
                       <ConfigField
                         key={field.key}
                         field={field}
                         value={widget.config[field.key]}
                         mask={keyMasks[`${widget.id}:${field.key}`]}
-                        onChange={(val) => updateWidgetConfig(widget.id, field.key, val)}
-                        onSecretSave={(val) => void handleSecretSave(widget.id, field.key, val)}
+                        onChange={val => updateWidgetConfig(widget.id, field.key, val)}
+                        onSecretSave={val =>
+                          void handleSecretSave(widget.id, field.key, val)
+                        }
                       />
                     ))}
                   </div>
@@ -432,7 +441,7 @@ export function Settings() {
         onClick={() => void handleSave()}
         disabled={saving}
       >
-        {saving ? 'Saving…' : 'Save changes'}
+        {saving ? "Saving…" : "Save changes"}
       </button>
     </div>
   );
@@ -451,9 +460,9 @@ function ConfigField({
   onChange: (val: unknown) => void;
   onSecretSave: (val: string) => void;
 }) {
-  const [secretInput, setSecretInput] = useState('');
+  const [secretInput, setSecretInput] = useState("");
 
-  if (field.type === 'secret') {
+  if (field.type === "secret") {
     return (
       <label className="settings__field">
         {field.label}
@@ -461,7 +470,7 @@ function ConfigField({
         <input
           type="password"
           value={secretInput}
-          onChange={(e) => setSecretInput(e.target.value)}
+          onChange={e => setSecretInput(e.target.value)}
           placeholder="Enter new key"
           className="settings__input"
         />
@@ -470,7 +479,7 @@ function ConfigField({
           className="settings__key-btn"
           onClick={() => {
             onSecretSave(secretInput);
-            setSecretInput('');
+            setSecretInput("");
           }}
         >
           Save key
@@ -480,25 +489,28 @@ function ConfigField({
     );
   }
 
-  if (field.type === 'boolean') {
+  if (field.type === "boolean") {
     return (
       <label className="settings__field settings__field--checkbox">
         <input
           type="checkbox"
           checked={Boolean(value)}
-          onChange={(e) => onChange(e.target.checked)}
+          onChange={e => onChange(e.target.checked)}
         />
         {field.label}
       </label>
     );
   }
 
-  if (field.type === 'select' && field.options) {
+  if (field.type === "select" && field.options) {
     return (
       <label className="settings__field">
         {field.label}
-        <select value={String(value ?? field.default)} onChange={(e) => onChange(e.target.value)}>
-          {field.options.map((opt) => (
+        <select
+          value={String(value ?? field.default)}
+          onChange={e => onChange(e.target.value)}
+        >
+          {field.options.map(opt => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -508,33 +520,33 @@ function ConfigField({
     );
   }
 
-  if (field.type === 'number') {
+  if (field.type === "number") {
     return (
       <label className="settings__field">
         {field.label}
         <input
           type="number"
           value={Number(value ?? field.default ?? 0)}
-          onChange={(e) => onChange(Number(e.target.value))}
+          onChange={e => onChange(Number(e.target.value))}
         />
         {field.description && <small>{field.description}</small>}
       </label>
     );
   }
 
-  if (field.type === 'string-list') {
+  if (field.type === "string-list") {
     const list = Array.isArray(value) ? (value as string[]) : [];
     return (
       <label className="settings__field">
         {field.label}
         <textarea
           rows={4}
-          value={list.join('\n')}
-          onChange={(e) =>
+          value={list.join("\n")}
+          onChange={e =>
             onChange(
               e.target.value
-                .split('\n')
-                .map((s) => s.trim())
+                .split("\n")
+                .map(s => s.trim())
                 .filter(Boolean),
             )
           }
@@ -550,56 +562,10 @@ function ConfigField({
       {field.label}
       <input
         type="text"
-        value={String(value ?? field.default ?? '')}
-        onChange={(e) => onChange(e.target.value)}
+        value={String(value ?? field.default ?? "")}
+        onChange={e => onChange(e.target.value)}
       />
       {field.description && <small>{field.description}</small>}
     </label>
-  );
-}
-
-function SectionNameInput({
-  section,
-  onRename,
-}: {
-  section: DashboardSection;
-  onRename: (name: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(section.name);
-
-  if (editing) {
-    return (
-      <input
-        className="settings__section-name-input"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onBlur={() => {
-          onRename(name);
-          setEditing(false);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            onRename(name);
-            setEditing(false);
-          }
-          if (e.key === 'Escape') {
-            setName(section.name);
-            setEditing(false);
-          }
-        }}
-        autoFocus
-      />
-    );
-  }
-
-  return (
-    <span
-      className="settings__section-name"
-      onDoubleClick={() => setEditing(true)}
-      title="Double-click to rename"
-    >
-      {section.name}
-    </span>
   );
 }
