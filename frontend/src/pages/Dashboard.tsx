@@ -12,7 +12,12 @@ interface GridPlacement {
   gridRow: string;
 }
 
-function computeGridPlacements(sections: DashboardSection[]): GridPlacement[] {
+interface GridResult {
+  placements: GridPlacement[];
+  totalRows: number;
+}
+
+function computeGrid(sections: DashboardSection[]): GridResult {
   const sorted = [...sections].sort((a, b) => a.position - b.position);
   const fullWidths = sorted.filter(s => !s.layout || s.layout === "full-width");
   const fullHeights = sorted.filter(
@@ -21,7 +26,7 @@ function computeGridPlacements(sections: DashboardSection[]): GridPlacement[] {
   const leftOnly = sorted.filter(s => s.layout === "left");
   const rightOnly = sorted.filter(s => s.layout === "right");
 
-  const totalRows = fullWidths.length + Math.max(leftOnly.length, rightOnly.length);
+  const totalRows = fullWidths.length + Math.max(leftOnly.length, rightOnly.length, fullHeights.length > 0 ? 1 : 0);
   const placements: GridPlacement[] = [];
 
   let row = 1;
@@ -50,7 +55,7 @@ function computeGridPlacements(sections: DashboardSection[]): GridPlacement[] {
     });
   }
 
-  return placements;
+  return { placements, totalRows };
 }
 
 export function Dashboard() {
@@ -103,8 +108,8 @@ export function Dashboard() {
     [state?.sections],
   );
 
-  const gridPlacements = useMemo(
-    () => computeGridPlacements(sortedSections),
+  const { placements: gridPlacements, totalRows } = useMemo(
+    () => computeGrid(sortedSections),
     [sortedSections],
   );
 
@@ -172,7 +177,15 @@ export function Dashboard() {
     <div className={`dashboard theme-${state.globalSettings.theme}`}>
       {!online && <div className="offline-banner">Offline — showing cached data</div>}
 
-      <div className="dashboard__grid">
+      <div
+        className="dashboard__grid"
+        style={totalRows > 0 ? { gridTemplateRows: `repeat(${totalRows}, 1fr)` } : undefined}
+      >
+        {gridPlacements.length === 0 && (
+          <div className="section__empty" style={{ gridColumn: '1 / -1' }}>
+            No sections yet — add one in Settings
+          </div>
+        )}
         {gridPlacements.map(({ section, gridColumn, gridRow }) => {
           const sp = getSectionProps(section.id);
           return (

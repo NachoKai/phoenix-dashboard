@@ -132,21 +132,13 @@ export function Settings() {
   };
 
   const handleDeleteSection = async (sectionId: string) => {
-    if (!state || state.sections.length <= 1) return;
+    if (!state) return;
     try {
       await apiDeleteSection(sectionId);
-      const updatedWidgets = state.widgets.map(w =>
-        w.section === sectionId
-          ? {
-              ...w,
-              section: state.sections.find(s => s.id !== sectionId)?.id ?? "default",
-            }
-          : w,
-      );
       setState({
         ...state,
         sections: state.sections.filter(s => s.id !== sectionId),
-        widgets: updatedWidgets,
+        widgets: state.widgets.filter(w => w.section !== sectionId),
       });
     } catch {
       /* silent */
@@ -330,15 +322,13 @@ export function Settings() {
                   <option value="right-full-height">Right + Full height</option>
                 </select>
               </div>
-              {state.sections.length > 1 && (
-                <button
-                  type="button"
-                  className="settings__remove-btn"
-                  onClick={() => void handleDeleteSection(section.id)}
-                >
-                  Remove
-                </button>
-              )}
+              <button
+                type="button"
+                className="settings__remove-btn"
+                onClick={() => void handleDeleteSection(section.id)}
+              >
+                Remove
+              </button>
             </div>
           ))}
           <button

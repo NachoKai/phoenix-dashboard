@@ -233,15 +233,10 @@ export function renameSection(id: string, name: string): boolean {
 export function deleteSection(id: string): boolean {
   const database = getDb();
   const sections = getSections();
-  if (sections.length <= 1) return false;
+  if (sections.length === 0) return false;
 
   const tx = database.transaction(() => {
-    const targetSection = sections.find(s => s.id !== id);
-    if (targetSection) {
-      database
-        .prepare("UPDATE widgets SET section = ? WHERE section = ?")
-        .run(targetSection.id, id);
-    }
+    database.prepare("DELETE FROM widgets WHERE section = ?").run(id);
     database.prepare("DELETE FROM sections WHERE id = ?").run(id);
     const remaining = getSections();
     remaining.forEach((s, i) => {
