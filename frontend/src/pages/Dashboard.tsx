@@ -219,6 +219,29 @@ export function Dashboard() {
     [state],
   );
 
+  useEffect(() => {
+    const orientation = state?.globalSettings?.orientation;
+    const so = screen.orientation as any;
+    if (!orientation || orientation === "auto") {
+      so?.unlock?.();
+      return;
+    }
+    if (!so?.lock) return;
+
+    const lockOrientation = () => {
+      so.lock(orientation).catch(() => {});
+    };
+
+    if (document.fullscreenElement) {
+      lockOrientation();
+    } else {
+      document.documentElement
+        .requestFullscreen()
+        .then(lockOrientation)
+        .catch(() => {});
+    }
+  }, [state?.globalSettings?.orientation]);
+
   const handleReorder = useCallback(
     (reordered: WidgetInstance[]) => {
       if (!state) return;
