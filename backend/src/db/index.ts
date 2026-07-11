@@ -48,6 +48,19 @@ let globalSettings: GlobalSettings = initial.globalSettings;
 let sections: DashboardSection[] = initial.sections;
 let widgets: WidgetInstance[] = initial.widgets;
 
+function persistToDisk(): void {
+  try {
+    const state: PersistedState = {
+      globalSettings: { ...globalSettings },
+      sections: [...sections],
+      widgets: [...widgets],
+    };
+    fs.writeFileSync(PERSIST_FILE, JSON.stringify(state, null, 2), "utf-8");
+  } catch {
+    // best-effort; don't crash the server on write failure
+  }
+}
+
 const encryptedKeys = new Map<string, string>();
 const apiCache = new Map<string, { value: string; expiresAt: number }>();
 
@@ -57,6 +70,7 @@ export function getGlobalSettings(): GlobalSettings {
 
 export function saveGlobalSettings(settings: GlobalSettings): void {
   globalSettings = { ...settings };
+  persistToDisk();
 }
 
 export function getSections(): DashboardSection[] {
@@ -69,6 +83,7 @@ export function saveSections(newSections: DashboardSection[]): void {
     position: i,
     name: s.name || `Section ${i + 1}`,
   }));
+  persistToDisk();
 }
 
 export function addSection(): DashboardSection {
@@ -102,6 +117,7 @@ export function getWidgets(): WidgetInstance[] {
 
 export function saveWidgets(newWidgets: WidgetInstance[]): void {
   widgets = [...newWidgets];
+  persistToDisk();
 }
 
 export function getDashboardState(): DashboardState {

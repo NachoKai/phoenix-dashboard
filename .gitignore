@@ -5,3 +5,4 @@ dist/
 *.log
 certs/
 nul
+backend/data/dashboard-state.json

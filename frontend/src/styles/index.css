@@ -544,10 +544,15 @@ a {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
+}
+
+.drag-item:has(.weather-forecast-widget) {
+  grid-column: 1 / -1;
 }
 
 .weather-forecast-widget__location {
-  font-size: clamp(0.7rem, 4cqw, 1.2rem);
+  font-size: clamp(0.6rem, 3.5cqw, 1rem);
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;

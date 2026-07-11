@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  fetchDashboard,
+  fetchDashboardWithCache,
   persistDashboardState,
   saveGlobalSettings,
   saveWidgets,
@@ -14,7 +14,6 @@ import type {
   GlobalSettings,
   WidgetInstance,
 } from "../types";
-import { loadDashboardCache } from "../utils/storage";
 import { getWidgetComponent } from "../widgets/registry";
 
 interface GridPlacement {
@@ -94,7 +93,7 @@ export function Dashboard() {
 
   const load = async () => {
     try {
-      const data = await fetchDashboard();
+      const data = await fetchDashboardWithCache();
       setState(data);
       setError(null);
     } catch (err) {
@@ -103,8 +102,6 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    const cached = loadDashboardCache();
-    if (cached) setState(cached);
     void load();
     const id = setInterval(() => void load(), 5 * 60_000);
     return () => clearInterval(id);
@@ -220,7 +217,8 @@ export function Dashboard() {
   );
 
   useEffect(() => {
-    const orientation = state?.globalSettings?.orientation;
+    if (state === null) return;
+    const orientation = state.globalSettings?.orientation;
     const so = screen.orientation as any;
     if (!orientation || orientation === "auto") {
       so?.unlock?.();

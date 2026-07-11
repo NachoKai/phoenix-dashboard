@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";import { Link } from "react-router-dom";
 import {
   checkStoredKey,
   createSection,
   deleteSection as apiDeleteSection,
-  fetchDashboard,
+  fetchDashboardWithCache,
   fetchWidgetRegistry,
   persistDashboardState,
   reorderSections,
@@ -20,7 +19,6 @@ import type {
   WidgetInstance,
 } from "../types";
 import { v4 as uuid } from "../utils/id";
-import { loadDashboardCache } from "../utils/storage";
 
 export function Settings() {
   const [state, setState] = useState<DashboardState | null>(null);
@@ -30,12 +28,10 @@ export function Settings() {
   const [keyMasks, setKeyMasks] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const cached = loadDashboardCache();
-    if (cached) {
-      setState(cached);
-    }
-
-    const [dashboard, reg] = await Promise.all([fetchDashboard(), fetchWidgetRegistry()]);
+    const [dashboard, reg] = await Promise.all([
+      fetchDashboardWithCache(),
+      fetchWidgetRegistry(),
+    ]);
     setState(dashboard);
     setRegistry(reg);
 
