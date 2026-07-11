@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchDashboard, saveWidgets } from "../api";
+import { fetchDashboard, persistDashboardState, saveGlobalSettings, saveWidgets } from "../api";
 import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import type { DashboardSection, DashboardState, WidgetInstance } from "../types";
@@ -64,6 +64,7 @@ function computeGrid(sections: DashboardSection[]): GridResult {
 export function Dashboard() {
   const [state, setState] = useState<DashboardState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeGroup, setActiveGroup] = useState<number>(1);
 
   const online = useOnlineStatus();
 
@@ -88,6 +89,25 @@ export function Dashboard() {
   useEffect(() => {
     if (online) void load();
   }, [online]);
+
+  useEffect(() => {
+    if (state?.globalSettings?.activeGroup != null) {
+      setActiveGroup(state.globalSettings.activeGroup);
+    }
+  }, [state?.globalSettings?.activeGroup]);
+
+  const handleGroupChange = useCallback(
+    (group: number) => {
+      setActiveGroup(group);
+      if (state) {
+        const updated = { ...state, globalSettings: { ...state.globalSettings, activeGroup: group } };
+        setState(updated);
+        void saveGlobalSettings(updated.globalSettings).catch(() => {});
+        persistDashboardState(updated);
+      }
+    },
+    [state],
+  );
 
   useEffect(() => {
     const orientation = state?.globalSettings?.orientation;
@@ -126,13 +146,26 @@ export function Dashboard() {
     [state?.sections],
   );
 
-  const { placements: gridPlacements, totalRows } = useMemo(
-    () => computeGrid(sortedSections),
+  const hasGroups = useMemo(
+    () => sortedSections.some(s => s.group != null),
     [sortedSections],
   );
 
+  const visibleSections = useMemo(
+    () =>
+      hasGroups
+        ? sortedSections.filter(s => s.group === undefined || s.group === activeGroup)
+        : sortedSections,
+    [sortedSections, activeGroup, hasGroups],
+  );
+
+  const { placements: gridPlacements, totalRows } = useMemo(
+    () => computeGrid(visibleSections),
+    [visibleSections],
+  );
+
   const { getSectionProps, getGridRef, getWidgetProps } = useSectionDragDrop(
-    state?.sections ?? [],
+    visibleSections,
     state?.widgets ?? [],
     handleReorder,
   );
@@ -192,8 +225,29 @@ export function Dashboard() {
   }
 
   return (
-    <div className={`dashboard theme-${state.globalSettings.theme}`}>
+    <div className={`dashboard theme-${state.globalSettings.theme}${hasGroups ? " dashboard--has-groups" : ""}`}>
       {!online && <div className="offline-banner">Offline — showing cached data</div>}
+
+      {hasGroups && (
+        <nav className="group-sidebar" role="tablist" aria-label="Widget groups">
+          {[1, 2, 3, 4].map(g => {
+            const isActive = g === activeGroup;
+            const hasContent = sortedSections.some(s => s.group === g);
+            return (
+              <button
+                key={g}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`group-sidebar__item${isActive ? " group-sidebar__item--active" : ""}${hasContent ? " group-sidebar__item--has-content" : ""}`}
+                onClick={() => handleGroupChange(g)}
+              >
+                {g}
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       <div
         className="dashboard__grid"

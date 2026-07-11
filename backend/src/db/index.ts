@@ -9,10 +9,12 @@ let globalSettings: GlobalSettings = {
   theme: "dark",
   defaultRefreshInterval: 60,
   orientation: "auto",
+  activeGroup: 1,
 };
 
 let sections: DashboardSection[] = [
-  { id: "default", name: "Dashboard", position: 0, flex: 1, layout: "full-width" },
+  { id: "default", name: "Dashboard", position: 0, flex: 1, layout: "full-width", group: 1 },
+  { id: "weather-group", name: "Weather", position: 1, flex: 1, layout: "full-width", group: 2 },
 ];
 
 let widgets: WidgetInstance[] = [
@@ -26,14 +28,14 @@ let widgets: WidgetInstance[] = [
   {
     id: "weather-1",
     type: "weather",
-    position: 1,
-    section: "default",
+    position: 0,
+    section: "weather-group",
     config: { location: "London", units: "metric", refreshInterval: 600 },
   },
   {
     id: "gifs-1",
     type: "gifs",
-    position: 2,
+    position: 1,
     section: "default",
     config: {
       source: "static",

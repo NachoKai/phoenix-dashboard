@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";import { Link } from "react-router-dom";
 import {
   checkStoredKey,
   createSection,
@@ -139,6 +138,14 @@ export function Settings() {
     });
   };
 
+  const handleSetSectionGroup = (sectionId: string, group: number | undefined) => {
+    if (!state) return;
+    setState({
+      ...state,
+      sections: state.sections.map(s => (s.id === sectionId ? { ...s, group } : s)),
+    });
+  };
+
   const handleSave = async () => {
     if (!state) return;
     setSaving(true);
@@ -267,6 +274,22 @@ export function Settings() {
                   <option value="right">Right</option>
                   <option value="left-full-height">Left + Full height</option>
                   <option value="right-full-height">Right + Full height</option>
+                </select>
+                <select
+                  className="settings__layout-select"
+                  value={section.group ?? ""}
+                  onChange={e =>
+                    void handleSetSectionGroup(
+                      section.id,
+                      e.target.value === "" ? undefined : Number(e.target.value),
+                    )
+                  }
+                >
+                  <option value="">No group</option>
+                  <option value="1">Group 1</option>
+                  <option value="2">Group 2</option>
+                  <option value="3">Group 3</option>
+                  <option value="4">Group 4</option>
                 </select>
               </div>
               <button

@@ -44,12 +44,14 @@ export interface DashboardSection {
   position: number;
   flex?: number;
   layout?: SectionLayout;
+  group?: number;
 }
 
 export interface GlobalSettings {
   theme: "dark" | "light";
   defaultRefreshInterval: number;
   orientation: "auto" | "portrait" | "landscape";
+  activeGroup: number;
 }
 
 export interface DashboardState {
