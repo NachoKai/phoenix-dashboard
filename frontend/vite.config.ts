@@ -1,4 +1,5 @@
-import { defineConfig } from "vite";import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
@@ -11,10 +12,12 @@ export default defineConfig({
         name: "Phoenix Dashboard",
         short_name: "Dashboard",
         description: "Always-on widget dashboard display",
+        id: "/",
+        prefer_related_applications: false,
         theme_color: "#0a0a0f",
         background_color: "#0a0a0f",
-        display: "standalone",
-        orientation: "portrait",
+        display: "fullscreen",
+        orientation: "any",
         start_url: "/",
         scope: "/",
         icons: [
@@ -22,11 +25,13 @@ export default defineConfig({
             src: "icons/icon-192.png",
             sizes: "192x192",
             type: "image/png",
+            purpose: "any",
           },
           {
             src: "icons/icon-512.png",
             sizes: "512x512",
             type: "image/png",
+            purpose: "any",
           },
           {
             src: "icons/icon-512.png",

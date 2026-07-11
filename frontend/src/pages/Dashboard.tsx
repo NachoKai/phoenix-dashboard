@@ -4,6 +4,7 @@ import {
   fetchDashboard,
   saveWidgets,
 } from '../api';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import { useSectionDragDrop } from '../hooks/useSectionDragDrop';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import type { DashboardSection, DashboardState, WidgetInstance } from '../types';
@@ -32,6 +33,7 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const online = useOnlineStatus();
+  const { install, canInstall, isStandalone } = usePWAInstall();
 
   const load = async () => {
     try {
@@ -178,6 +180,11 @@ export function Dashboard() {
       <Link to="/settings" className="dashboard__settings-link" aria-label="Settings">
         ⚙
       </Link>
+      {canInstall && !isStandalone && (
+        <button type="button" className="dashboard__install-btn" onClick={() => void install()}>
+          Install App
+        </button>
+      )}
     </div>
   );
 }
