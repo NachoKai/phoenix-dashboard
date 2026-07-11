@@ -255,7 +255,7 @@ export function Dashboard() {
 
       {hasGroups && (
         <nav className="group-sidebar" role="tablist" aria-label="Widget groups">
-          {[1, 2, 3, 4].map(g => {
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(g => {
             const isActive = g === activeGroup;
             const hasContent = sortedSections.some(s => s.group === g);
             const { ref, isOver, ...dragProps } = getGroupButtonProps(g);

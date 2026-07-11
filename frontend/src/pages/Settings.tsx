@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   checkStoredKey,
   createSection,
@@ -290,6 +291,10 @@ export function Settings() {
                   <option value="2">Group 2</option>
                   <option value="3">Group 3</option>
                   <option value="4">Group 4</option>
+                  <option value="5">Group 5</option>
+                  <option value="6">Group 6</option>
+                  <option value="7">Group 7</option>
+                  <option value="8">Group 8</option>
                 </select>
               </div>
               <button

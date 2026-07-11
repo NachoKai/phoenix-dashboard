@@ -6,7 +6,7 @@ A self-hosted, always-on widget dashboard designed to turn any phone into a smar
 
 - **PWA** — installable on any device, works offline with cached data
 - **Section-based layout** — organize widgets into named sections with flexible layouts (full-width, left/right splits, left-full-height, right-full-height)
-- **4-group tabs** — separate dashboard views into up to 4 independent groups
+- **4-group tabs** — separate dashboard views into up to 8 independent groups
 - **Drag & drop** — reorder widgets across sections with mouse or touch
 - **Dark / light theme** — toggle from settings
 - **Orientation lock** — force portrait, landscape, or auto
