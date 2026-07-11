@@ -1,5 +1,4 @@
-import { useCallback } from "react";
-import { fetchWithRetry } from "../../api";
+import { useCallback } from "react";import { fetchWithRetry } from "../../api";
 import { WidgetCard } from "../../components/WidgetCard";
 import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
@@ -41,6 +40,7 @@ const WEATHER_ICONS: Record<string, string> = {
 export function WeatherWidget({ instance }: WidgetProps) {
   const location = (instance.config.location as string) ?? "London";
   const units = (instance.config.units as string) ?? "metric";
+  const lang = (instance.config.lang as string) ?? "en";
   const refreshInterval = ((instance.config.refreshInterval as number) ?? 600) * 1000;
   const unitSymbol = units === "imperial" ? "°F" : "°C";
 
@@ -48,10 +48,11 @@ export function WeatherWidget({ instance }: WidgetProps) {
     const params = new URLSearchParams({
       location,
       units,
+      lang,
       widgetId: instance.id,
     });
     return fetchWithRetry<WeatherData>(`/api/weather?${params}`);
-  }, [location, units, instance.id]);
+  }, [location, units, lang, instance.id]);
 
   const { data, status, error, retry } = useWidgetData<WeatherData>({
     fetcher,
@@ -80,7 +81,8 @@ export function WeatherWidget({ instance }: WidgetProps) {
               <div className="weather-widget__detail-card">
                 <span className="weather-widget__detail-label">Feels</span>
                 <span className="weather-widget__detail-value">
-                  {data.feelsLike}{unitSymbol}
+                  {data.feelsLike}
+                  {unitSymbol}
                 </span>
               </div>
               <div className="weather-widget__detail-card">

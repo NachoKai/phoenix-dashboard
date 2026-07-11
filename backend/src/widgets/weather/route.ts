@@ -64,8 +64,9 @@ async function geocodeLocation(
 
 export async function weatherHandler(req: Request, res: Response) {
   try {
-    const location = (req.query.location as string) || "London";
+    const location = (req.query.location as string) || "Buenos Aires";
     const units = (req.query.units as string) || "metric";
+    const lang = (req.query.lang as string) || "en";
     const widgetId = req.query.widgetId as string | undefined;
 
     const apiKey = resolveApiKey(widgetId);
@@ -88,8 +89,8 @@ export async function weatherHandler(req: Request, res: Response) {
       ? `id=${geo.cityId}`
       : `lat=${geo.lat}&lon=${geo.lon}`;
 
-    const currentUrl = `https://api.openweathermap.org/data/2.5/weather?${locationParam}&units=${unitParam}&appid=${apiKey}`;
-    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?${locationParam}&units=${unitParam}&appid=${apiKey}&cnt=8`;
+    const currentUrl = `https://api.openweathermap.org/data/2.5/weather?${locationParam}&units=${unitParam}&lang=${lang}&appid=${apiKey}`;
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?${locationParam}&units=${unitParam}&lang=${lang}&appid=${apiKey}&cnt=8`;
 
     const [currentRes, forecastRes] = await Promise.all([
       fetch(currentUrl),

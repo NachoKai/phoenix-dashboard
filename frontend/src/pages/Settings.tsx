@@ -526,24 +526,55 @@ function ConfigField({
 
   if (field.type === "string-list") {
     const list = Array.isArray(value) ? (value as string[]) : [];
+    const updateItem = (index: number, newVal: string) => {
+      const updated = [...list];
+      updated[index] = newVal;
+      onChange(updated);
+    };
+    const addItem = () => {
+      onChange([...list, ""]);
+    };
+    const removeItem = (index: number) => {
+      onChange(list.filter((_, i) => i !== index));
+    };
     return (
-      <label className="settings__field">
-        {field.label}
-        <textarea
-          rows={4}
-          value={list.join("\n")}
-          onChange={e =>
-            onChange(
-              e.target.value
-                .split("\n")
-                .map(s => s.trim())
-                .filter(Boolean),
-            )
-          }
-          placeholder="One URL per line"
-        />
+      <div className="settings__field">
+        <span className="settings__field-label">{field.label}</span>
+        <div className="settings__url-list">
+          {list.map((url, i) => (
+            <div key={i} className="settings__url-row">
+              <input
+                type="text"
+                value={url}
+                onChange={e => updateItem(i, e.target.value)}
+                placeholder="Paste GIF URL"
+                className="settings__url-input"
+              />
+              {url && (
+                <img
+                  src={url}
+                  alt={`GIF ${i + 1}`}
+                  className="settings__url-preview"
+                  onError={e => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              )}
+              <button
+                type="button"
+                className="settings__remove-btn"
+                onClick={() => removeItem(i)}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <button type="button" className="settings__add-btn" onClick={addItem}>
+            + GIF
+          </button>
+        </div>
         {field.description && <small>{field.description}</small>}
-      </label>
+      </div>
     );
   }
 
