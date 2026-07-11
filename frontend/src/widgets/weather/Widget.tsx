@@ -1,4 +1,5 @@
-import { useCallback } from "react";import { fetchWithRetry } from "../../api";
+import { useCallback } from "react";
+import { fetchWithRetry } from "../../api";
 import { WidgetCard } from "../../components/WidgetCard";
 import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
@@ -37,7 +38,7 @@ const WEATHER_ICONS: Record<string, string> = {
   "50n": "🌫️",
 };
 
-export function WeatherWidget({ instance }: WidgetProps) {
+export function WeatherWidget({ instance, sleeping }: WidgetProps) {
   const location = (instance.config.location as string) ?? "Buenos Aires";
   const units = (instance.config.units as string) ?? "metric";
   const lang = (instance.config.lang as string) ?? "en";
@@ -58,6 +59,7 @@ export function WeatherWidget({ instance }: WidgetProps) {
     fetcher,
     refreshInterval,
     staleAfterMs: refreshInterval * 1.5,
+    enabled: !sleeping,
   });
 
   return (

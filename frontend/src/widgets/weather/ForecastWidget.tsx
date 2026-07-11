@@ -38,7 +38,7 @@ const WEATHER_ICONS: Record<string, string> = {
   "50n": "🌫️",
 };
 
-export function WeatherForecastWidget({ instance }: WidgetProps) {
+export function WeatherForecastWidget({ instance, sleeping }: WidgetProps) {
   const location = (instance.config.location as string) ?? "Buenos Aires";
   const units = (instance.config.units as string) ?? "metric";
   const lang = (instance.config.lang as string) ?? "en";
@@ -59,6 +59,7 @@ export function WeatherForecastWidget({ instance }: WidgetProps) {
     fetcher,
     refreshInterval,
     staleAfterMs: refreshInterval * 1.5,
+    enabled: !sleeping,
   });
 
   return (

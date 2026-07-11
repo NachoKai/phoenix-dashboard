@@ -54,6 +54,11 @@ export interface GlobalSettings {
   orientation: "auto" | "portrait" | "landscape";
   activeGroup: number;
   autoRotateInterval: number;
+  sleepTimeEnabled: boolean;
+  sleepStartHour: number;
+  sleepStartMinute: number;
+  sleepEndHour: number;
+  sleepEndMinute: number;
 }
 
 export interface DashboardState {
@@ -65,6 +70,7 @@ export interface DashboardState {
 export interface WidgetProps {
   instance: WidgetInstance;
   globalSettings: GlobalSettings;
+  sleeping?: boolean;
 }
 
 export type WidgetStatus = "loading" | "success" | "error" | "stale";

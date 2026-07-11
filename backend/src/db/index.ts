@@ -25,6 +25,11 @@ const DEFAULTS: PersistedState = {
     orientation: "auto",
     activeGroup: 1,
     autoRotateInterval: 0,
+    sleepTimeEnabled: false,
+    sleepStartHour: 23,
+    sleepStartMinute: 0,
+    sleepEndHour: 7,
+    sleepEndMinute: 0,
   },
   sections: [
     {

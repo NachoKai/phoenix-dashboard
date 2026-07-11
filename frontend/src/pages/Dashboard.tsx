@@ -8,7 +8,12 @@ import {
 } from "../api";
 import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
-import type { DashboardSection, DashboardState, WidgetInstance } from "../types";
+import type {
+  DashboardSection,
+  DashboardState,
+  GlobalSettings,
+  WidgetInstance,
+} from "../types";
 import { loadDashboardCache } from "../utils/storage";
 import { getWidgetComponent } from "../widgets/registry";
 
@@ -66,10 +71,24 @@ function computeGrid(sections: DashboardSection[]): GridResult {
   return { placements, totalRows };
 }
 
+function isInSleepRange(settings: GlobalSettings): boolean {
+  if (!settings.sleepTimeEnabled) return false;
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = settings.sleepStartHour * 60 + settings.sleepStartMinute;
+  const endMinutes = settings.sleepEndHour * 60 + settings.sleepEndMinute;
+
+  if (startMinutes <= endMinutes) {
+    return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  }
+  return currentMinutes >= startMinutes || currentMinutes < endMinutes;
+}
+
 export function Dashboard() {
   const [state, setState] = useState<DashboardState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<number>(1);
+  const [sleeping, setSleeping] = useState(false);
 
   const online = useOnlineStatus();
 
@@ -94,6 +113,19 @@ export function Dashboard() {
   useEffect(() => {
     if (online) void load();
   }, [online]);
+
+  useEffect(() => {
+    if (!state?.globalSettings?.sleepTimeEnabled) {
+      setSleeping(false);
+      return;
+    }
+
+    const check = () => setSleeping(isInSleepRange(state.globalSettings));
+
+    check();
+    const id = setInterval(check, 30_000);
+    return () => clearInterval(id);
+  }, [state?.globalSettings]);
 
   useEffect(() => {
     if (state?.globalSettings?.activeGroup != null) {
@@ -263,7 +295,11 @@ export function Dashboard() {
             }
             return (
               <div key={widget.id} {...getWidgetProps(widget.id, section.id)}>
-                <Component instance={widget} globalSettings={state!.globalSettings} />
+                <Component
+                  instance={widget}
+                  globalSettings={state!.globalSettings}
+                  sleeping={sleeping}
+                />
               </div>
             );
           })}
@@ -354,6 +390,8 @@ export function Dashboard() {
       <Link to="/settings" className="dashboard__settings-link" aria-label="Settings">
         ⚙
       </Link>
+
+      {sleeping && <div className="sleep-overlay" />}
     </div>
   );
 }

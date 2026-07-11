@@ -273,6 +273,104 @@ export function Settings() {
           />
           <small>0 = disabled. Cycles through groups with widgets automatically.</small>
         </label>
+
+        <h2>Sleep Time</h2>
+        <label className="settings__field settings__field--checkbox">
+          <input
+            type="checkbox"
+            checked={state.globalSettings.sleepTimeEnabled}
+            onChange={e =>
+              setState({
+                ...state,
+                globalSettings: {
+                  ...state.globalSettings,
+                  sleepTimeEnabled: e.target.checked,
+                },
+              })
+            }
+          />
+          Enable sleep time (black screen, pauses all activity)
+        </label>
+
+        {state.globalSettings.sleepTimeEnabled && (
+          <div className="settings__sleep-row">
+            <label className="settings__field">
+              Start
+              <div className="settings__sleep-time">
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={state.globalSettings.sleepStartHour}
+                  onChange={e =>
+                    setState({
+                      ...state,
+                      globalSettings: {
+                        ...state.globalSettings,
+                        sleepStartHour: Math.max(0, Math.min(23, Number(e.target.value))),
+                      },
+                    })
+                  }
+                />
+                <span>:</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={59}
+                  value={state.globalSettings.sleepStartMinute}
+                  onChange={e =>
+                    setState({
+                      ...state,
+                      globalSettings: {
+                        ...state.globalSettings,
+                        sleepStartMinute: Math.max(
+                          0,
+                          Math.min(59, Number(e.target.value)),
+                        ),
+                      },
+                    })
+                  }
+                />
+              </div>
+            </label>
+            <label className="settings__field">
+              End
+              <div className="settings__sleep-time">
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={state.globalSettings.sleepEndHour}
+                  onChange={e =>
+                    setState({
+                      ...state,
+                      globalSettings: {
+                        ...state.globalSettings,
+                        sleepEndHour: Math.max(0, Math.min(23, Number(e.target.value))),
+                      },
+                    })
+                  }
+                />
+                <span>:</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={59}
+                  value={state.globalSettings.sleepEndMinute}
+                  onChange={e =>
+                    setState({
+                      ...state,
+                      globalSettings: {
+                        ...state.globalSettings,
+                        sleepEndMinute: Math.max(0, Math.min(59, Number(e.target.value))),
+                      },
+                    })
+                  }
+                />
+              </div>
+            </label>
+          </div>
+        )}
       </section>
 
       <section className="settings__section">

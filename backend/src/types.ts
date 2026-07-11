@@ -54,6 +54,11 @@ export interface GlobalSettings {
   orientation: "auto" | "portrait" | "landscape";
   activeGroup: number;
   autoRotateInterval: number;
+  sleepTimeEnabled: boolean;
+  sleepStartHour: number;
+  sleepStartMinute: number;
+  sleepEndHour: number;
+  sleepEndMinute: number;
 }
 
 export interface DashboardState {

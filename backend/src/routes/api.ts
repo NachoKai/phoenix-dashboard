@@ -90,7 +90,13 @@ apiRouter.put("/dashboard/settings", (req, res) => {
     res.status(400).json({ error: "Invalid settings" });
     return;
   }
-  saveGlobalSettings(settings);
+  saveGlobalSettings({
+    ...settings,
+    sleepStartHour: Math.max(0, Math.min(23, settings.sleepStartHour ?? 23)),
+    sleepStartMinute: Math.max(0, Math.min(59, settings.sleepStartMinute ?? 0)),
+    sleepEndHour: Math.max(0, Math.min(23, settings.sleepEndHour ?? 7)),
+    sleepEndMinute: Math.max(0, Math.min(59, settings.sleepEndMinute ?? 0)),
+  });
   res.json({ ok: true, settings });
 });
 

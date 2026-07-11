@@ -4,7 +4,12 @@
     "defaultRefreshInterval": 60,
     "orientation": "landscape",
     "activeGroup": 1,
-    "autoRotateInterval": 5
+    "autoRotateInterval": 5,
+    "sleepStartHour": 1,
+    "sleepStartMinute": 30,
+    "sleepEndHour": 1,
+    "sleepEndMinute": 31,
+    "sleepTimeEnabled": true
   },
   "sections": [
     {

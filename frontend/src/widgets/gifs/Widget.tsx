@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";import { fetchWithRetry } from "../../api";
+import { useCallback, useEffect, useState } from "react";
+import { fetchWithRetry } from "../../api";
 import { WidgetCard } from "../../components/WidgetCard";
 import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
@@ -9,7 +10,7 @@ interface GifsData {
   cachedAt: string;
 }
 
-export function GifsWidget({ instance }: WidgetProps) {
+export function GifsWidget({ instance, sleeping }: WidgetProps) {
   const source = (instance.config.source as string) ?? "static";
   const urls = (instance.config.urls as string[]) ?? [];
   const tag = (instance.config.tag as string) ?? "nature";
@@ -29,6 +30,7 @@ export function GifsWidget({ instance }: WidgetProps) {
     fetcher,
     refreshInterval: source === "giphy" ? 30 * 60_000 : 0,
     staleAfterMs: 60 * 60_000,
+    enabled: !sleeping,
   });
 
   const gifUrls = data?.urls ?? [];
