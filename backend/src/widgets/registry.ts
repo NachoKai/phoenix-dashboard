@@ -247,7 +247,7 @@ export const gifsWidget: WidgetDefinition = {
     },
     {
       key: "tag",
-      label: "Giphy tag/category",
+      label: "Giphy tag",
       type: "string",
       default: "nature",
       description: "Used when source is Giphy API",
