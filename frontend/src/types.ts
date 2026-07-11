@@ -1,5 +1,4 @@
-export type ConfigFieldType =
-  | "string"
+export type ConfigFieldType =  | "string"
   | "number"
   | "boolean"
   | "select"
@@ -50,7 +49,6 @@ export interface DashboardSection {
 export interface GlobalSettings {
   theme: "dark" | "light";
   defaultRefreshInterval: number;
-  settingsPin?: string;
   orientation: "auto" | "portrait" | "landscape";
 }
 

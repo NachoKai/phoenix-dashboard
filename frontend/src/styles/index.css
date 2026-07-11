@@ -374,103 +374,146 @@ a {
 }
 
 /* =============================================
-   WEATHER — compact landscape
+   WEATHER — current conditions
    ============================================= */
 
-.weather-widget__current {
+.weather-widget {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
-.weather-widget__current-left {
+.weather-widget__current {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .weather-widget__icon {
-  font-size: clamp(1.6rem, 12cqw, 4.5rem);
+  font-size: clamp(2.2rem, 18cqw, 5.5rem);
   line-height: 1;
+  flex-shrink: 0;
+}
+
+.weather-widget__current-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .weather-widget__location {
   margin: 0;
-  font-size: clamp(0.6rem, 3.2cqw, 1.1rem);
+  font-size: clamp(0.7rem, 4cqw, 1.2rem);
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .weather-widget__temp {
   margin: 2px 0 0;
-  font-size: clamp(1.3rem, 9cqw, 3.5rem);
-  font-weight: 600;
+  font-size: clamp(1.8rem, 14cqw, 4.5rem);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
 
 .weather-widget__desc {
-  margin: 1px 0 0;
+  margin: 2px 0 0;
   text-transform: capitalize;
   color: var(--text-muted);
-  font-size: clamp(0.6rem, 3.2cqw, 1.1rem);
+  font-size: clamp(0.65rem, 3.8cqw, 1.15rem);
 }
 
 .weather-widget__details {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
-  font-size: clamp(0.5rem, 3cqw, 1rem);
+  margin-left: auto;
 }
 
 .weather-widget__detail-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1px;
+  gap: 2px;
   background: var(--bg-elevated);
-  padding: 6px 8px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
   color: var(--text-muted);
-  flex: 1;
+  min-width: clamp(60px, 18cqw, 110px);
 }
 
 .weather-widget__detail-label {
-  font-size: clamp(0.45rem, 2.5cqw, 0.85rem);
+  font-size: clamp(0.55rem, 3cqw, 0.95rem);
   opacity: 0.7;
 }
 
-.weather-widget__detail-card--desc {
-  text-transform: capitalize;
-  font-size: clamp(0.6rem, 3.2cqw, 1.1rem);
-  font-weight: 500;
-  color: var(--text-primary);
-  width: 100%;
-  text-align: center;
-  flex: unset;
-}
-
 .weather-widget__detail-value {
+  font-size: clamp(0.75rem, 4.5cqw, 1.3rem);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
 
-.weather-widget__forecast {
+/* =============================================
+   WEATHER FORECAST — upcoming hours
+   ============================================= */
+
+.weather-forecast-widget {
   display: flex;
-  gap: 4px;
-  margin-top: 8px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.weather-widget__forecast-item {
+.weather-forecast-widget__location {
+  font-size: clamp(0.7rem, 4cqw, 1.2rem);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weather-forecast-widget__grid {
+  display: flex;
+  gap: 6px;
+}
+
+.weather-forecast-widget__item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   flex: 1;
-  font-size: clamp(0.5rem, 3cqw, 1rem);
   background: var(--bg-elevated);
-  padding: 5px 5px;
-  border-radius: 6px;
+  padding: 8px 4px;
+  border-radius: 8px;
+}
+
+.weather-forecast-widget__time {
+  font-size: clamp(0.6rem, 3.5cqw, 1rem);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.weather-forecast-widget__icon {
+  font-size: clamp(1.1rem, 8cqw, 2.5rem);
+  line-height: 1;
+}
+
+.weather-forecast-widget__temp {
+  font-size: clamp(0.75rem, 5cqw, 1.4rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.weather-forecast-widget__desc {
+  font-size: clamp(0.5rem, 2.8cqw, 0.85rem);
+  color: var(--text-muted);
+  text-transform: capitalize;
+  text-align: center;
+  line-height: 1.2;
 }
 
 /* =============================================
@@ -819,16 +862,6 @@ a {
 .settings__message--error {
   background: var(--error);
   color: #fff;
-}
-
-.settings--pin {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 12px;
-  padding: 16px;
 }
 
 .settings--loading {

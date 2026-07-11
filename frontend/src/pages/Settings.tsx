@@ -1,17 +1,16 @@
-import { useCallback, useEffect, useState } from "react";import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   checkStoredKey,
   createSection,
   deleteSection as apiDeleteSection,
   fetchDashboard,
   fetchWidgetRegistry,
-  isPinRequired,
   persistDashboardState,
   reorderSections,
   saveApiKey,
   saveGlobalSettings,
   saveWidgets,
-  verifyPin,
 } from "../api";
 import type {
   ConfigFieldSchema,
@@ -26,9 +25,6 @@ import { loadDashboardCache } from "../utils/storage";
 export function Settings() {
   const [state, setState] = useState<DashboardState | null>(null);
   const [registry, setRegistry] = useState<WidgetDefinition[]>([]);
-  const [pinRequired, setPinRequired] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [pinOk, setPinOk] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [keyMasks, setKeyMasks] = useState<Record<string, string>>({});
@@ -37,18 +33,11 @@ export function Settings() {
     const cached = loadDashboardCache();
     if (cached) {
       setState(cached);
-      setPinOk(true);
     }
 
-    const [dashboard, reg, pinReq] = await Promise.all([
-      fetchDashboard(),
-      fetchWidgetRegistry(),
-      isPinRequired(),
-    ]);
+    const [dashboard, reg] = await Promise.all([fetchDashboard(), fetchWidgetRegistry()]);
     setState(dashboard);
     setRegistry(reg);
-    setPinRequired(pinReq);
-    if (!pinReq) setPinOk(true);
 
     const masks: Record<string, string> = {};
     for (const w of dashboard.widgets) {
@@ -68,16 +57,6 @@ export function Settings() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  const handlePinSubmit = async () => {
-    const ok = await verifyPin(pinInput);
-    if (ok) {
-      setPinOk(true);
-      setMessage(null);
-    } else {
-      setMessage("Invalid PIN");
-    }
-  };
 
   const updateWidgetConfig = (id: string, key: string, value: unknown) => {
     if (!state) return;
@@ -194,29 +173,6 @@ export function Settings() {
     return <div className="settings settings--loading">Loading…</div>;
   }
 
-  if (pinRequired && !pinOk) {
-    return (
-      <div className="settings settings--pin">
-        <h1>Enter PIN</h1>
-        <input
-          type="password"
-          inputMode="numeric"
-          value={pinInput}
-          onChange={e => setPinInput(e.target.value)}
-          placeholder="PIN"
-          className="settings__input"
-        />
-        <button type="button" onClick={() => void handlePinSubmit()}>
-          Unlock
-        </button>
-        {message && (
-          <p className="settings__message settings__message--error">{message}</p>
-        )}
-        <Link to="/">← Back to dashboard</Link>
-      </div>
-    );
-  }
-
   return (
     <div className={`settings theme-${state.globalSettings.theme}`}>
       <header className="settings__header">
@@ -289,23 +245,6 @@ export function Settings() {
             <option value="portrait">Portrait</option>
             <option value="landscape">Landscape</option>
           </select>
-        </label>
-        <label className="settings__field">
-          Settings PIN (optional)
-          <input
-            type="password"
-            value={state.globalSettings.settingsPin ?? ""}
-            onChange={e =>
-              setState({
-                ...state,
-                globalSettings: {
-                  ...state.globalSettings,
-                  settingsPin: e.target.value || undefined,
-                },
-              })
-            }
-            placeholder="Leave empty to disable"
-          />
         </label>
       </section>
 

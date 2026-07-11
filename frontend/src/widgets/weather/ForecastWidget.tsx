@@ -1,4 +1,5 @@
-import { useCallback } from "react";import { fetchWithRetry } from "../../api";
+import { useCallback } from "react";
+import { fetchWithRetry } from "../../api";
 import { WidgetCard } from "../../components/WidgetCard";
 import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
@@ -37,7 +38,7 @@ const WEATHER_ICONS: Record<string, string> = {
   "50n": "🌫️",
 };
 
-export function WeatherWidget({ instance }: WidgetProps) {
+export function WeatherForecastWidget({ instance }: WidgetProps) {
   const location = (instance.config.location as string) ?? "London";
   const units = (instance.config.units as string) ?? "metric";
   const lang = (instance.config.lang as string) ?? "en";
@@ -62,39 +63,22 @@ export function WeatherWidget({ instance }: WidgetProps) {
 
   return (
     <WidgetCard title="" status={status} error={error} onRetry={retry}>
-      {data && (
-        <div className="weather-widget">
-          <div className="weather-widget__current">
-            <span className="weather-widget__icon">
-              {WEATHER_ICONS[data.icon] ?? "🌡️"}
-            </span>
-            <div className="weather-widget__current-info">
-              <p className="weather-widget__location">{data.location}</p>
-              <p className="weather-widget__temp">
-                {data.temp}
-                {unitSymbol}
-              </p>
-              <p className="weather-widget__desc">{data.description}</p>
-            </div>
-          </div>
-          <div className="weather-widget__details">
-            <div className="weather-widget__detail-card">
-              <span className="weather-widget__detail-label">Feels</span>
-              <span className="weather-widget__detail-value">
-                {data.feelsLike}
-                {unitSymbol}
-              </span>
-            </div>
-            <div className="weather-widget__detail-card">
-              <span className="weather-widget__detail-label">Humidity</span>
-              <span className="weather-widget__detail-value">{data.humidity}%</span>
-            </div>
-            <div className="weather-widget__detail-card">
-              <span className="weather-widget__detail-label">Wind</span>
-              <span className="weather-widget__detail-value">
-                {data.windSpeed} {units === "imperial" ? "mph" : "m/s"}
-              </span>
-            </div>
+      {data && data.forecast.length > 0 && (
+        <div className="weather-forecast-widget">
+          <div className="weather-forecast-widget__location">{data.location}</div>
+          <div className="weather-forecast-widget__grid">
+            {data.forecast.map(f => (
+              <div key={f.time} className="weather-forecast-widget__item">
+                <span className="weather-forecast-widget__time">{f.time}</span>
+                <span className="weather-forecast-widget__icon">
+                  {WEATHER_ICONS[f.icon] ?? "·"}
+                </span>
+                <span className="weather-forecast-widget__temp">
+                  {f.temp}{unitSymbol}
+                </span>
+                <span className="weather-forecast-widget__desc">{f.description}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

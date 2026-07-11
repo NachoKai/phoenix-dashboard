@@ -95,6 +95,64 @@ export const weatherWidget: WidgetDefinition = {
   ],
 };
 
+export const weatherForecastWidget: WidgetDefinition = {
+  type: "weather-forecast",
+  name: "Weather Forecast",
+  description: "Upcoming hours forecast",
+  hasBackendRoute: true,
+  defaultConfig: {
+    location: "London",
+    units: "metric",
+    lang: "en",
+    refreshInterval: 600,
+  },
+  configSchema: [
+    {
+      key: "location",
+      label: "Location",
+      type: "string",
+      default: "London",
+      description: "City name or lat,lon",
+    },
+    {
+      key: "units",
+      label: "Units",
+      type: "select",
+      default: "metric",
+      options: [
+        { value: "metric", label: "Metric (°C)" },
+        { value: "imperial", label: "Imperial (°F)" },
+      ],
+    },
+    {
+      key: "lang",
+      label: "Language",
+      type: "select",
+      default: "en",
+      options: [
+        { value: "en", label: "English" },
+        { value: "es", label: "Español" },
+        { value: "fr", label: "Français" },
+        { value: "de", label: "Deutsch" },
+        { value: "pt", label: "Português" },
+        { value: "it", label: "Italiano" },
+      ],
+    },
+    {
+      key: "refreshInterval",
+      label: "Refresh interval (seconds)",
+      type: "number",
+      default: 600,
+    },
+    {
+      key: "apiKey",
+      label: "OpenWeatherMap API Key",
+      type: "secret",
+      description: "Stored encrypted; falls back to server .env key",
+    },
+  ],
+};
+
 export const gifsWidget: WidgetDefinition = {
   type: "gifs",
   name: "Animated GIFs",
@@ -174,6 +232,7 @@ export const aiQaWidget: WidgetDefinition = {
 export const widgetRegistry: WidgetDefinition[] = [
   clockWidget,
   weatherWidget,
+  weatherForecastWidget,
   gifsWidget,
   aiQaWidget,
 ];

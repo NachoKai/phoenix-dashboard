@@ -145,32 +145,6 @@ apiRouter.delete("/dashboard/keys/:widgetId", (req, res) => {
   res.json({ ok: true });
 });
 
-function verifyPin(
-  req: { headers: { "x-settings-pin"?: string } },
-  settings: GlobalSettings,
-): boolean {
-  const pin = settings.settingsPin || process.env.SETTINGS_PIN;
-  if (!pin) return true;
-  return req.headers["x-settings-pin"] === pin;
-}
-
-apiRouter.get("/settings/pin-required", (_req, res) => {
-  const settings = getDashboardState().globalSettings;
-  const required = Boolean(settings.settingsPin || process.env.SETTINGS_PIN);
-  res.json({ required });
-});
-
-apiRouter.post("/settings/verify-pin", (req, res) => {
-  const { pin } = req.body as { pin?: string };
-  const settings = getDashboardState().globalSettings;
-  const required = settings.settingsPin || process.env.SETTINGS_PIN;
-  if (!required) {
-    res.json({ ok: true });
-    return;
-  }
-  res.json({ ok: pin === required });
-});
-
 apiRouter.get("/weather", weatherHandler);
 apiRouter.get("/gifs", gifsHandler);
 apiRouter.post("/ask", aiQaHandler);

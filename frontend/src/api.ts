@@ -1,5 +1,4 @@
-import { loadDashboardCache, saveDashboardCache } from "./utils/storage";
-const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
+import { loadDashboardCache, saveDashboardCache } from "./utils/storage";const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
 export async function fetchDashboard(): Promise<import("./types").DashboardState> {
   const res = await fetch(`${API_BASE}/dashboard`);
@@ -73,24 +72,6 @@ export async function checkStoredKey(
   const res = await fetch(`${API_BASE}/dashboard/keys/${widgetId}/${keyName}`);
   if (!res.ok) return { hasValue: false };
   return res.json();
-}
-
-export async function isPinRequired(): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/settings/pin-required`);
-  if (!res.ok) return false;
-  const data = await res.json();
-  return data.required === true;
-}
-
-export async function verifyPin(pin: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/settings/verify-pin`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pin }),
-  });
-  if (!res.ok) return false;
-  const data = await res.json();
-  return data.ok === true;
 }
 
 // ── Section management ──
