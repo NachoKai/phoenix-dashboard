@@ -354,6 +354,14 @@ a {
   overflow-y: auto;
 }
 
+.widget-card__body:has(.weather-widget),
+.widget-card__body:has(.weather-forecast-widget),
+.widget-card__body:has(.gifs-widget) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .widget-card__loading {
   color: var(--text-muted);
   padding: 16px 0;
@@ -366,6 +374,11 @@ a {
   padding: 10px 0;
   color: var(--error);
   font-size: 0.85rem;
+  height: 100%;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
 }
 
 .widget-card__retry {
