@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchDashboard, persistDashboardState, saveGlobalSettings, saveWidgets } from "../api";
+import {
+  fetchDashboard,
+  persistDashboardState,
+  saveGlobalSettings,
+  saveWidgets,
+} from "../api";
 import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import type { DashboardSection, DashboardState, WidgetInstance } from "../types";
@@ -100,11 +105,27 @@ export function Dashboard() {
     (group: number) => {
       setActiveGroup(group);
       if (state) {
-        const updated = { ...state, globalSettings: { ...state.globalSettings, activeGroup: group } };
+        const updated = {
+          ...state,
+          globalSettings: { ...state.globalSettings, activeGroup: group },
+        };
         setState(updated);
         void saveGlobalSettings(updated.globalSettings).catch(() => {});
         persistDashboardState(updated);
       }
+    },
+    [state],
+  );
+
+  const handleSectionGroupChange = useCallback(
+    (sectionId: string, group: number) => {
+      if (!state) return;
+      const updated = {
+        ...state,
+        sections: state.sections.map(s => (s.id === sectionId ? { ...s, group } : s)),
+      };
+      setState(updated);
+      persistDashboardState(updated);
     },
     [state],
   );
@@ -164,11 +185,13 @@ export function Dashboard() {
     [visibleSections],
   );
 
-  const { getSectionProps, getGridRef, getWidgetProps } = useSectionDragDrop(
-    visibleSections,
-    state?.widgets ?? [],
-    handleReorder,
-  );
+  const { getSectionProps, getGridRef, getWidgetProps, getGroupButtonProps } =
+    useSectionDragDrop(
+      visibleSections,
+      state?.widgets ?? [],
+      handleReorder,
+      handleSectionGroupChange,
+    );
 
   const renderSection = (section: DashboardSection) => {
     const sectionWidgets = state
@@ -225,7 +248,9 @@ export function Dashboard() {
   }
 
   return (
-    <div className={`dashboard theme-${state.globalSettings.theme}${hasGroups ? " dashboard--has-groups" : ""}`}>
+    <div
+      className={`dashboard theme-${state.globalSettings.theme}${hasGroups ? " dashboard--has-groups" : ""}`}
+    >
       {!online && <div className="offline-banner">Offline — showing cached data</div>}
 
       {hasGroups && (
@@ -233,14 +258,17 @@ export function Dashboard() {
           {[1, 2, 3, 4].map(g => {
             const isActive = g === activeGroup;
             const hasContent = sortedSections.some(s => s.group === g);
+            const { ref, isOver, ...dragProps } = getGroupButtonProps(g);
             return (
               <button
                 key={g}
+                ref={ref}
                 type="button"
                 role="tab"
                 aria-selected={isActive}
-                className={`group-sidebar__item${isActive ? " group-sidebar__item--active" : ""}${hasContent ? " group-sidebar__item--has-content" : ""}`}
+                className={`group-sidebar__item${isActive ? " group-sidebar__item--active" : ""}${hasContent ? " group-sidebar__item--has-content" : ""}${isOver ? " group-sidebar__item--over" : ""}`}
                 onClick={() => handleGroupChange(g)}
+                {...dragProps}
               >
                 {g}
               </button>
