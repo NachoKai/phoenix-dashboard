@@ -81,6 +81,7 @@ function seedDefaults(database: Database.Database) {
   const defaults: GlobalSettings = {
     theme: 'dark',
     defaultRefreshInterval: 60,
+    orientation: 'auto',
   };
   database.prepare('INSERT OR REPLACE INTO global_settings (key, value) VALUES (?, ?)').run(
     'settings',
@@ -140,7 +141,7 @@ export function getGlobalSettings(): GlobalSettings {
     .prepare('SELECT value FROM global_settings WHERE key = ?')
     .get('settings') as { value: string } | undefined;
   if (!row) {
-    return { theme: 'dark', defaultRefreshInterval: 60 };
+    return { theme: 'dark', defaultRefreshInterval: 60, orientation: 'auto' };
   }
   return JSON.parse(row.value) as GlobalSettings;
 }

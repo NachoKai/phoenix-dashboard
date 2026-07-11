@@ -38,6 +38,7 @@ export interface GlobalSettings {
   theme: 'dark' | 'light';
   defaultRefreshInterval: number;
   settingsPin?: string;
+  orientation: 'auto' | 'portrait' | 'landscape';
 }
 
 export interface DashboardState {

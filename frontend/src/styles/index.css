@@ -158,34 +158,13 @@ a {
   border-radius: 50%;
   text-decoration: none;
   font-size: 0.9rem;
-  opacity: 0.3;
+  opacity: 0.9;
   transition: opacity 0.2s;
   z-index: 10;
 }
 
 .dashboard__settings-link:hover,
 .dashboard__settings-link:focus {
-  opacity: 1;
-}
-
-.dashboard__install-btn {
-  position: fixed;
-  bottom: calc(6px + var(--safe-bottom));
-  left: calc(8px + var(--safe-left));
-  padding: 6px 14px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  color: var(--text);
-  font-size: 0.75rem;
-  opacity: 0.3;
-  transition: opacity 0.2s;
-  z-index: 10;
-  cursor: pointer;
-}
-
-.dashboard__install-btn:hover,
-.dashboard__install-btn:focus {
   opacity: 1;
 }
 

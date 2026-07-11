@@ -275,6 +275,25 @@ export function Settings() {
           />
         </label>
         <label className="settings__field">
+          Orientation
+          <select
+            value={state.globalSettings.orientation ?? 'auto'}
+            onChange={(e) =>
+              setState({
+                ...state,
+                globalSettings: {
+                  ...state.globalSettings,
+                  orientation: e.target.value as 'auto' | 'portrait' | 'landscape',
+                },
+              })
+            }
+          >
+            <option value="auto">Auto (follows device)</option>
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+          </select>
+        </label>
+        <label className="settings__field">
           Settings PIN (optional)
           <input
             type="password"
