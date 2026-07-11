@@ -26,7 +26,9 @@ function computeGrid(sections: DashboardSection[]): GridResult {
   const leftOnly = sorted.filter(s => s.layout === "left");
   const rightOnly = sorted.filter(s => s.layout === "right");
 
-  const totalRows = fullWidths.length + Math.max(leftOnly.length, rightOnly.length, fullHeights.length > 0 ? 1 : 0);
+  const totalRows =
+    fullWidths.length +
+    Math.max(leftOnly.length, rightOnly.length, fullHeights.length > 0 ? 1 : 0);
   const placements: GridPlacement[] = [];
 
   let row = 1;
@@ -89,8 +91,21 @@ export function Dashboard() {
     const so = screen.orientation as any;
     if (!orientation || orientation === "auto") {
       so?.unlock?.();
-    } else if (so?.lock) {
+      return;
+    }
+    if (!so?.lock) return;
+
+    const lockOrientation = () => {
       so.lock(orientation).catch(() => {});
+    };
+
+    if (document.fullscreenElement) {
+      lockOrientation();
+    } else {
+      document.documentElement
+        .requestFullscreen()
+        .then(lockOrientation)
+        .catch(() => {});
     }
   }, [state?.globalSettings?.orientation]);
 
@@ -179,10 +194,12 @@ export function Dashboard() {
 
       <div
         className="dashboard__grid"
-        style={totalRows > 0 ? { gridTemplateRows: `repeat(${totalRows}, 1fr)` } : undefined}
+        style={
+          totalRows > 0 ? { gridTemplateRows: `repeat(${totalRows}, 1fr)` } : undefined
+        }
       >
         {gridPlacements.length === 0 && (
-          <div className="section__empty" style={{ gridColumn: '1 / -1' }}>
+          <div className="section__empty" style={{ gridColumn: "1 / -1" }}>
             No sections yet — add one in Settings
           </div>
         )}
