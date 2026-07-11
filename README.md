@@ -10,7 +10,7 @@ A self-hosted, always-on widget dashboard designed to turn any phone into a smar
 - **Dark / light theme** — toggle from settings
 - **Encrypted secrets** — API keys stored with AES-256-GCM encryption
 - **PIN-protected settings** — optional lock on the settings page
-- **SQLite storage** — zero-config persistent database with WAL mode
+- **localStorage persistence** — settings survive server restarts and cold starts
 - **Per-widget refresh** — configurable refresh intervals with stale data detection
 - **Safe area support** — respects notches, rounded corners, and system insets
 
@@ -86,7 +86,7 @@ phoenix-dashboard/
 │   └── src/
 │       ├── server.ts              # Express entry point
 │       ├── config/encryption.ts   # AES-256-GCM encrypt/decrypt
-│       ├── db/index.ts            # SQLite + migrations + CRUD
+│       ├── db/index.ts            # In-memory storage (settings, widgets, cache)
 │       ├── routes/api.ts          # REST API routes
 │       └── widgets/               # Per-widget route handlers
 │           ├── weather/route.ts   # OpenWeatherMap proxy + cache
@@ -130,7 +130,7 @@ All endpoints are prefixed with `/api`.
 |-------|------------|
 | Frontend | React 19, React Router 7, Vite 6, TypeScript 5.7 |
 | Backend | Express 4, TypeScript 5.7, tsx (dev) |
-| Database | SQLite via better-sqlite3 (WAL mode) |
+| Storage | In-memory server, localStorage (client-side persistence) |
 | PWA | vite-plugin-pwa, Workbox |
 | Encryption | Node.js crypto (AES-256-GCM) |
 

@@ -4,6 +4,7 @@ import { fetchDashboard, saveWidgets } from "../api";
 import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import type { DashboardSection, DashboardState, WidgetInstance } from "../types";
+import { loadDashboardCache } from "../utils/storage";
 import { getWidgetComponent } from "../widgets/registry";
 
 interface GridPlacement {
@@ -77,6 +78,8 @@ export function Dashboard() {
   };
 
   useEffect(() => {
+    const cached = loadDashboardCache();
+    if (cached) setState(cached);
     void load();
     const id = setInterval(() => void load(), 5 * 60_000);
     return () => clearInterval(id);

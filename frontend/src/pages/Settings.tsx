@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";import { Link } from "react-router-dom";
 import {
   checkStoredKey,
   createSection,
@@ -7,6 +6,7 @@ import {
   fetchDashboard,
   fetchWidgetRegistry,
   isPinRequired,
+  persistDashboardState,
   reorderSections,
   saveApiKey,
   saveGlobalSettings,
@@ -21,6 +21,7 @@ import type {
   WidgetInstance,
 } from "../types";
 import { v4 as uuid } from "../utils/id";
+import { loadDashboardCache } from "../utils/storage";
 
 export function Settings() {
   const [state, setState] = useState<DashboardState | null>(null);
@@ -33,6 +34,12 @@ export function Settings() {
   const [keyMasks, setKeyMasks] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
+    const cached = loadDashboardCache();
+    if (cached) {
+      setState(cached);
+      setPinOk(true);
+    }
+
     const [dashboard, reg, pinReq] = await Promise.all([
       fetchDashboard(),
       fetchWidgetRegistry(),
@@ -163,6 +170,7 @@ export function Settings() {
       await reorderSections(
         state.sections.map((s, i) => ({ ...s, position: i, name: `Section ${i + 1}` })),
       );
+      persistDashboardState(state);
       setMessage("Saved successfully");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Save failed");

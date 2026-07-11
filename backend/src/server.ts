@@ -3,7 +3,6 @@ import cors from "cors";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { cleanupExpiredCache } from "./db/index.js";
 import { apiRouter } from "./routes/api.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,9 +28,6 @@ app.get("*", (req, res, next) => {
     if (err) next();
   });
 });
-
-cleanupExpiredCache();
-setInterval(cleanupExpiredCache, 60 * 60 * 1000);
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Phoenix Dashboard API running on http://0.0.0.0:${PORT}`);

@@ -1,9 +1,21 @@
+import { loadDashboardCache, saveDashboardCache } from "./utils/storage";
 const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
 export async function fetchDashboard(): Promise<import("./types").DashboardState> {
   const res = await fetch(`${API_BASE}/dashboard`);
   if (!res.ok) throw new Error("Failed to load dashboard");
-  return res.json();
+  const data: import("./types").DashboardState = await res.json();
+  saveDashboardCache(data);
+  return data;
+}
+
+export async function fetchDashboardWithCache(): Promise<
+  import("./types").DashboardState
+> {
+  const cache = loadDashboardCache();
+  fetchDashboard().catch(() => {});
+  if (cache) return cache;
+  return fetchDashboard();
 }
 
 export async function fetchWidgetRegistry(): Promise<
@@ -12,6 +24,10 @@ export async function fetchWidgetRegistry(): Promise<
   const res = await fetch(`${API_BASE}/widgets/registry`);
   if (!res.ok) throw new Error("Failed to load widget registry");
   return res.json();
+}
+
+export function persistDashboardState(state: import("./types").DashboardState): void {
+  saveDashboardCache(state);
 }
 
 export async function saveWidgets(
