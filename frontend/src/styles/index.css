@@ -810,7 +810,8 @@ a {
 
 .settings__back {
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .settings__section {
