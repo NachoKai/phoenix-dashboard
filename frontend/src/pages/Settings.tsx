@@ -149,12 +149,24 @@ export function Settings() {
     setSaving(true);
     setMessage(null);
     try {
-      await saveWidgets(state.widgets);
+      const cleanedWidgets = state.widgets.map(w =>
+        w.type === "gifs" && Array.isArray(w.config.urls)
+          ? {
+              ...w,
+              config: {
+                ...w.config,
+                urls: (w.config.urls as string[]).filter(u => u.trim() !== ""),
+              },
+            }
+          : w,
+      );
+      await saveWidgets(cleanedWidgets);
       await saveGlobalSettings(state.globalSettings);
       await reorderSections(
         state.sections.map((s, i) => ({ ...s, position: i, name: `Section ${i + 1}` })),
       );
-      persistDashboardState(state);
+      persistDashboardState({ ...state, widgets: cleanedWidgets });
+      setState(s => (s ? { ...s, widgets: cleanedWidgets } : s));
       setMessage("Saved successfully");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Save failed");
