@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useState } from "react";import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   checkStoredKey,
   createSection,
   deleteSection as apiDeleteSection,
   fetchDashboardWithCache,
   fetchWidgetRegistry,
-  persistDashboardState,
   reorderSections,
   saveApiKey,
+  saveDashboardState,
   saveGlobalSettings,
   saveWidgets,
 } from "../api";
@@ -164,7 +165,7 @@ export function Settings() {
       await reorderSections(
         state.sections.map((s, i) => ({ ...s, position: i, name: `Section ${i + 1}` })),
       );
-      persistDashboardState({ ...state, widgets: cleanedWidgets });
+      await saveDashboardState({ ...state, widgets: cleanedWidgets });
       setState(s => (s ? { ...s, widgets: cleanedWidgets } : s));
       setMessage("Saved successfully");
     } catch (err) {

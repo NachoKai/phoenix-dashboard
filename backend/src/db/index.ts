@@ -129,6 +129,13 @@ export function getDashboardState(): DashboardState {
   };
 }
 
+export function saveDashboardState(state: DashboardState): void {
+  widgets = [...state.widgets];
+  sections = [...state.sections];
+  globalSettings = { ...state.globalSettings };
+  persistToDisk();
+}
+
 export function saveEncryptedKey(
   widgetId: string,
   keyName: string,

@@ -8,12 +8,18 @@ import {
   getEncryptedKey,
   getSections,
   getWidgets,
+  saveDashboardState,
   saveEncryptedKey,
   saveGlobalSettings,
   saveSections,
   saveWidgets,
 } from "../db/index.js";
-import type { DashboardSection, GlobalSettings, WidgetInstance } from "../types.js";
+import type {
+  DashboardSection,
+  DashboardState,
+  GlobalSettings,
+  WidgetInstance,
+} from "../types.js";
 import { getWidgetDefinition, widgetRegistry } from "../widgets/registry.js";
 import { aiQaHandler } from "../widgets/ai-qa/route.js";
 import { gifsHandler } from "../widgets/gifs/route.js";
@@ -37,6 +43,20 @@ apiRouter.get("/health", (_req, res) => {
 
 apiRouter.get("/dashboard", (_req, res) => {
   res.json(getDashboardState());
+});
+
+apiRouter.put("/dashboard", (req, res) => {
+  const state = req.body as DashboardState;
+  if (!state.widgets || !state.sections || !state.globalSettings) {
+    res
+      .status(400)
+      .json({
+        error: "Full dashboard state required (widgets, sections, globalSettings)",
+      });
+    return;
+  }
+  saveDashboardState(state);
+  res.json({ ok: true });
 });
 
 apiRouter.get("/widgets/registry", (_req, res) => {

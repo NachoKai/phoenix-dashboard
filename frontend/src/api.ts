@@ -1,5 +1,4 @@
 import type { DashboardState } from "./types";
-import { getDeviceId } from "./utils/deviceId";
 import {
   loadDashboardCache,
   migrateLegacyCache,
@@ -8,43 +7,35 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
-function mergeStates(
-  backend: DashboardState,
-  local: DashboardState | null,
-): DashboardState {
-  if (!local) return backend;
-
-  const localWidgetMap = new Map(local.widgets.map(w => [w.id, w]));
-  const mergedWidgets = backend.widgets.map(w => localWidgetMap.get(w.id) ?? w);
-
-  const localSectionMap = new Map(local.sections.map(s => [s.id, s]));
-  const mergedSections = backend.sections.map(s => localSectionMap.get(s.id) ?? s);
-
-  return {
-    widgets: mergedWidgets,
-    sections: mergedSections,
-    globalSettings: local.globalSettings,
-  };
-}
-
 export async function fetchDashboard(): Promise<DashboardState> {
   const res = await fetch(`${API_BASE}/dashboard`);
   if (!res.ok) throw new Error("Failed to load dashboard");
-  const backend: DashboardState = await res.json();
-
-  const deviceId = getDeviceId();
-  const local = loadDashboardCache(deviceId);
-  const merged = mergeStates(backend, local);
-  saveDashboardCache(deviceId, merged);
-  return merged;
+  return res.json();
 }
 
 export async function fetchDashboardWithCache(): Promise<DashboardState> {
   const deviceId = getDeviceId();
   const cached = loadDashboardCache(deviceId) ?? migrateLegacyCache(deviceId);
-  fetchDashboard().catch(() => {});
-  if (cached) return cached;
+  if (cached) {
+    fetchDashboard()
+      .then(state => saveDashboardCache(deviceId, state))
+      .catch(() => {});
+    return cached;
+  }
   return fetchDashboard();
+}
+
+import { getDeviceId } from "./utils/deviceId";
+
+export async function saveDashboardState(state: DashboardState): Promise<void> {
+  const res = await fetch(`${API_BASE}/dashboard`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(state),
+  });
+  if (!res.ok) throw new Error("Failed to save dashboard state");
+  const deviceId = getDeviceId();
+  saveDashboardCache(deviceId, state);
 }
 
 export async function fetchWidgetRegistry(): Promise<
@@ -57,6 +48,7 @@ export async function fetchWidgetRegistry(): Promise<
 
 export function persistDashboardState(state: DashboardState): void {
   saveDashboardCache(getDeviceId(), state);
+  void saveDashboardState(state).catch(() => {});
 }
 
 export async function saveWidgets(

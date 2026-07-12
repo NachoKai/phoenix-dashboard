@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   fetchDashboardWithCache,
-  persistDashboardState,
   reorderSections,
-  saveGlobalSettings,
+  saveDashboardState,
   saveWidgets,
 } from "../api";
 import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import { useAuth } from "../auth";
 import type {
   DashboardSection,
   DashboardState,
@@ -171,8 +171,7 @@ export function Dashboard() {
               globalSettings: { ...state.globalSettings, activeGroup: nextGroup },
             };
             setState(updated);
-            void saveGlobalSettings(updated.globalSettings).catch(() => {});
-            persistDashboardState(updated);
+            void saveDashboardState(updated).catch(() => {});
           }
           return nextGroup;
         });
@@ -196,8 +195,7 @@ export function Dashboard() {
           globalSettings: { ...state.globalSettings, activeGroup: group },
         };
         setState(updated);
-        void saveGlobalSettings(updated.globalSettings).catch(() => {});
-        persistDashboardState(updated);
+        void saveDashboardState(updated).catch(() => {});
       }
       resetRotateTimer();
     },
@@ -212,7 +210,7 @@ export function Dashboard() {
         sections: state.sections.map(s => (s.id === sectionId ? { ...s, group } : s)),
       };
       setState(updated);
-      persistDashboardState(updated);
+      void saveDashboardState(updated).catch(() => {});
       void reorderSections(updated.sections).catch(() => {});
     },
     [state],
@@ -271,6 +269,7 @@ export function Dashboard() {
       handleReorder,
       handleSectionGroupChange,
     );
+  const { logout } = useAuth();
 
   const renderSection = (section: DashboardSection) => {
     const sectionWidgets = state
@@ -335,28 +334,41 @@ export function Dashboard() {
       className={`dashboard theme-${state.globalSettings.theme} dashboard--has-groups`}
     >
       <nav className="group-sidebar" role="tablist" aria-label="Widget groups">
-        {hasGroups && [1, 2, 3, 4, 5, 6].map(g => {
-          const isActive = g === activeGroup;
-          const hasContent = sortedSections.some(s => s.group === g);
-          const { ref, isOver, ...dragProps } = getGroupButtonProps(g);
-          return (
-            <button
-              key={g}
-              ref={ref}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              className={`group-sidebar__item${isActive ? " group-sidebar__item--active" : ""}${hasContent ? " group-sidebar__item--has-content" : ""}${isOver ? " group-sidebar__item--over" : ""}`}
-              onClick={() => handleGroupChange(g)}
-              {...dragProps}
-            >
-              {g}
-            </button>
-          );
-        })}
-        <Link to="/settings" className="group-sidebar__item group-sidebar__settings" aria-label="Settings">
+        {hasGroups &&
+          [1, 2, 3, 4, 5, 6].map(g => {
+            const isActive = g === activeGroup;
+            const hasContent = sortedSections.some(s => s.group === g);
+            const { ref, isOver, ...dragProps } = getGroupButtonProps(g);
+            return (
+              <button
+                key={g}
+                ref={ref}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`group-sidebar__item${isActive ? " group-sidebar__item--active" : ""}${hasContent ? " group-sidebar__item--has-content" : ""}${isOver ? " group-sidebar__item--over" : ""}`}
+                onClick={() => handleGroupChange(g)}
+                {...dragProps}
+              >
+                {g}
+              </button>
+            );
+          })}
+        <Link
+          to="/settings"
+          className="group-sidebar__item group-sidebar__settings"
+          aria-label="Settings"
+        >
           ⚙
         </Link>
+        <button
+          type="button"
+          className="group-sidebar__logout"
+          aria-label="Logout"
+          onClick={() => logout()}
+        >
+          ✕
+        </button>
       </nav>
 
       <div
