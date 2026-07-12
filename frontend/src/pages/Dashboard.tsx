@@ -355,6 +355,9 @@ export function Dashboard() {
               </button>
             );
           })}
+          <Link to="/settings" className="group-sidebar__item group-sidebar__settings" aria-label="Settings">
+            ⚙
+          </Link>
         </nav>
       )}
 
@@ -384,10 +387,6 @@ export function Dashboard() {
           );
         })}
       </div>
-
-      <Link to="/settings" className="dashboard__settings-link" aria-label="Settings">
-        ⚙
-      </Link>
 
       {sleeping && <div className="sleep-overlay" />}
     </div>
