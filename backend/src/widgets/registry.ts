@@ -1,4 +1,5 @@
-import type { WidgetDefinition } from "../types.js";export const clockWidget: WidgetDefinition = {
+import type { WidgetDefinition } from "../types.js";
+export const clockWidget: WidgetDefinition = {
   type: "clock",
   name: "Clock",
   description: "Current time and date",
@@ -304,6 +305,66 @@ export const moonPhaseWidget: WidgetDefinition = {
   ],
 };
 
+export const lightsWidget: WidgetDefinition = {
+  type: "lights",
+  name: "Light Controls",
+  description: "Control smart lights (on/off, brightness, color)",
+  hasBackendRoute: true,
+  defaultConfig: {
+    refreshInterval: 30,
+  },
+  configSchema: [
+    {
+      key: "refreshInterval",
+      label: "Refresh interval (seconds)",
+      type: "number",
+      default: 30,
+    },
+    {
+      key: "tuyaAccessId",
+      label: "Tuya Access ID",
+      type: "secret",
+      description: "From iot.tuya.com; falls back to server .env TUYA_ACCESS_ID",
+    },
+    {
+      key: "tuyaAccessSecret",
+      label: "Tuya Access Secret",
+      type: "secret",
+      description: "From iot.tuya.com; falls back to server .env TUYA_ACCESS_SECRET",
+    },
+  ],
+};
+
+export const vacuumWidget: WidgetDefinition = {
+  type: "vacuum",
+  name: "Robot Vacuum",
+  description: "Robot vacuum status and control (battery, start, dock)",
+  hasBackendRoute: true,
+  defaultConfig: {
+    refreshInterval: 15,
+  },
+  configSchema: [
+    {
+      key: "refreshInterval",
+      label: "Refresh interval (seconds)",
+      type: "number",
+      default: 15,
+    },
+    {
+      key: "tuyaAccessId",
+      label: "Tuya Access ID",
+      type: "secret",
+      description: "From iot.tuya.com; falls back to server .env TUYA_ACCESS_ID",
+    },
+    {
+      key: "tuyaAccessSecret",
+      label: "Tuya Access Secret",
+      type: "secret",
+      description: "From iot.tuya.com; falls back to server .env TUYA_ACCESS_SECRET",
+    },
+  ],
+};
+
 export const widgetRegistry: WidgetDefinition[] = [
   clockWidget,
   weatherWidget,
@@ -312,6 +373,8 @@ export const widgetRegistry: WidgetDefinition[] = [
   moonPhaseWidget,
   gifsWidget,
   aiQaWidget,
+  lightsWidget,
+  vacuumWidget,
 ];
 
 export function getWidgetDefinition(type: string): WidgetDefinition | undefined {

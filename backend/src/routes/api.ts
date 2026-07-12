@@ -19,6 +19,15 @@ import { aiQaHandler } from "../widgets/ai-qa/route.js";
 import { gifsHandler } from "../widgets/gifs/route.js";
 import { weatherHandler } from "../widgets/weather/route.js";
 import { weatherWeeklyHandler } from "../widgets/weather/weeklyRoute.js";
+import { lightsListHandler, lightsControlHandler } from "../widgets/lights/route.js";
+import { vacuumStatusHandler, vacuumControlHandler } from "../widgets/vacuum/route.js";
+import {
+  getAllDevices,
+  getDeviceStatus,
+  getTokenInfo,
+  tuyaGet,
+  tuyaPost,
+} from "../widgets/tuya/client.js";
 
 export const apiRouter = Router();
 
@@ -156,3 +165,45 @@ apiRouter.get("/weather", weatherHandler);
 apiRouter.get("/weather-weekly", weatherWeeklyHandler);
 apiRouter.get("/gifs", gifsHandler);
 apiRouter.post("/ask", aiQaHandler);
+
+apiRouter.get("/lights/devices", lightsListHandler);
+apiRouter.post("/lights/control", lightsControlHandler);
+apiRouter.get("/vacuum/status", vacuumStatusHandler);
+apiRouter.post("/vacuum/control", vacuumControlHandler);
+
+apiRouter.get("/tuya/debug", async (_req, res) => {
+  const VACUUM_ID = "eba151d8cfa3fec78dkdgx";
+  const LIGHT_ID = "eba91d2bbc51684b06cifi";
+
+  const [tokenResult, devicesResult, vacuumResult, lightResult, specResult] =
+    await Promise.allSettled([
+      getTokenInfo(),
+      getAllDevices(),
+      getDeviceStatus(VACUUM_ID),
+      getDeviceStatus(LIGHT_ID),
+      tuyaGet(`/v1.0/iot-03/devices/${VACUUM_ID}/specification`),
+    ]);
+
+  res.json({
+    token:
+      tokenResult.status === "fulfilled"
+        ? { ok: true, ...tokenResult.value }
+        : { ok: false, error: String(tokenResult.reason) },
+    devices:
+      devicesResult.status === "fulfilled"
+        ? { ok: true, count: devicesResult.value.length, devices: devicesResult.value }
+        : { ok: false, error: String(devicesResult.reason) },
+    vacuumDirect:
+      vacuumResult.status === "fulfilled"
+        ? { ok: true, device: vacuumResult.value }
+        : { ok: false, error: String(vacuumResult.reason) },
+    lightDirect:
+      lightResult.status === "fulfilled"
+        ? { ok: true, device: lightResult.value }
+        : { ok: false, error: String(lightResult.reason) },
+    vacuumSpec:
+      specResult.status === "fulfilled"
+        ? { ok: true, spec: specResult.value }
+        : { ok: false, error: String(specResult.reason) },
+  });
+});

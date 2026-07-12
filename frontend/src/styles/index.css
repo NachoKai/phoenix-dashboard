@@ -1207,6 +1207,38 @@ a {
   .gifs-widget__image {
     height: 100%;
   }
+
+  .lights-widget {
+    gap: 4px;
+  }
+
+  .lights-widget__light {
+    gap: 2px;
+  }
+
+  .lights-widget__controls {
+    gap: 2px;
+  }
+
+  .lights-widget__row {
+    gap: 4px;
+  }
+
+  .lights-widget__presets {
+    gap: 2px;
+  }
+
+  .vacuum-widget {
+    gap: 4px;
+  }
+
+  .vacuum-widget__controls {
+    gap: 2px;
+  }
+
+  .vacuum-widget__btn {
+    padding: 3px 4px;
+  }
 }
 
 /* Portrait phone (Moto G8: ~720×1400 viewport) */
@@ -1218,6 +1250,14 @@ a {
 
   .gifs-widget__image {
     height: 100%;
+  }
+
+  .lights-widget__controls {
+    gap: 3px;
+  }
+
+  .vacuum-widget__btn {
+    padding: 4px 5px;
   }
 }
 
@@ -1248,6 +1288,37 @@ a {
   .widget-card {
     padding: 2px 4px;
   }
+
+  .lights-widget__presets {
+    gap: 2px;
+  }
+
+  .lights-widget__preset {
+    height: clamp(14px, 4.5cqw, 18px);
+  }
+
+  .lights-widget__preset-label {
+    font-size: clamp(0.32rem, 1.8cqw, 0.5rem);
+  }
+
+  .vacuum-widget__top {
+    gap: 4px;
+  }
+
+  .vacuum-widget__battery-level {
+    font-size: clamp(0.45rem, 2.8cqw, 0.75rem);
+  }
+
+  .vacuum-widget__controls {
+    flex-wrap: wrap;
+  }
+
+  .vacuum-widget__btn {
+    flex: 1 1 auto;
+    min-width: clamp(40px, 14cqw, 60px);
+    padding: 2px 3px;
+    font-size: clamp(0.42rem, 2.4cqw, 0.65rem);
+  }
 }
 
 /* Larger screens (tablets, desktops) */
@@ -1259,5 +1330,321 @@ a {
 
   .widget-card {
     padding: 4px 6px;
+  }
+}
+
+/* =============================================
+   LIGHTS — Smart light controls
+   ============================================= */
+
+.lights-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.lights-widget__empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: clamp(0.6rem, 3.5cqw, 0.9rem);
+  padding: 4px 0;
+}
+
+.lights-widget__light {
+  background: var(--bg-elevated);
+  padding: clamp(4px, 2cqw, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lights-widget__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lights-widget__toggle {
+  padding: 2px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: clamp(0.5rem, 2.8cqw, 0.75rem);
+  font-weight: 600;
+  min-width: 36px;
+  transition: all 0.2s ease;
+}
+
+.lights-widget__toggle--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.lights-widget__toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.lights-widget__name {
+  font-size: clamp(0.55rem, 3cqw, 0.85rem);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.lights-widget__offline {
+  font-size: clamp(0.45rem, 2.5cqw, 0.7rem);
+  color: var(--error);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lights-widget__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lights-widget__slider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lights-widget__label {
+  font-size: clamp(0.45rem, 2.5cqw, 0.7rem);
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  min-width: 0;
+}
+
+.lights-widget__adj-btn {
+  width: clamp(20px, 6cqw, 28px);
+  height: clamp(20px, 6cqw, 28px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  font-size: clamp(0.65rem, 3cqw, 0.9rem);
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+
+.lights-widget__adj-btn:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.lights-widget__adj-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.lights-widget__value {
+  font-size: clamp(0.45rem, 2.5cqw, 0.7rem);
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.lights-widget__color {
+  width: clamp(20px, 6cqw, 28px);
+  height: clamp(16px, 4.5cqw, 22px);
+  border: 1px solid var(--border);
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+}
+
+.lights-widget__presets {
+  display: flex;
+  gap: 4px;
+}
+
+.lights-widget__preset {
+  flex: 1;
+  height: clamp(18px, 5cqw, 24px);
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  padding: 0;
+  min-width: 0;
+}
+
+.lights-widget__preset:hover {
+  border-color: var(--text-muted);
+}
+
+.lights-widget__preset--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 6px rgba(66, 96, 196, 0.4);
+}
+
+.lights-widget__preset:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.lights-widget__preset-label {
+  font-size: clamp(0.38rem, 2cqw, 0.6rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1a1a2e;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* =============================================
+   VACUUM — Robot vacuum status & controls
+   ============================================= */
+
+.vacuum-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.vacuum-widget__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vacuum-widget__battery {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.vacuum-widget__battery-icon {
+  font-size: clamp(0.8rem, 5cqw, 1.2rem);
+}
+
+.vacuum-widget__battery-level {
+  font-size: clamp(0.55rem, 3.2cqw, 0.9rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.vacuum-widget__battery-bar {
+  width: clamp(30px, 10cqw, 50px);
+  height: clamp(4px, 1.5cqw, 6px);
+  background: var(--border);
+  overflow: hidden;
+}
+
+.vacuum-widget__battery-fill {
+  height: 100%;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.vacuum-widget__status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vacuum-widget__state {
+  font-size: clamp(0.5rem, 2.8cqw, 0.8rem);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.vacuum-widget__state--cleaning {
+  color: var(--success);
+}
+
+.vacuum-widget__offline {
+  font-size: clamp(0.45rem, 2.5cqw, 0.7rem);
+  color: var(--error);
+  text-transform: uppercase;
+}
+
+.vacuum-widget__info {
+  display: flex;
+  gap: 10px;
+}
+
+.vacuum-widget__stat {
+  font-size: clamp(0.5rem, 2.8cqw, 0.8rem);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.vacuum-widget__controls {
+  display: flex;
+  gap: 4px;
+}
+
+.vacuum-widget__btn {
+  flex: 1;
+  padding: 4px 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  font-size: clamp(0.5rem, 2.8cqw, 0.75rem);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.vacuum-widget__btn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  border-color: var(--accent);
+}
+
+.vacuum-widget__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.vacuum-widget__btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.vacuum-widget__btn--primary:hover:not(:disabled) {
+  background: var(--accent-dim);
+}
+
+.vacuum-widget__btn--sending {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
   }
 }

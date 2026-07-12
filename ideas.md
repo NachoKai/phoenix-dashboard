@@ -38,11 +38,11 @@
 
 ## Smart Home
 
-- Light controls
+- Light controls ✅
 - Door status
 - Security cameras
 - Home temperature
-- Robot vacuum status
+- Robot vacuum status ✅
 - Motion sensors
 - Smart doorbell
 
