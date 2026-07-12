@@ -11,8 +11,9 @@ A self-hosted, always-on widget dashboard designed to turn any phone into a smar
 - **Dark / light theme** — toggle from settings
 - **Orientation lock** — force portrait, landscape, or auto
 - **Encrypted secrets** — API keys stored with AES-256-GCM encryption
-- **PIN-protected settings** — optional lock on the settings page
-- **localStorage persistence** — settings survive server restarts and cold starts
+- **Password-protected dashboard** — environment-variable-based password gate (`VITE_DASHBOARD_PASSWORD`)
+- **Shared state across devices** — all settings save to the server's `dashboard-state.json`, visible to every logged-in device
+- **localStorage fallback** — offline-capable with cached state when the server is unreachable
 - **Per-widget refresh** — configurable refresh intervals with stale data detection
 - **Safe area support** — respects notches, rounded corners, and system insets
 - **Offline banner** — shows cached data indicator when connectivity is lost
@@ -58,6 +59,9 @@ Edit `.env` with your settings:
 # Required — used to encrypt stored API keys
 ENCRYPTION_KEY=change-me-to-a-32-byte-random-string!!
 
+# Required — set a password to lock the dashboard
+VITE_DASHBOARD_PASSWORD=your-password-here
+
 # Optional — global fallback API keys (can also be set per-widget in Settings)
 OPENWEATHER_API_KEY=
 GIPHY_API_KEY=
@@ -82,6 +86,8 @@ npm run dev
 ```
 
 This starts both the backend (port 3001) and frontend (port 5173) with hot reload.
+
+> **Note:** After changing `VITE_DASHBOARD_PASSWORD` in `.env`, restart the dev server. Vite reads env vars at startup.
 
 ### Build & Run (Production)
 
@@ -123,14 +129,15 @@ phoenix-dashboard/
 ├── frontend/
 │   └── src/
 │       ├── main.tsx               # Bootstrap + PWA registration
-│       ├── App.tsx                # Routes
+│       ├── App.tsx                # Routes with auth gate
+│       ├── auth.tsx               # AuthProvider + useAuth (password via VITE_DASHBOARD_PASSWORD)
 │       ├── api.ts                 # API fetch helpers with retry + stale-while-revalidate
 │       ├── types.ts               # Frontend types (WidgetProps, WidgetState, etc.)
-│       ├── styles/index.css       # All styles (CSS Grid, themes, responsive)
+│       ├── styles/index.css       # All styles (CSS Grid, themes, responsive, login)
 │       ├── components/            # Shared components (WidgetCard)
 │       ├── hooks/                 # useWidgetData, useSectionDragDrop, useOnlineStatus
 │       ├── utils/                 # storage (cache layer), id (UUID generator)
-│       ├── pages/                 # Dashboard, Settings
+│       ├── pages/                 # Dashboard, Settings, Login
 │       └── widgets/               # Widget components
 │           ├── registry.ts        # Frontend widget registry
 │           ├── clock/Widget.tsx
@@ -150,6 +157,7 @@ All endpoints are prefixed with `/api`.
 |--------|----------|-------------|
 | `GET` | `/api/health` | Health check |
 | `GET` | `/api/dashboard` | Full dashboard state (widgets + sections + settings) |
+| `PUT` | `/api/dashboard` | Save full dashboard state (shared across devices) |
 | `GET` | `/api/widgets/registry` | Available widget definitions |
 | `PUT` | `/api/dashboard/widgets` | Save widget layout and config |
 | `PUT` | `/api/dashboard/settings` | Save global settings |
@@ -160,8 +168,6 @@ All endpoints are prefixed with `/api`.
 | `POST` | `/api/dashboard/keys` | Store an encrypted API key |
 | `GET` | `/api/dashboard/keys/:widgetId/:keyName` | Check if a key exists |
 | `DELETE` | `/api/dashboard/keys/:widgetId` | Delete keys for a widget |
-| `GET` | `/api/settings/pin-required` | Check if PIN is enabled |
-| `POST` | `/api/settings/verify-pin` | Verify settings PIN |
 | `GET` | `/api/weather` | Fetch weather data |
 | `GET` | `/api/gifs` | Fetch GIF URLs |
 | `GET` | `/api/lights/devices` | List smart lights with status |
@@ -176,7 +182,7 @@ All endpoints are prefixed with `/api`.
 |-------|------------|
 | Frontend | React 19, React Router DOM 7, Vite 6, TypeScript 5.7 |
 | Backend | Express 4, TypeScript 5.7, tsx (dev) |
-| Storage | JSON file persistence (server), localStorage (client-side cache) |
+| Storage | JSON file persistence (server), localStorage (client-side cache/offline fallback) |
 | PWA | vite-plugin-pwa, Workbox |
 | Encryption | Node.js crypto (AES-256-GCM) |
 
