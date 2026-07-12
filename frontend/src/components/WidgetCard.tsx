@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import type { WidgetStatus } from "../types";
+import type { ReactNode } from "react";import type { WidgetStatus } from "../types";
 
 interface WidgetCardProps {
   title: string;
@@ -30,9 +29,6 @@ export function WidgetCard({ title, status, error, onRetry, children }: WidgetCa
           </div>
         ) : (
           children
-        )}
-        {status === "stale" && (
-          <div className="widget-card__stale-banner">Showing cached data</div>
         )}
         {status === "error" && children && (
           <div className="widget-card__stale-banner">{error}</div>

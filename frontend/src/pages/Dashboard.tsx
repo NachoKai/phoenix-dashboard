@@ -334,8 +334,6 @@ export function Dashboard() {
     <div
       className={`dashboard theme-${state.globalSettings.theme}${hasGroups ? " dashboard--has-groups" : ""}`}
     >
-      {!online && <div className="offline-banner">Offline — showing cached data</div>}
-
       {hasGroups && (
         <nav className="group-sidebar" role="tablist" aria-label="Widget groups">
           {[1, 2, 3, 4, 5, 6, 7, 8].map(g => {

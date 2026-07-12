@@ -2,6 +2,7 @@ import type { ComponentType } from "react";import type { WidgetProps } from "../
 import { AiQaWidget } from "./ai-qa/Widget";
 import { ClockWidget } from "./clock/Widget";
 import { GifsWidget } from "./gifs/Widget";
+import { MoonPhaseWidget } from "./moon-phase/Widget";
 import { WeatherForecastWidget } from "./weather/ForecastWidget";
 import { WeatherWeeklyWidget } from "./weather/WeekTemperatureWidget";
 import { WeatherWidget } from "./weather/Widget";
@@ -16,6 +17,7 @@ export const widgetRegistry: FrontendWidgetEntry[] = [
   { type: "weather", component: WeatherWidget },
   { type: "weather-forecast", component: WeatherForecastWidget },
   { type: "weather-weekly", component: WeatherWeeklyWidget },
+  { type: "moon-phase", component: MoonPhaseWidget },
   { type: "gifs", component: GifsWidget },
   { type: "ai-qa", component: AiQaWidget },
 ];

@@ -1,7 +1,9 @@
-import { useCallback } from "react";import { fetchWithRetry } from "../../api";
+import { useCallback } from "react";
+import { fetchWithRetry } from "../../api";
 import { WidgetCard } from "../../components/WidgetCard";
 import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
+import { AQI_COLORS, formatTime } from "../../utils/weather";
 import { WEATHER_ICONS } from "./icons";
 
 interface WeatherData {
@@ -14,6 +16,10 @@ interface WeatherData {
   windSpeed: number;
   units: string;
   forecast: { time: string; temp: number; description: string; icon: string }[];
+  sunrise: number;
+  sunset: number;
+  aqi: number;
+  aqiLabel: string;
   cachedAt: string;
 }
 
@@ -74,6 +80,27 @@ export function WeatherWidget({ instance, sleeping }: WidgetProps) {
               <span className="weather-widget__detail-label">Wind</span>
               <span className="weather-widget__detail-value">
                 {data.windSpeed} {units === "imperial" ? "mph" : "m/s"}
+              </span>
+            </div>
+            <div className="weather-widget__detail-card">
+              <span className="weather-widget__detail-label">Sunrise</span>
+              <span className="weather-widget__detail-value">
+                {formatTime(data.sunrise)}
+              </span>
+            </div>
+            <div className="weather-widget__detail-card">
+              <span className="weather-widget__detail-label">Sunset</span>
+              <span className="weather-widget__detail-value">
+                {formatTime(data.sunset)}
+              </span>
+            </div>
+            <div className="weather-widget__detail-card">
+              <span className="weather-widget__detail-label">AQI</span>
+              <span
+                className="weather-widget__detail-value"
+                style={{ color: AQI_COLORS[data.aqi] }}
+              >
+                {data.aqiLabel}
               </span>
             </div>
           </div>

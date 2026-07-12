@@ -464,11 +464,11 @@ a {
 .weather-widget__current {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .weather-widget__icon {
-  font-size: clamp(2.2rem, 18cqw, 5.5rem);
+  font-size: clamp(1.6rem, 12cqw, 3.5rem);
   line-height: 1;
   flex-shrink: 0;
 }
@@ -481,7 +481,7 @@ a {
 
 .weather-widget__location {
   margin: 0;
-  font-size: clamp(0.7rem, 4cqw, 1.2rem);
+  font-size: clamp(0.65rem, 3.5cqw, 1.05rem);
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -489,38 +489,39 @@ a {
 }
 
 .weather-widget__temp {
-  margin: 2px 0 0;
-  font-size: clamp(1.8rem, 14cqw, 4.5rem);
+  margin: 1px 0 0;
+  font-size: clamp(1.2rem, 10cqw, 3rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
 
 .weather-widget__desc {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   text-transform: capitalize;
   color: var(--text-muted);
-  font-size: clamp(0.65rem, 3.8cqw, 1.15rem);
+  font-size: clamp(0.6rem, 3.2cqw, 1rem);
 }
 
 .weather-widget__details {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   margin-left: auto;
 }
 
 .weather-widget__detail-card {
   display: flex;
-  flex-direction: row-reverse;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: center;
+  gap: 2px;
   background: var(--bg-elevated);
-  padding: 8px 12px;
+  padding: 8px 6px;
   border-radius: 8px;
   color: var(--text-muted);
-  min-width: clamp(60px, 18cqw, 110px);
+  text-align: center;
+  min-width: 0;
 }
 
 .weather-widget__detail-label {
@@ -683,6 +684,58 @@ a {
   text-transform: capitalize;
   text-align: center;
   line-height: 1.2;
+}
+
+/* =============================================
+   MOON PHASE
+   ============================================= */
+
+.moon-widget {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.moon-widget__emoji {
+  font-size: clamp(2.5rem, 20cqw, 6rem);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.moon-widget__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.moon-widget__name {
+  margin: 0;
+  font-size: clamp(0.75rem, 4.5cqw, 1.3rem);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.moon-widget__bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.moon-widget__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #5c6bc0, #ffd54f);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.moon-widget__illumination {
+  margin: 0;
+  font-size: clamp(0.6rem, 3.5cqw, 1rem);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* =============================================

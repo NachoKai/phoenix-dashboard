@@ -1,5 +1,4 @@
-import type { WidgetDefinition } from "../types.js";
-export const clockWidget: WidgetDefinition = {
+import type { WidgetDefinition } from "../types.js";export const clockWidget: WidgetDefinition = {
   type: "clock",
   name: "Clock",
   description: "Current time and date",
@@ -286,11 +285,31 @@ export const aiQaWidget: WidgetDefinition = {
   ],
 };
 
+export const moonPhaseWidget: WidgetDefinition = {
+  type: "moon-phase",
+  name: "Moon Phase",
+  description: "Current lunar phase with illumination",
+  hasBackendRoute: false,
+  defaultConfig: {
+    timezone: "local",
+  },
+  configSchema: [
+    {
+      key: "timezone",
+      label: "Timezone",
+      type: "string",
+      default: "local",
+      description: 'IANA timezone (e.g. America/New_York) or "local"',
+    },
+  ],
+};
+
 export const widgetRegistry: WidgetDefinition[] = [
   clockWidget,
   weatherWidget,
   weatherForecastWidget,
   weatherWeeklyWidget,
+  moonPhaseWidget,
   gifsWidget,
   aiQaWidget,
 ];

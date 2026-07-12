@@ -1,4 +1,5 @@
-import type { Request, Response } from "express";import { decrypt, getEncryptionKey } from "../../config/encryption.js";
+import type { Request, Response } from "express";
+import { decrypt, getEncryptionKey } from "../../config/encryption.js";
 import { getCachedValue, getEncryptedKey, setCachedValue } from "../../db/index.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
@@ -13,6 +14,10 @@ interface WeatherResponse {
   windSpeed: number;
   units: string;
   forecast: { time: string; temp: number; description: string; icon: string }[];
+  sunrise: number;
+  sunset: number;
+  aqi: number;
+  aqiLabel: string;
   cachedAt: string;
 }
 
@@ -91,10 +96,12 @@ export async function weatherHandler(req: Request, res: Response) {
 
     const currentUrl = `https://api.openweathermap.org/data/2.5/weather?${locationParam}&units=${unitParam}&lang=${lang}&appid=${apiKey}`;
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?${locationParam}&units=${unitParam}&lang=${lang}&appid=${apiKey}&cnt=8`;
+    const aqiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?${locationParam}&appid=${apiKey}`;
 
-    const [currentRes, forecastRes] = await Promise.all([
+    const [currentRes, forecastRes, aqiRes] = await Promise.all([
       fetch(currentUrl),
       fetch(forecastUrl),
+      fetch(aqiUrl),
     ]);
 
     if (!currentRes.ok) {
@@ -105,6 +112,7 @@ export async function weatherHandler(req: Request, res: Response) {
       main: { temp: number; feels_like: number; humidity: number };
       weather: { description: string; icon: string }[];
       wind: { speed: number };
+      sys: { sunrise: number; sunset: number };
     };
 
     let forecast: WeatherResponse["forecast"] = [];
@@ -129,6 +137,24 @@ export async function weatherHandler(req: Request, res: Response) {
         }));
     }
 
+    const AQI_LABELS: Record<number, string> = {
+      1: "Good",
+      2: "Fair",
+      3: "Moderate",
+      4: "Poor",
+      5: "Very Poor",
+    };
+
+    let aqi = 0;
+    let aqiLabel = "Unknown";
+    if (aqiRes.ok) {
+      const aqiData = (await aqiRes.json()) as {
+        list: { main: { aqi: number } }[];
+      };
+      aqi = aqiData.list[0]?.main.aqi ?? 0;
+      aqiLabel = AQI_LABELS[aqi] ?? "Unknown";
+    }
+
     const result: WeatherResponse = {
       location: geo.cityId
         ? (current as unknown as { name: string }).name || geo.name
@@ -141,6 +167,10 @@ export async function weatherHandler(req: Request, res: Response) {
       windSpeed: Math.round(current.wind.speed),
       units: unitParam,
       forecast,
+      sunrise: current.sys.sunrise,
+      sunset: current.sys.sunset,
+      aqi,
+      aqiLabel,
       cachedAt: new Date().toISOString(),
     };
 

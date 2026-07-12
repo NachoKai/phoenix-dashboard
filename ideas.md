@@ -2,17 +2,17 @@
 
 ## General Information
 
-- Large clock (12/24-hour format)
-- Current date
-- Day of the week
-- Current weather
-- Hourly weather forecast
-- 5-7 day weather forecast
-- Feels like temperature
-- Air quality
+- Large clock ✅
+- Current date ✅
+- Day of the week ✅
+- Current weather ✅
+- Hourly weather forecast ✅
+- 5 day weather forecast ✅
+- Feels like temperature ✅
+- Air quality ✅
 - UV index
-- Sunrise and sunset times
-- Moon phase
+- Sunrise and sunset times ✅
+- Moon phase ✅
 
 ## Productivity
 
