@@ -552,6 +552,9 @@ function ConfigField({
   onSecretSave: (val: string) => void;
 }) {
   const [secretInput, setSecretInput] = useState("");
+  const [bulkInput, setBulkInput] = useState("");
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkReplace, setBulkReplace] = useState(false);
 
   if (field.type === "secret") {
     return (
@@ -684,6 +687,52 @@ function ConfigField({
             + GIF
           </button>
         </div>
+        <button
+          type="button"
+          className="settings__bulk-toggle"
+          onClick={() => setShowBulk(s => !s)}
+        >
+          {showBulk ? "Hide bulk import" : "Bulk import"}
+        </button>
+        {showBulk && (
+          <div className="settings__bulk-area">
+            <textarea
+              className="settings__bulk-textarea"
+              value={bulkInput}
+              onChange={e => setBulkInput(e.target.value)}
+              placeholder="Paste URLs, one per line or comma-separated"
+              rows={5}
+            />
+            <div className="settings__bulk-actions">
+              <label className="settings__field settings__field--checkbox settings__bulk-replace">
+                <input
+                  type="checkbox"
+                  checked={bulkReplace}
+                  onChange={e => setBulkReplace(e.target.checked)}
+                />
+                Replace existing
+              </label>
+              <button
+                type="button"
+                className="settings__add-btn"
+                onClick={() => {
+                  const parsed = bulkInput
+                    .split(/[\n,]/)
+                    .map(u => u.trim())
+                    .filter(u => u.length > 0);
+                  if (parsed.length === 0) return;
+                  const merged = bulkReplace ? parsed : [...list, ...parsed];
+                  const deduped = [...new Set(merged)].filter(u => u.trim() !== "");
+                  onChange(deduped);
+                  setBulkInput("");
+                  setShowBulk(false);
+                }}
+              >
+                Import
+              </button>
+            </div>
+          </div>
+        )}
         {field.description && <small>{field.description}</small>}
       </div>
     );

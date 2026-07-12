@@ -875,6 +875,50 @@ a {
   justify-content: center;
 }
 
+.settings__bulk-toggle {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+
+.settings__bulk-toggle:hover {
+  text-decoration: underline;
+}
+
+.settings__bulk-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.settings__bulk-textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.settings__bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings__bulk-replace {
+  font-size: 0.75rem;
+  margin: 0;
+}
+
 .settings__field-label {
   font-size: 0.85rem;
   margin-bottom: 2px;
