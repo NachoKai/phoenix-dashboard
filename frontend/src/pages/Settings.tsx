@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   checkStoredKey,
   createSection,
@@ -628,36 +629,46 @@ function ConfigField({
     return (
       <div className="settings__field">
         <span className="settings__field-label">{field.label}</span>
-        <div className="settings__url-list">
+        <div className="settings__url-grid">
           {list.map((url, i) => (
-            <div key={i} className="settings__url-row">
-              <input
-                type="text"
-                value={url}
-                onChange={e => updateItem(i, e.target.value)}
-                placeholder="Paste GIF URL"
-                className="settings__url-input"
-              />
-              {url && (
-                <img
-                  src={url}
-                  alt={`GIF ${i + 1}`}
-                  className="settings__url-preview"
-                  onError={e => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
+            <div key={i} className="settings__url-card">
+              <div className="settings__url-card-preview">
+                {url ? (
+                  <img
+                    src={url}
+                    alt={`GIF ${i + 1}`}
+                    className="settings__url-preview"
+                    onError={e => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <span className="settings__url-preview-placeholder">No preview</span>
+                )}
+              </div>
+              <div className="settings__url-card-footer">
+                <input
+                  type="text"
+                  value={url}
+                  onChange={e => updateItem(i, e.target.value)}
+                  placeholder="Paste GIF URL"
+                  className="settings__url-input"
                 />
-              )}
-              <button
-                type="button"
-                className="settings__remove-btn"
-                onClick={() => removeItem(i)}
-              >
-                ✕
-              </button>
+                <button
+                  type="button"
+                  className="settings__remove-btn"
+                  onClick={() => removeItem(i)}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           ))}
-          <button type="button" className="settings__add-btn" onClick={addItem}>
+          <button
+            type="button"
+            className="settings__add-btn settings__add-btn--card"
+            onClick={addItem}
+          >
             + GIF
           </button>
         </div>

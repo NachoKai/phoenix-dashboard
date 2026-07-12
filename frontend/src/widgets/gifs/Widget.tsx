@@ -34,16 +34,25 @@ export function GifsWidget({ instance, sleeping }: WidgetProps) {
   });
 
   const gifUrls = data?.urls ?? [];
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => 0);
 
   useEffect(() => {
-    setIndex(0);
+    if (gifUrls.length > 0) {
+      setIndex(Math.floor(Math.random() * gifUrls.length));
+    }
   }, [gifUrls.length]);
 
   useEffect(() => {
     if (gifUrls.length <= 1) return;
     const id = setInterval(() => {
-      setIndex(i => (i + 1) % gifUrls.length);
+      setIndex(i => {
+        if (gifUrls.length <= 1) return 0;
+        let next;
+        do {
+          next = Math.floor(Math.random() * gifUrls.length);
+        } while (next === i && gifUrls.length > 1);
+        return next;
+      });
     }, rotationInterval);
     return () => clearInterval(id);
   }, [gifUrls.length, rotationInterval]);
