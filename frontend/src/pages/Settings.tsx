@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";import { Link } from "react-router-dom";
 import {
   checkStoredKey,
   createSection,
@@ -700,9 +699,34 @@ function ConfigField({
               className="settings__bulk-textarea"
               value={bulkInput}
               onChange={e => setBulkInput(e.target.value)}
+              onPaste={e => {
+                e.preventDefault();
+                const text = e.clipboardData.getData("text/plain");
+                const el = e.currentTarget;
+                const start = el.selectionStart;
+                const end = el.selectionEnd;
+                const next =
+                  bulkInput.substring(0, start) + text + bulkInput.substring(end);
+                setBulkInput(next);
+              }}
               placeholder="Paste URLs, one per line or comma-separated"
               rows={5}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
             />
+            {bulkInput.trim() && (
+              <small className="settings__bulk-count">
+                {
+                  bulkInput
+                    .split(/[\n,]/)
+                    .map(u => u.trim())
+                    .filter(u => u.length > 0).length
+                }{" "}
+                URL(s) detected
+              </small>
+            )}
             <div className="settings__bulk-actions">
               <label className="settings__field settings__field--checkbox settings__bulk-replace">
                 <input

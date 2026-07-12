@@ -919,6 +919,11 @@ a {
   margin: 0;
 }
 
+.settings__bulk-count {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
 .settings__field-label {
   font-size: 0.85rem;
   margin-bottom: 2px;
