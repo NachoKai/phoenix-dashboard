@@ -16,11 +16,11 @@ interface LightDevice {
 }
 
 const COLOR_PRESETS = [
-  { label: "Daylight", temp: 100, bg: "#e8f0ff" },
-  { label: "Cool", temp: 250, bg: "#fff8e1" },
+  { label: "Daylight", temp: 1000, bg: "#e8f0ff" },
+  { label: "Cool", temp: 750, bg: "#fff8e1" },
   { label: "Neutral", temp: 500, bg: "#ffecd2" },
-  { label: "Warm", temp: 750, bg: "#ffc48a" },
-  { label: "Candle", temp: 1000, bg: "#ff9d4a" },
+  { label: "Warm", temp: 250, bg: "#ffc48a" },
+  { label: "Candle", temp: 100, bg: "#ff9d4a" },
 ];
 
 export function LightsWidget({ instance, sleeping }: WidgetProps) {
@@ -84,6 +84,14 @@ export function LightsWidget({ instance, sleeping }: WidgetProps) {
                     <button
                       type="button"
                       className="lights-widget__adj-btn"
+                      disabled={busy || light.brightness <= 10}
+                      onClick={() => sendControl(light.id, "brightness", 10)}
+                    >
+                      MIN
+                    </button>
+                    <button
+                      type="button"
+                      className="lights-widget__adj-btn"
                       disabled={busy || light.brightness <= 1}
                       onClick={() =>
                         sendControl(
@@ -109,6 +117,14 @@ export function LightsWidget({ instance, sleeping }: WidgetProps) {
                       }
                     >
                       +
+                    </button>
+                    <button
+                      type="button"
+                      className="lights-widget__adj-btn"
+                      disabled={busy || light.brightness === 100}
+                      onClick={() => sendControl(light.id, "brightness", 100)}
+                    >
+                      MAX
                     </button>
                   </div>
                   <div className="lights-widget__row">
