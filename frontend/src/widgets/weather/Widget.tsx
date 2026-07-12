@@ -3,7 +3,8 @@ import { fetchWithRetry } from "../../api";
 import { WidgetCard } from "../../components/WidgetCard";
 import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
-import { AQI_COLORS, formatTime } from "../../utils/weather";
+import { AQI_COLORS, formatTime, getLabel } from "../../utils/weather";
+// import { DetailIcon } from "./DetailIcon";
 import { WEATHER_ICONS } from "./icons";
 
 interface WeatherData {
@@ -66,36 +67,66 @@ export function WeatherWidget({ instance, sleeping }: WidgetProps) {
           </div>
           <div className="weather-widget__details">
             <div className="weather-widget__detail-card">
-              <span className="weather-widget__detail-label">Feels</span>
+              <div className="weather-widget__detail-header">
+                {/* <DetailIcon name="feels" /> */}
+                <span className="weather-widget__detail-label">
+                  {getLabel(lang, "feels")}
+                </span>
+              </div>
               <span className="weather-widget__detail-value">
                 {data.feelsLike}
                 {unitSymbol}
               </span>
             </div>
             <div className="weather-widget__detail-card">
-              <span className="weather-widget__detail-label">Humidity</span>
+              <div className="weather-widget__detail-header">
+                {/* <DetailIcon name="humidity" /> */}
+                <span className="weather-widget__detail-label">
+                  {getLabel(lang, "humidity")}
+                </span>
+              </div>
               <span className="weather-widget__detail-value">{data.humidity}%</span>
             </div>
             <div className="weather-widget__detail-card">
-              <span className="weather-widget__detail-label">Wind</span>
+              <div className="weather-widget__detail-header">
+                {/* <DetailIcon name="wind" /> */}
+                <span className="weather-widget__detail-label">
+                  {getLabel(lang, "wind")}
+                </span>
+              </div>
               <span className="weather-widget__detail-value">
                 {data.windSpeed} {units === "imperial" ? "mph" : "m/s"}
               </span>
             </div>
             <div className="weather-widget__detail-card">
-              <span className="weather-widget__detail-label">Sunrise</span>
+              <div className="weather-widget__detail-header">
+                {/* <DetailIcon name="sunrise" /> */}
+                <span className="weather-widget__detail-label">
+                  {getLabel(lang, "sunrise")}
+                </span>
+              </div>
               <span className="weather-widget__detail-value">
                 {formatTime(data.sunrise)}
               </span>
             </div>
             <div className="weather-widget__detail-card">
-              <span className="weather-widget__detail-label">Sunset</span>
+              <div className="weather-widget__detail-header">
+                {/* <DetailIcon name="sunset" /> */}
+                <span className="weather-widget__detail-label">
+                  {getLabel(lang, "sunset")}
+                </span>
+              </div>
               <span className="weather-widget__detail-value">
                 {formatTime(data.sunset)}
               </span>
             </div>
             <div className="weather-widget__detail-card">
-              <span className="weather-widget__detail-label">AQI</span>
+              <div className="weather-widget__detail-header">
+                {/* <DetailIcon name="aqi" /> */}
+                <span className="weather-widget__detail-label">
+                  {getLabel(lang, "aqi")}
+                </span>
+              </div>
               <span
                 className="weather-widget__detail-value"
                 style={{ color: AQI_COLORS[data.aqi] }}

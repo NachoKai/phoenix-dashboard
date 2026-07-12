@@ -146,13 +146,13 @@ export async function weatherHandler(req: Request, res: Response) {
     };
 
     let aqi = 0;
-    let aqiLabel = "Unknown";
+    let aqiLabel = "-";
     if (aqiRes.ok) {
       const aqiData = (await aqiRes.json()) as {
         list: { main: { aqi: number } }[];
       };
       aqi = aqiData.list[0]?.main.aqi ?? 0;
-      aqiLabel = AQI_LABELS[aqi] ?? "Unknown";
+      aqiLabel = AQI_LABELS[aqi] ?? "-";
     }
 
     const result: WeatherResponse = {
