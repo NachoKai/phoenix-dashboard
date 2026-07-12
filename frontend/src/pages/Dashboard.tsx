@@ -332,34 +332,32 @@ export function Dashboard() {
 
   return (
     <div
-      className={`dashboard theme-${state.globalSettings.theme}${hasGroups ? " dashboard--has-groups" : ""}`}
+      className={`dashboard theme-${state.globalSettings.theme} dashboard--has-groups`}
     >
-      {hasGroups && (
-        <nav className="group-sidebar" role="tablist" aria-label="Widget groups">
-          {[1, 2, 3, 4, 5, 6].map(g => {
-            const isActive = g === activeGroup;
-            const hasContent = sortedSections.some(s => s.group === g);
-            const { ref, isOver, ...dragProps } = getGroupButtonProps(g);
-            return (
-              <button
-                key={g}
-                ref={ref}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                className={`group-sidebar__item${isActive ? " group-sidebar__item--active" : ""}${hasContent ? " group-sidebar__item--has-content" : ""}${isOver ? " group-sidebar__item--over" : ""}`}
-                onClick={() => handleGroupChange(g)}
-                {...dragProps}
-              >
-                {g}
-              </button>
-            );
-          })}
-          <Link to="/settings" className="group-sidebar__item group-sidebar__settings" aria-label="Settings">
-            ⚙
-          </Link>
-        </nav>
-      )}
+      <nav className="group-sidebar" role="tablist" aria-label="Widget groups">
+        {hasGroups && [1, 2, 3, 4, 5, 6].map(g => {
+          const isActive = g === activeGroup;
+          const hasContent = sortedSections.some(s => s.group === g);
+          const { ref, isOver, ...dragProps } = getGroupButtonProps(g);
+          return (
+            <button
+              key={g}
+              ref={ref}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className={`group-sidebar__item${isActive ? " group-sidebar__item--active" : ""}${hasContent ? " group-sidebar__item--has-content" : ""}${isOver ? " group-sidebar__item--over" : ""}`}
+              onClick={() => handleGroupChange(g)}
+              {...dragProps}
+            >
+              {g}
+            </button>
+          );
+        })}
+        <Link to="/settings" className="group-sidebar__item group-sidebar__settings" aria-label="Settings">
+          ⚙
+        </Link>
+      </nav>
 
       <div
         className="dashboard__grid"
