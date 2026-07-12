@@ -331,14 +331,10 @@ export async function getAllDevices(): Promise<TuyaDevice[]> {
     const resultObj = result as Record<string, unknown>;
     const list = (resultObj.list ?? resultObj.devices ?? []) as TuyaDevice[];
     if (list.length > 0) {
-      console.log("[Tuya] Got devices via iot-03 list:", list.length);
       return list;
     }
-  } catch (err) {
-    console.log(
-      "[Tuya] iot-03 device list failed:",
-      err instanceof Error ? err.message : err,
-    );
+  } catch {
+    // Silently try next strategy
   }
 
   // Strategy 2: Try associated-users endpoint
@@ -349,30 +345,22 @@ export async function getAllDevices(): Promise<TuyaDevice[]> {
     const resultObj = result as Record<string, unknown>;
     const list = (resultObj.devices ?? resultObj.list ?? []) as TuyaDevice[];
     if (list.length > 0) {
-      console.log("[Tuya] Got devices via associated-users:", list.length);
       return list;
     }
-  } catch (err) {
-    console.log(
-      "[Tuya] associated-users endpoint failed:",
-      err instanceof Error ? err.message : err,
-    );
+  } catch {
+    // Silently try next strategy
   }
 
   // Strategy 3: Fetch known devices by ID via iot-03 status endpoint
   const knownIds = (process.env.TUYA_KNOWN_DEVICE_IDS ?? "").split(",").filter(Boolean);
   if (knownIds.length > 0) {
-    console.log("[Tuya] Falling back to known device IDs:", knownIds.length);
     const devices: TuyaDevice[] = [];
     for (const id of knownIds) {
       try {
         const device = await getDeviceStatus(id.trim());
         devices.push(device);
-      } catch (err) {
-        console.log(
-          `[Tuya] Failed to get device ${id}:`,
-          err instanceof Error ? err.message : err,
-        );
+      } catch {
+        // Silently skip failed device
       }
     }
     if (devices.length > 0) return devices;
