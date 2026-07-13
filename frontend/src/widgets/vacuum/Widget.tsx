@@ -101,52 +101,75 @@ export function VacuumWidget({ instance, sleeping }: WidgetProps) {
             {data.time > 0 && (
               <span className="vacuum-widget__stat">{data.time} min</span>
             )}
+            {data.fanSpeed && (
+              <span className="vacuum-widget__stat vacuum-widget__stat--fan">
+                {data.fanSpeed}
+              </span>
+            )}
           </div>
 
-          <div className="vacuum-widget__controls">
-            <button
-              type="button"
-              className="vacuum-widget__btn"
-              disabled={!!sending}
-              onClick={() => sendControl("power_on")}
-              title="Turn on"
-            >
-              ⏻ On
-            </button>
-            <button
-              type="button"
-              className="vacuum-widget__btn"
-              disabled={!!sending}
-              onClick={() => sendControl("power_off")}
-              title="Turn off"
-            >
-              ⏻ Off
-            </button>
-            <button
-              type="button"
-              className={`vacuum-widget__btn vacuum-widget__btn--primary ${sending === "start" ? "vacuum-widget__btn--sending" : ""}`}
-              disabled={!!sending || data.isCleaning}
-              onClick={() => sendControl("start")}
-            >
-              Start
-            </button>
-            <button
-              type="button"
-              className="vacuum-widget__btn"
-              disabled={!!sending}
-              onClick={() => sendControl("stop")}
-            >
-              Stop
-            </button>
-            <button
-              type="button"
-              className="vacuum-widget__btn"
-              disabled={!!sending}
-              onClick={() => sendControl("dock")}
-              title="Return to dock"
-            >
-              Dock
-            </button>
+          {data.errorCode > 0 && (
+            <div className="vacuum-widget__error">
+              Error {data.errorCode}
+            </div>
+          )}
+
+          <div className="vacuum-widget__controls vacuum-widget__controls--rows">
+            <div className="vacuum-widget__controls-row">
+              <button
+                type="button"
+                className={`vacuum-widget__btn vacuum-widget__btn--primary ${sending === "start" ? "vacuum-widget__btn--sending" : ""}`}
+                disabled={!!sending || data.isCleaning}
+                onClick={() => sendControl("start")}
+              >
+                Start
+              </button>
+              <button
+                type="button"
+                className="vacuum-widget__btn"
+                disabled={!!sending || !data.isCleaning}
+                onClick={() => sendControl("pause")}
+              >
+                Pause
+              </button>
+              <button
+                type="button"
+                className="vacuum-widget__btn"
+                disabled={!!sending}
+                onClick={() => sendControl("stop")}
+              >
+                Stop
+              </button>
+            </div>
+            <div className="vacuum-widget__controls-row">
+              <button
+                type="button"
+                className="vacuum-widget__btn"
+                disabled={!!sending}
+                onClick={() => sendControl("power_on")}
+                title="Turn on"
+              >
+                On
+              </button>
+              <button
+                type="button"
+                className="vacuum-widget__btn"
+                disabled={!!sending}
+                onClick={() => sendControl("power_off")}
+                title="Turn off"
+              >
+                Off
+              </button>
+              <button
+                type="button"
+                className="vacuum-widget__btn"
+                disabled={!!sending}
+                onClick={() => sendControl("dock")}
+                title="Return to dock"
+              >
+                Dock
+              </button>
+            </div>
           </div>
         </div>
       )}

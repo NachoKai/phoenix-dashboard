@@ -336,6 +336,12 @@ a {
   justify-content: center;
 }
 
+.widget-card__body:has(.lights-widget),
+.widget-card__body:has(.vacuum-widget) {
+  display: flex;
+  flex-direction: column;
+}
+
 .widget-card__loading {
   color: var(--text-muted);
   padding: 4px 0;
@@ -1213,31 +1219,35 @@ a {
   }
 
   .lights-widget__light {
-    gap: 2px;
+    gap: 3px;
   }
 
   .lights-widget__controls {
-    gap: 2px;
+    gap: 3px;
   }
 
   .lights-widget__row {
-    gap: 4px;
+    gap: 5px;
   }
 
   .lights-widget__presets {
-    gap: 2px;
+    gap: 3px;
   }
 
   .vacuum-widget {
-    gap: 4px;
+    gap: 5px;
   }
 
   .vacuum-widget__controls {
-    gap: 2px;
+    gap: 3px;
+  }
+
+  .vacuum-widget__controls-row {
+    gap: 3px;
   }
 
   .vacuum-widget__btn {
-    padding: 3px 4px;
+    padding: 4px 6px;
   }
 }
 
@@ -1253,11 +1263,11 @@ a {
   }
 
   .lights-widget__controls {
-    gap: 3px;
+    gap: 4px;
   }
 
   .vacuum-widget__btn {
-    padding: 4px 5px;
+    padding: 5px 8px;
   }
 }
 
@@ -1294,11 +1304,11 @@ a {
   }
 
   .lights-widget__preset {
-    height: clamp(14px, 4.5cqw, 18px);
+    height: clamp(16px, 5cqw, 22px);
   }
 
   .lights-widget__preset-label {
-    font-size: clamp(0.32rem, 1.8cqw, 0.5rem);
+    font-size: clamp(0.35rem, 2cqw, 0.55rem);
   }
 
   .vacuum-widget__top {
@@ -1306,18 +1316,18 @@ a {
   }
 
   .vacuum-widget__battery-level {
-    font-size: clamp(0.45rem, 2.8cqw, 0.75rem);
+    font-size: clamp(0.5rem, 3cqw, 0.8rem);
   }
 
-  .vacuum-widget__controls {
+  .vacuum-widget__controls-row {
     flex-wrap: wrap;
   }
 
   .vacuum-widget__btn {
     flex: 1 1 auto;
-    min-width: clamp(40px, 14cqw, 60px);
-    padding: 2px 3px;
-    font-size: clamp(0.42rem, 2.4cqw, 0.65rem);
+    min-width: clamp(44px, 15cqw, 65px);
+    padding: 3px 4px;
+    font-size: clamp(0.45rem, 2.6cqw, 0.7rem);
   }
 }
 
@@ -1340,8 +1350,10 @@ a {
 .lights-widget {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .lights-widget__empty {
@@ -1353,27 +1365,29 @@ a {
 
 .lights-widget__light {
   background: var(--bg-elevated);
-  padding: clamp(4px, 2cqw, 8px);
+  padding: clamp(8px, 3cqw, 14px);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
 }
 
 .lights-widget__row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
 }
 
 .lights-widget__toggle {
-  padding: 2px 8px;
+  padding: 4px 12px;
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text-muted);
   cursor: pointer;
-  font-size: clamp(0.5rem, 2.8cqw, 0.75rem);
+  font-size: clamp(0.6rem, 3.6cqw, 0.95rem);
   font-weight: 600;
-  min-width: 36px;
+  min-width: 50px;
   transition: all 0.2s ease;
 }
 
@@ -1389,7 +1403,7 @@ a {
 }
 
 .lights-widget__name {
-  font-size: clamp(0.55rem, 3cqw, 0.85rem);
+  font-size: clamp(0.65rem, 4cqw, 1.05rem);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1408,7 +1422,10 @@ a {
 .lights-widget__controls {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  justify-content: space-between;
 }
 
 .lights-widget__slider-row {
@@ -1418,7 +1435,7 @@ a {
 }
 
 .lights-widget__label {
-  font-size: clamp(0.45rem, 2.5cqw, 0.7rem);
+  font-size: clamp(0.55rem, 3.2cqw, 0.85rem);
   color: var(--text-muted);
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1426,8 +1443,8 @@ a {
 }
 
 .lights-widget__adj-btn {
-  width: clamp(20px, 6cqw, 28px);
-  height: clamp(20px, 6cqw, 28px);
+  width: clamp(30px, 8.5cqw, 40px);
+  height: clamp(30px, 8.5cqw, 40px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1435,7 +1452,7 @@ a {
   border: 1px solid var(--border);
   color: var(--text);
   cursor: pointer;
-  font-size: clamp(0.65rem, 3cqw, 0.9rem);
+  font-size: clamp(0.75rem, 4cqw, 1.1rem);
   font-weight: 700;
   line-height: 1;
   border-radius: 4px;
@@ -1457,16 +1474,21 @@ a {
   cursor: not-allowed;
 }
 
+.lights-widget__adj-btn--wide {
+  min-width: clamp(40px, 11cqw, 52px);
+  font-size: clamp(0.55rem, 3cqw, 0.8rem);
+}
+
 .lights-widget__value {
-  font-size: clamp(0.45rem, 2.5cqw, 0.7rem);
-  min-width: 28px;
+  font-size: clamp(0.6rem, 3.4cqw, 0.9rem);
+  min-width: 36px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .lights-widget__color {
-  width: clamp(20px, 6cqw, 28px);
-  height: clamp(16px, 4.5cqw, 22px);
+  width: clamp(32px, 9cqw, 42px);
+  height: clamp(26px, 7cqw, 34px);
   border: 1px solid var(--border);
   padding: 0;
   cursor: pointer;
@@ -1480,7 +1502,7 @@ a {
 
 .lights-widget__preset {
   flex: 1;
-  height: clamp(18px, 5cqw, 24px);
+  height: clamp(28px, 7.5cqw, 38px);
   border: 2px solid transparent;
   cursor: pointer;
   display: flex;
@@ -1506,7 +1528,7 @@ a {
 }
 
 .lights-widget__preset-label {
-  font-size: clamp(0.38rem, 2cqw, 0.6rem);
+  font-size: clamp(0.46rem, 2.8cqw, 0.8rem);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1523,37 +1545,39 @@ a {
 .vacuum-widget {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   width: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .vacuum-widget__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
 }
 
 .vacuum-widget__battery {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
 }
 
 .vacuum-widget__battery-icon {
-  font-size: clamp(0.8rem, 5cqw, 1.2rem);
+  font-size: clamp(1.2rem, 7cqw, 1.8rem);
 }
 
 .vacuum-widget__battery-level {
-  font-size: clamp(0.55rem, 3.2cqw, 0.9rem);
+  font-size: clamp(0.75rem, 4.5cqw, 1.2rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .vacuum-widget__battery-bar {
-  width: clamp(30px, 10cqw, 50px);
-  height: clamp(4px, 1.5cqw, 6px);
+  width: clamp(60px, 22cqw, 110px);
+  height: clamp(8px, 2.5cqw, 12px);
   background: var(--border);
   overflow: hidden;
 }
@@ -1566,11 +1590,11 @@ a {
 .vacuum-widget__status {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .vacuum-widget__state {
-  font-size: clamp(0.5rem, 2.8cqw, 0.8rem);
+  font-size: clamp(0.6rem, 3.8cqw, 1rem);
   color: var(--text-muted);
   font-weight: 500;
 }
@@ -1587,28 +1611,48 @@ a {
 
 .vacuum-widget__info {
   display: flex;
-  gap: 10px;
+  gap: 18px;
 }
 
 .vacuum-widget__stat {
-  font-size: clamp(0.5rem, 2.8cqw, 0.8rem);
+  font-size: clamp(0.6rem, 3.8cqw, 1rem);
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
+.vacuum-widget__stat--fan {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.vacuum-widget__error {
+  font-size: clamp(0.55rem, 3.2cqw, 0.85rem);
+  color: var(--error);
+  font-weight: 600;
+  text-align: center;
+  padding: 2px 0;
+}
+
 .vacuum-widget__controls {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.vacuum-widget__controls-row {
+  display: flex;
+  gap: 6px;
 }
 
 .vacuum-widget__btn {
   flex: 1;
-  padding: 4px 6px;
+  padding: 8px 12px;
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
   cursor: pointer;
-  font-size: clamp(0.5rem, 2.8cqw, 0.75rem);
+  font-size: clamp(0.6rem, 3.6cqw, 0.95rem);
   font-weight: 600;
   transition: all 0.2s ease;
 }

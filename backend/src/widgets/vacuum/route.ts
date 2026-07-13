@@ -207,7 +207,7 @@ export async function vacuumControlHandler(req: Request, res: Response) {
         commands.push({ code: "mode", value: "chargego" });
         break;
       case "locate":
-        commands.push({ code: "direction_control", value: "stop" });
+        commands.push({ code: "seek", value: true });
         break;
       default:
         res.status(400).json({ error: `Unknown action: ${action}` });

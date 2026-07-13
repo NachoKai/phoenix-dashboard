@@ -83,7 +83,7 @@ export function LightsWidget({ instance, sleeping }: WidgetProps) {
                     <span className="lights-widget__label">BRI</span>
                     <button
                       type="button"
-                      className="lights-widget__adj-btn"
+                      className="lights-widget__adj-btn lights-widget__adj-btn--wide"
                       disabled={busy || light.brightness <= 10}
                       onClick={() => sendControl(light.id, "brightness", 10)}
                     >
@@ -120,7 +120,7 @@ export function LightsWidget({ instance, sleeping }: WidgetProps) {
                     </button>
                     <button
                       type="button"
-                      className="lights-widget__adj-btn"
+                      className="lights-widget__adj-btn lights-widget__adj-btn--wide"
                       disabled={busy || light.brightness === 100}
                       onClick={() => sendControl(light.id, "brightness", 100)}
                     >
