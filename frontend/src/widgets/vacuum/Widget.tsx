@@ -86,7 +86,7 @@ export function VacuumWidget({ instance, sleeping }: WidgetProps) {
               <span
                 className={`vacuum-widget__state ${data.isCleaning ? "vacuum-widget__state--cleaning" : ""}`}
               >
-                {data.status}
+                Status: {data.status}
               </span>
               {!data.online && <span className="vacuum-widget__offline">offline</span>}
             </div>
@@ -103,15 +103,13 @@ export function VacuumWidget({ instance, sleeping }: WidgetProps) {
             )}
             {data.fanSpeed && (
               <span className="vacuum-widget__stat vacuum-widget__stat--fan">
-                {data.fanSpeed}
+                Fan Speed: {data.fanSpeed}
               </span>
             )}
           </div>
 
           {data.errorCode > 0 && (
-            <div className="vacuum-widget__error">
-              Error {data.errorCode}
-            </div>
+            <div className="vacuum-widget__error">Error {data.errorCode}</div>
           )}
 
           <div className="vacuum-widget__controls vacuum-widget__controls--rows">

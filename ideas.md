@@ -1,19 +1,5 @@
 # Ideas
 
-## General Information
-
-- Large clock ✅
-- Current date ✅
-- Day of the week ✅
-- Current weather ✅
-- Hourly weather forecast ✅
-- 5 day weather forecast ✅
-- Feels like temperature ✅
-- Air quality ✅
-- UV index
-- Sunrise and sunset times ✅
-- Moon phase ✅
-
 ## Productivity
 
 - Google Calendar integration
@@ -36,27 +22,6 @@
 - Days until payday
 - Remaining vacation days
 
-## Smart Home
-
-- Light controls ✅
-- Door status
-- Security cameras
-- Home temperature
-- Robot vacuum status ✅
-- Motion sensors
-- Smart doorbell
-
-## Multimedia
-
-- Spotify "Now Playing"
-- Playback controls
-- Album artwork
-- Synced lyrics
-- Internet radio
-- Animated GIFs
-- Dynamic wallpapers
-- Family photo slideshow
-
 ## AI
 
 - "Ask AI" button
@@ -74,7 +39,6 @@
 - Hacker News
 - Reddit
 - Technology news
-- Sports news
 - Important alerts
 
 ## Developer Dashboard
@@ -90,22 +54,14 @@
 
 ## Utilities
 
-- Configurable QR code
-- Flashlight (full white screen)
 - Notes
 - Quick calculator
 - Currency converter
 - Unit converter
-- QR code scanner
 
 ## Health
 
-- Step counter (if supported)
-- Sleep tracking
-- Heart rate (if available)
 - Water intake tracker
-- Weight tracking
-- Daily goals
 
 ## Entertainment
 

@@ -1364,8 +1364,6 @@ a {
 }
 
 .lights-widget__light {
-  background: var(--bg-elevated);
-  padding: clamp(8px, 3cqw, 14px);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1425,7 +1423,6 @@ a {
   gap: 8px;
   flex: 1;
   min-height: 0;
-  justify-content: space-between;
 }
 
 .lights-widget__slider-row {
@@ -1480,7 +1477,8 @@ a {
 }
 
 .lights-widget__value {
-  font-size: clamp(0.6rem, 3.4cqw, 0.9rem);
+  font-weight: 700;
+  font-size: clamp(0.75rem, 4.5cqw, 1.2rem);
   min-width: 36px;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -1594,9 +1592,9 @@ a {
 }
 
 .vacuum-widget__state {
-  font-size: clamp(0.6rem, 3.8cqw, 1rem);
+  font-size: clamp(0.75rem, 4.5cqw, 1.2rem);
   color: var(--text-muted);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .vacuum-widget__state--cleaning {
@@ -1636,13 +1634,12 @@ a {
 .vacuum-widget__controls {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: auto;
+  gap: 8px;
 }
 
 .vacuum-widget__controls-row {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .vacuum-widget__btn {

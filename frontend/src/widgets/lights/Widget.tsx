@@ -80,7 +80,7 @@ export function LightsWidget({ instance, sleeping }: WidgetProps) {
               {light.isOn && (
                 <div className="lights-widget__controls">
                   <div className="lights-widget__row">
-                    <span className="lights-widget__label">BRI</span>
+                    <span className="lights-widget__label">BRIGHT</span>
                     <button
                       type="button"
                       className="lights-widget__adj-btn lights-widget__adj-btn--wide"
