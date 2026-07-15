@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { NumberInput } from "../components/NumberInput";
+import { useCallback, useEffect, useRef, useState } from "react";import { NumberInput } from "../components/NumberInput";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
 import {
@@ -221,7 +220,7 @@ export function Settings() {
           <h1>Settings</h1>
           <div className="settings__header-actions">
             <Link to="/" className="settings__back">
-              Back
+              ← Back
             </Link>
             <button
               type="button"
