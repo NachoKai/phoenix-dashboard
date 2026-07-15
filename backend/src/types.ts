@@ -65,4 +65,5 @@ export interface DashboardState {
   widgets: WidgetInstance[];
   sections: DashboardSection[];
   globalSettings: GlobalSettings;
+  lastModified?: number;
 }

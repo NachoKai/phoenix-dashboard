@@ -11,11 +11,13 @@ import type {
 const __filename = fileURLToPath(import.meta.url);
 const DATA_DIR = path.resolve(path.dirname(__filename), "../../data");
 const PERSIST_FILE = path.join(DATA_DIR, "dashboard-state.json");
+const KEYS_FILE = path.join(DATA_DIR, "encrypted-keys.json");
 
 interface PersistedState {
   globalSettings: GlobalSettings;
   sections: DashboardSection[];
   widgets: WidgetInstance[];
+  lastModified?: number;
 }
 
 function loadFromDisk(): PersistedState {
@@ -38,6 +40,7 @@ function loadFromDisk(): PersistedState {
       },
       sections: [],
       widgets: [],
+      lastModified: 0,
     };
   }
 }
@@ -47,6 +50,7 @@ const initial = loadFromDisk();
 let globalSettings: GlobalSettings = initial.globalSettings;
 let sections: DashboardSection[] = initial.sections;
 let widgets: WidgetInstance[] = initial.widgets;
+let lastModified: number = initial.lastModified ?? 0;
 
 function persistToDisk(): void {
   try {
@@ -54,6 +58,7 @@ function persistToDisk(): void {
       globalSettings: { ...globalSettings },
       sections: [...sections],
       widgets: [...widgets],
+      lastModified,
     };
     fs.writeFileSync(PERSIST_FILE, JSON.stringify(state, null, 2), "utf-8");
   } catch {
@@ -61,7 +66,29 @@ function persistToDisk(): void {
   }
 }
 
-const encryptedKeys = new Map<string, string>();
+function loadEncryptedKeysFromDisk(): Map<string, string> {
+  try {
+    const raw = fs.readFileSync(KEYS_FILE, "utf-8");
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    return new Map(Object.entries(parsed));
+  } catch {
+    return new Map();
+  }
+}
+
+function persistEncryptedKeys(): void {
+  try {
+    const obj: Record<string, string> = {};
+    for (const [k, v] of encryptedKeys) {
+      obj[k] = v;
+    }
+    fs.writeFileSync(KEYS_FILE, JSON.stringify(obj, null, 2), "utf-8");
+  } catch {
+    // best-effort
+  }
+}
+
+const encryptedKeys = loadEncryptedKeysFromDisk();
 const apiCache = new Map<string, { value: string; expiresAt: number }>();
 
 export function getGlobalSettings(): GlobalSettings {
@@ -70,6 +97,7 @@ export function getGlobalSettings(): GlobalSettings {
 
 export function saveGlobalSettings(settings: GlobalSettings): void {
   globalSettings = { ...settings };
+  lastModified = Date.now();
   persistToDisk();
 }
 
@@ -83,6 +111,7 @@ export function saveSections(newSections: DashboardSection[]): void {
     position: i,
     name: s.name || `Section ${i + 1}`,
   }));
+  lastModified = Date.now();
   persistToDisk();
 }
 
@@ -98,6 +127,8 @@ export function addSection(): DashboardSection {
     layout: "full-width",
   };
   sections.push(section);
+  lastModified = Date.now();
+  persistToDisk();
   return section;
 }
 
@@ -108,6 +139,7 @@ export function deleteSection(id: string): boolean {
   sections.forEach((s, i) => {
     s.position = i;
   });
+  lastModified = Date.now();
   persistToDisk();
   return true;
 }
@@ -118,6 +150,7 @@ export function getWidgets(): WidgetInstance[] {
 
 export function saveWidgets(newWidgets: WidgetInstance[]): void {
   widgets = [...newWidgets];
+  lastModified = Date.now();
   persistToDisk();
 }
 
@@ -126,6 +159,7 @@ export function getDashboardState(): DashboardState {
     widgets: getWidgets(),
     sections: getSections(),
     globalSettings: getGlobalSettings(),
+    lastModified,
   };
 }
 
@@ -133,6 +167,7 @@ export function saveDashboardState(state: DashboardState): void {
   widgets = [...state.widgets];
   sections = [...state.sections];
   globalSettings = { ...state.globalSettings };
+  lastModified = Date.now();
   persistToDisk();
 }
 
@@ -142,6 +177,7 @@ export function saveEncryptedKey(
   encrypted: string,
 ): void {
   encryptedKeys.set(`${widgetId}:${keyName}`, encrypted);
+  persistEncryptedKeys();
 }
 
 export function getEncryptedKey(widgetId: string, keyName: string): string | null {
@@ -154,6 +190,7 @@ export function deleteEncryptedKeysForWidget(widgetId: string): void {
       encryptedKeys.delete(key);
     }
   }
+  persistEncryptedKeys();
 }
 
 export function getCachedValue(cacheKey: string): string | null {

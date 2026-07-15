@@ -18,7 +18,21 @@ export async function fetchDashboardWithCache(): Promise<DashboardState> {
   const cached = loadDashboardCache(deviceId) ?? migrateLegacyCache(deviceId);
   if (cached) {
     fetchDashboard()
-      .then(state => saveDashboardCache(deviceId, state))
+      .then(serverState => {
+        const serverTime = serverState.lastModified ?? 0;
+        const cacheTime = cached.lastModified ?? 0;
+        if (serverTime > cacheTime) {
+          saveDashboardCache(deviceId, serverState);
+        } else if (
+          serverTime === 0 &&
+          cacheTime > 0 &&
+          (cached.widgets.length > 0 || cached.sections.length > 1)
+        ) {
+          // Server returned empty/default state but cache has real data — don't overwrite
+          // This happens after a fresh deploy before the state file is recreated
+          return;
+        }
+      })
       .catch(() => {});
     return cached;
   }
@@ -34,8 +48,9 @@ export async function saveDashboardState(state: DashboardState): Promise<void> {
     body: JSON.stringify(state),
   });
   if (!res.ok) throw new Error("Failed to save dashboard state");
+  const body = (await res.json()) as { lastModified?: number };
   const deviceId = getDeviceId();
-  saveDashboardCache(deviceId, state);
+  saveDashboardCache(deviceId, { ...state, lastModified: body.lastModified });
 }
 
 export async function fetchWidgetRegistry(): Promise<

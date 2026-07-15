@@ -1,5 +1,4 @@
-export type ConfigFieldType =
-  | "string"
+export type ConfigFieldType =  | "string"
   | "number"
   | "boolean"
   | "select"
@@ -65,6 +64,7 @@ export interface DashboardState {
   widgets: WidgetInstance[];
   sections: DashboardSection[];
   globalSettings: GlobalSettings;
+  lastModified?: number;
 }
 
 export interface WidgetProps {

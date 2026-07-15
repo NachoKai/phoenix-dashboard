@@ -6,3 +6,4 @@ dist/
 certs/
 nul
 backend/data/dashboard-state.json
+backend/data/encrypted-keys.json

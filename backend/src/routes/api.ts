@@ -48,15 +48,13 @@ apiRouter.get("/dashboard", (_req, res) => {
 apiRouter.put("/dashboard", (req, res) => {
   const state = req.body as DashboardState;
   if (!state.widgets || !state.sections || !state.globalSettings) {
-    res
-      .status(400)
-      .json({
-        error: "Full dashboard state required (widgets, sections, globalSettings)",
-      });
+    res.status(400).json({
+      error: "Full dashboard state required (widgets, sections, globalSettings)",
+    });
     return;
   }
   saveDashboardState(state);
-  res.json({ ok: true });
+  res.json({ ok: true, lastModified: getDashboardState().lastModified });
 });
 
 apiRouter.get("/widgets/registry", (_req, res) => {
