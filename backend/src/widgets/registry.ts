@@ -1,5 +1,5 @@
 import type { WidgetDefinition } from "../types.js";
-export const clockWidget: WidgetDefinition = {
+import { DEFAULT_SYSTEM_PROMPT } from "../constants.js";export const clockWidget: WidgetDefinition = {
   type: "clock",
   name: "Clock",
   description: "Current time and date",
@@ -264,24 +264,51 @@ export const gifsWidget: WidgetDefinition = {
 export const aiQaWidget: WidgetDefinition = {
   type: "ai-qa",
   name: "AI Q&A",
-  description: "Ask questions via LLM (coming soon)",
+  description: "Multi-model chat via OpenRouter (GPT, Claude, Gemini, Llama, etc.)",
   hasBackendRoute: true,
   defaultConfig: {
-    placeholder: "Ask anything...",
-    refreshInterval: 0,
+    model: "openrouter/free",
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
   },
   configSchema: [
     {
-      key: "placeholder",
-      label: "Input placeholder",
-      type: "string",
-      default: "Ask anything...",
+      key: "model",
+      label: "Default model",
+      type: "select",
+      default: "openrouter/free",
+      options: [
+        { value: "openrouter/free", label: "⚡ Auto (best free model)" },
+        {
+          value: "meta-llama/llama-3.3-70b-instruct:free",
+          label: "Llama 3.3 70B (free)",
+        },
+        { value: "google/gemma-4-31b-it:free", label: "Gemma 4 31B (free)" },
+        { value: "qwen/qwen3-coder:free", label: "Qwen3 Coder 480B (free)" },
+        { value: "openai/gpt-oss-20b:free", label: "GPT-OSS 20B (free)" },
+        {
+          value: "nousresearch/hermes-3-llama-3.1-405b:free",
+          label: "Hermes 3 405B (free)",
+        },
+        { value: "google/gemini-flash-1.5", label: "Gemini 1.5 Flash" },
+        { value: "openai/gpt-4o-mini", label: "GPT-4o Mini" },
+        { value: "anthropic/claude-3.5-haiku", label: "Claude 3.5 Haiku" },
+        { value: "openai/gpt-4o", label: "GPT-4o" },
+        { value: "anthropic/claude-3-opus", label: "Claude 3 Opus" },
+      ],
     },
     {
-      key: "apiKey",
-      label: "LLM API Key",
+      key: "systemPrompt",
+      label: "System prompt",
+      type: "string",
+      default: DEFAULT_SYSTEM_PROMPT,
+      description: "Instructions for the AI's behavior",
+    },
+    {
+      key: "openrouterApiKey",
+      label: "OpenRouter API Key",
       type: "secret",
-      description: "Stored encrypted for future use",
+      description:
+        "Get a free key at openrouter.ai — falls back to server .env OPENROUTER_API_KEY",
     },
   ],
 };
