@@ -30,6 +30,7 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  border-radius: 4px;
 }
 
 html,
@@ -983,6 +984,7 @@ a {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+  gap: 12px;
 }
 
 .settings__header h1 {
@@ -990,10 +992,45 @@ a {
   font-size: 1.2rem;
 }
 
+.settings__header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .settings__back {
   text-decoration: none;
-  font-size: 0.95rem;
+  padding: 6px 14px;
+  border: 2px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.85rem;
   font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.settings__back:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.settings__logout {
+  padding: 6px 14px;
+  border: 2px solid var(--error);
+  background: transparent;
+  color: var(--error);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.settings__logout:hover {
+  background: var(--error);
+  color: #fff;
 }
 
 .settings__section {
@@ -1279,11 +1316,18 @@ a {
   font-size: 0.8rem;
 }
 
-.settings__save-btn {
+.settings__bottom-bar {
   position: fixed;
   bottom: calc(8px + var(--safe-bottom));
   left: calc(16px + var(--safe-left));
   right: calc(16px + var(--safe-right));
+  display: flex;
+  gap: 10px;
+  z-index: 20;
+}
+
+.settings__save-btn {
+  flex: 1;
   padding: 10px;
   background: var(--accent);
   color: #fff;
@@ -1295,6 +1339,32 @@ a {
 
 .settings__save-btn:disabled {
   opacity: 0.6;
+}
+
+.settings__scroll-top {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.2s;
+}
+
+.settings__scroll-top:active {
+  opacity: 0.8;
+}
+
+.settings__scroll-top--hidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .settings__message {
@@ -1950,25 +2020,4 @@ a {
 
 .login__btn:active {
   transform: scale(0.98);
-}
-
-/* ── Logout button in sidebar ── */
-
-.group-sidebar__logout {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: color 0.2s, background 0.2s;
-}
-
-.group-sidebar__logout:hover {
-  color: var(--error);
-  background: color-mix(in srgb, var(--error) 10%, transparent);
 }

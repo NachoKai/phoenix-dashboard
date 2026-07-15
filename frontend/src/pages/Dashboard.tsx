@@ -8,7 +8,6 @@ import {
 } from "../api";
 import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
-import { useAuth } from "../auth";
 import type {
   DashboardSection,
   DashboardState,
@@ -269,8 +268,6 @@ export function Dashboard() {
       handleReorder,
       handleSectionGroupChange,
     );
-  const { logout } = useAuth();
-
   const renderSection = (section: DashboardSection) => {
     const sectionWidgets = state
       ? state.widgets
@@ -361,14 +358,6 @@ export function Dashboard() {
         >
           ⚙
         </Link>
-        <button
-          type="button"
-          className="group-sidebar__logout"
-          aria-label="Logout"
-          onClick={() => logout()}
-        >
-          ✕
-        </button>
       </nav>
 
       <div
