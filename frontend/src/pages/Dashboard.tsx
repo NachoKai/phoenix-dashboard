@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  createSection,
   fetchDashboardWithCache,
-  reorderSections,
   saveDashboardState,
   saveWidgets,
 } from "../api";
@@ -201,16 +201,58 @@ export function Dashboard() {
     [state, resetRotateTimer],
   );
 
-  const handleSectionGroupChange = useCallback(
-    (sectionId: string, group: number) => {
+  const handleMoveWidgetToGroup = useCallback(
+    async (widgetId: string, toGroup: number) => {
       if (!state) return;
-      const updated = {
-        ...state,
-        sections: state.sections.map(s => (s.id === sectionId ? { ...s, group } : s)),
-      };
+      const widget = state.widgets.find(w => w.id === widgetId);
+      if (!widget) return;
+
+      let targetSection = state.sections.find(s => s.group === toGroup);
+      if (!targetSection) {
+        try {
+          const { section } = await createSection();
+          targetSection = { ...section, group: toGroup };
+        } catch {
+          return;
+        }
+      }
+
+      const sourceSection = widget.section;
+      const sourceWidgets = state.widgets
+        .filter(w => w.section === sourceSection && w.id !== widgetId)
+        .sort((a, b) => a.position - b.position);
+      const targetWidgets = state.widgets
+        .filter(w => w.section === targetSection!.id)
+        .sort((a, b) => a.position - b.position);
+
+      const movedWidget = { ...widget, section: targetSection!.id };
+      const newTarget = [...targetWidgets, movedWidget].map((w, i) => ({ ...w, position: i }));
+      const newSource = sourceWidgets.map((w, i) => ({ ...w, position: i }));
+
+      const others = state.widgets.filter(
+        w => w.section !== sourceSection && w.section !== targetSection!.id,
+      );
+
+      const needsNewSection = !state.sections.find(s => s.id === targetSection!.id);
+      const updatedSections = needsNewSection
+        ? [...state.sections, targetSection!]
+        : state.sections;
+
+      const reordered = [...others, ...newSource, ...newTarget].sort((a, b) => {
+        if (a.section !== b.section) {
+          const sA = updatedSections.find(s => s.id === a.section);
+          const sB = updatedSections.find(s => s.id === b.section);
+          return (sA?.position ?? 0) - (sB?.position ?? 0);
+        }
+        return a.position - b.position;
+      });
+
+      const updated = { ...state, widgets: reordered, sections: updatedSections };
       setState(updated);
-      void saveDashboardState(updated).catch(() => {});
-      void reorderSections(updated.sections).catch(() => {});
+      void saveWidgets(reordered).catch(() => {});
+      if (needsNewSection) {
+        void saveDashboardState(updated).catch(() => {});
+      }
     },
     [state],
   );
@@ -263,10 +305,10 @@ export function Dashboard() {
 
   const { getSectionProps, getGridRef, getWidgetProps, getGroupButtonProps } =
     useSectionDragDrop(
-      visibleSections,
+      sortedSections,
       state?.widgets ?? [],
       handleReorder,
-      handleSectionGroupChange,
+      handleMoveWidgetToGroup,
     );
   const renderSection = (section: DashboardSection) => {
     const sectionWidgets = state

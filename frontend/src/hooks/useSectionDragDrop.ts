@@ -31,7 +31,7 @@ export function useSectionDragDrop(
   sections: DashboardSection[],
   widgets: WidgetInstance[],
   onReorder: (widgets: WidgetInstance[]) => void,
-  onSectionGroupChange?: (sectionId: string, group: number) => void,
+  onMoveWidgetToGroup?: (widgetId: string, toGroup: number) => void,
 ) {
   const [state, setState] = useState<SectionDragState>({
     dragWidgetId: null,
@@ -93,15 +93,26 @@ export function useSectionDragDrop(
       if (!widget) return;
 
       const fromSection = widget.section;
-      const fromWidgets = widgets.filter(
-        w => w.section === fromSection && w.id !== widgetId,
-      );
+
+      const sortedFromAll = widgets
+        .filter(w => w.section === fromSection)
+        .sort((a, b) => a.position - b.position);
+      const originalVisualIndex = sortedFromAll.findIndex(w => w.id === widgetId);
+
+      const fromWidgets = sortedFromAll.filter(w => w.id !== widgetId);
       const toWidgets =
         fromSection === toSection
           ? fromWidgets
-          : widgets.filter(w => w.section === toSection);
+          : widgets
+              .filter(w => w.section === toSection)
+              .sort((a, b) => a.position - b.position);
 
-      const insertAt = Math.min(toIndex, toWidgets.length);
+      let adjustedIndex = toIndex;
+      if (fromSection === toSection && originalVisualIndex !== -1 && originalVisualIndex < toIndex) {
+        adjustedIndex = Math.max(0, toIndex - 1);
+      }
+
+      const insertAt = Math.min(adjustedIndex, toWidgets.length);
       const updatedTo = [...toWidgets];
       updatedTo.splice(insertAt, 0, { ...widget, section: toSection });
 
@@ -222,12 +233,8 @@ export function useSectionDragDrop(
     (group: number) => (e: React.DragEvent<HTMLElement>) => {
       e.preventDefault();
       const data = dragDataRef.current;
-      if (!data || !onSectionGroupChange) return;
-      const widget = widgets.find(w => w.id === data.widgetId);
-      if (widget) {
-        const sectionId = widget.section;
-        onSectionGroupChange(sectionId, group);
-      }
+      if (!data || !onMoveWidgetToGroup) return;
+      onMoveWidgetToGroup(data.widgetId, group);
       setState({
         dragWidgetId: null,
         dragFromSection: null,
@@ -237,7 +244,7 @@ export function useSectionDragDrop(
       });
       dragDataRef.current = null;
     },
-    [widgets, onSectionGroupChange],
+    [onMoveWidgetToGroup],
   );
 
   // ── Touch drag ──
@@ -340,11 +347,8 @@ export function useSectionDragDrop(
       const droppedGroup = overGroupRef.current;
 
       setState(s => {
-        if (data && droppedGroup !== null && onSectionGroupChange) {
-          const widget = widgets.find(w => w.id === data.widgetId);
-          if (widget) {
-            onSectionGroupChange(widget.section, droppedGroup);
-          }
+        if (data && droppedGroup !== null && onMoveWidgetToGroup) {
+          onMoveWidgetToGroup(data.widgetId, droppedGroup);
         } else if (data && s.overSection !== null) {
           const grid = sectionGridsRef.current.get(s.overSection);
           const idx = grid && s.overIndex !== null ? s.overIndex : 0;
@@ -361,7 +365,7 @@ export function useSectionDragDrop(
       dragDataRef.current = null;
       overGroupRef.current = null;
     },
-    [moveWidget, widgets, onSectionGroupChange],
+    [moveWidget, onMoveWidgetToGroup],
   );
 
   const handleTouchCancel = useCallback(() => {
@@ -410,7 +414,9 @@ export function useSectionDragDrop(
   const getWidgetProps = useCallback(
     (widgetId: string, sectionId: string) => {
       const isDragging = state.dragWidgetId === widgetId;
-      const sectionWidgets = widgets.filter(w => w.section === sectionId);
+      const sectionWidgets = widgets
+        .filter(w => w.section === sectionId)
+        .sort((a, b) => a.position - b.position);
       const widgetIndex = sectionWidgets.findIndex(w => w.id === widgetId);
 
       let className = "drag-item";

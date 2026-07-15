@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";import { NumberInput } from "../components/NumberInput";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { NumberInput } from "../components/NumberInput";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
 import {
@@ -58,6 +59,12 @@ export function Settings() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!message) return;
+    const t = setTimeout(() => setMessage(null), 4000);
+    return () => clearTimeout(t);
+  }, [message]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -232,14 +239,6 @@ export function Settings() {
             </button>
           </div>
         </header>
-
-        {message && (
-          <p
-            className={`settings__message ${message.includes("fail") || message.includes("Invalid") ? "settings__message--error" : ""}`}
-          >
-            {message}
-          </p>
-        )}
 
         <section className="settings__section">
           <h2>Global</h2>
@@ -563,6 +562,13 @@ export function Settings() {
         >
           {saving ? "Saving…" : "Save"}
         </button>
+        {message && (
+          <div
+            className={`settings__toast ${message.includes("fail") || message.includes("Invalid") ? "settings__toast--error" : ""}`}
+          >
+            {message}
+          </div>
+        )}
         <button
           type="button"
           className={`settings__scroll-top${showScrollTop ? "" : " settings__scroll-top--hidden"}`}
