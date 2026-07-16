@@ -1,7 +1,14 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { useDashboardQuery } from "../hooks/useDashboardQuery";
-import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
+import {
+  useSectionDragDrop,
+  SortableWidgetItem,
+  DroppableSection,
+  DroppableGroupButton,
+  WidgetSortableContext,
+} from "../hooks/useSectionDragDrop";
 import { useUiStore } from "../stores/uiStore";
 import { queryClient } from "../lib/queryClient";
 import { createSection, saveDashboardState, saveWidgets } from "../api";
@@ -295,13 +302,20 @@ export function Dashboard() {
     [visibleSections],
   );
 
-  const { getSectionProps, getGridRef, getWidgetProps, getGroupButtonProps } =
-    useSectionDragDrop(
-      sortedSections,
-      state?.widgets ?? [],
-      handleReorder,
-      handleMoveWidgetToGroup,
-    );
+  const {
+    sensors,
+    state: dragState,
+    handleDragStart,
+    handleDragEnd,
+    handleDragCancel,
+    groupAwareCollisionDetection,
+  } = useSectionDragDrop(
+    sortedSections,
+    state?.widgets ?? [],
+    handleReorder,
+    handleMoveWidgetToGroup,
+  );
+
   const renderSection = useCallback(
     (section: DashboardSection) => {
       const sectionWidgets = state
@@ -317,38 +331,48 @@ export function Dashboard() {
         return true;
       });
 
+      const widgetIds = uniqueSectionWidgets.map(w => w.id);
+
       return (
         <div className="section__content" key={section.id}>
-          <div className="section__grid" ref={getGridRef(section.id)}>
-            {uniqueSectionWidgets.map(widget => {
-              const Component = getWidgetComponent(widget.type);
-              if (!Component) {
-                return (
-                  <div key={widget.id} {...getWidgetProps(widget.id, section.id)}>
-                    <div className="widget-card widget-card--error">
-                      <p>Unknown widget: {widget.type}</p>
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <div key={widget.id} {...getWidgetProps(widget.id, section.id)}>
-                  <Suspense
-                    fallback={
-                      <div className="widget-card widget-card--loading">
-                        <div className="widget-card__loading">Loading…</div>
+          <div className="section__grid">
+            <WidgetSortableContext widgetIds={widgetIds}>
+              {uniqueSectionWidgets.map(widget => {
+                const Component = getWidgetComponent(widget.type);
+                if (!Component) {
+                  return (
+                    <SortableWidgetItem
+                      key={widget.id}
+                      widgetId={widget.id}
+                    >
+                      <div className="widget-card widget-card--error">
+                        <p>Unknown widget: {widget.type}</p>
                       </div>
-                    }
+                    </SortableWidgetItem>
+                  );
+                }
+                return (
+                  <SortableWidgetItem
+                    key={widget.id}
+                    widgetId={widget.id}
                   >
-                    <Component
-                      instance={widget}
-                      globalSettings={state!.globalSettings}
-                      sleeping={sleeping}
-                    />
-                  </Suspense>
-                </div>
-              );
-            })}
+                    <Suspense
+                      fallback={
+                        <div className="widget-card widget-card--loading">
+                          <div className="widget-card__loading">Loading…</div>
+                        </div>
+                      }
+                    >
+                      <Component
+                        instance={widget}
+                        globalSettings={state!.globalSettings}
+                        sleeping={sleeping}
+                      />
+                    </Suspense>
+                  </SortableWidgetItem>
+                );
+              })}
+            </WidgetSortableContext>
             {uniqueSectionWidgets.length === 0 && (
               <div className="section__empty">Drop widgets here</div>
             )}
@@ -356,7 +380,7 @@ export function Dashboard() {
         </div>
       );
     },
-    [state, sleeping, getGridRef, getWidgetProps],
+    [state, sleeping],
   );
 
   if (!state && error) {
@@ -382,67 +406,88 @@ export function Dashboard() {
   }
 
   return (
-    <div
-      className={`dashboard theme-${state.globalSettings.theme} dashboard--has-groups`}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={groupAwareCollisionDetection}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
-      <nav className="group-sidebar" role="tablist" aria-label="Widget groups">
-        {hasGroups &&
-          [1, 2, 3, 4, 5, 6].map(g => {
-            const isActive = g === activeGroup;
-            const hasContent = sortedSections.some(s => s.group === g);
-            const { ref, isOver, ...dragProps } = getGroupButtonProps(g);
-            return (
-              <button
-                key={g}
-                ref={ref}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                className={`group-sidebar__item${isActive ? " group-sidebar__item--active" : ""}${hasContent ? " group-sidebar__item--has-content" : ""}${isOver ? " group-sidebar__item--over" : ""}`}
-                onClick={() => handleGroupChange(g)}
-                {...dragProps}
-              >
-                {g}
-              </button>
-            );
-          })}
-        <Link
-          to="/settings"
-          className="group-sidebar__item group-sidebar__settings"
-          aria-label="Settings"
-        >
-          ⚙
-        </Link>
-      </nav>
-
       <div
-        className="dashboard__grid"
-        style={
-          totalRows > 0 ? { gridTemplateRows: `repeat(${totalRows}, 1fr)` } : undefined
-        }
+        className={`dashboard theme-${state.globalSettings.theme} dashboard--has-groups`}
       >
-        {gridPlacements.length === 0 && (
-          <div className="section__empty" style={{ gridColumn: "1 / -1" }}>
-            No sections yet — add one in Settings
-          </div>
-        )}
-        {gridPlacements.map(({ section, gridColumn, gridRow }) => {
-          const sp = getSectionProps(section.id);
-          return (
-            <div
+        <nav className="group-sidebar" role="tablist" aria-label="Widget groups">
+          {hasGroups &&
+            [1, 2, 3, 4, 5, 6].map(g => {
+              const isActive = g === activeGroup;
+              const hasContent = sortedSections.some(s => s.group === g);
+              return (
+                <DroppableGroupButton
+                  key={g}
+                  group={g}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  className={`group-sidebar__item${isActive ? " group-sidebar__item--active" : ""}${hasContent ? " group-sidebar__item--has-content" : ""}`}
+                  onClick={() => handleGroupChange(g)}
+                >
+                  {g}
+                </DroppableGroupButton>
+              );
+            })}
+          <Link
+            to="/settings"
+            className="group-sidebar__item group-sidebar__settings"
+            aria-label="Settings"
+          >
+            ⚙
+          </Link>
+        </nav>
+
+        <div
+          className="dashboard__grid"
+          style={
+            totalRows > 0 ? { gridTemplateRows: `repeat(${totalRows}, 1fr)` } : undefined
+          }
+        >
+          {gridPlacements.length === 0 && (
+            <div className="section__empty" style={{ gridColumn: "1 / -1" }}>
+              No sections yet — add one in Settings
+            </div>
+          )}
+          {gridPlacements.map(({ section, gridColumn, gridRow }) => (
+            <DroppableSection
               key={section.id}
-              className={`dashboard__section${sp.isOver ? " dashboard__section--over" : ""}`}
+              sectionId={section.id}
+              className="dashboard__section"
               style={{ gridColumn, gridRow }}
-              onDragOver={sp.onDragOver}
-              onDrop={sp.onDrop}
             >
               {renderSection(section)}
-            </div>
-          );
-        })}
-      </div>
+            </DroppableSection>
+          ))}
+        </div>
 
-      {sleeping && <div className="sleep-overlay" />}
-    </div>
+        {sleeping && <div className="sleep-overlay" />}
+      </div>
+      <DragOverlay>
+        {dragState.dragWidgetId ? (
+          <div className="drag-item drag-item--overlay">
+            {(() => {
+              const widget = state.widgets.find(w => w.id === dragState.dragWidgetId);
+              if (!widget) return null;
+              const Component = getWidgetComponent(widget.type);
+              if (!Component) return null;
+              return (
+                <Component
+                  instance={widget}
+                  globalSettings={state.globalSettings}
+                  sleeping={sleeping}
+                />
+              );
+            })()}
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
