@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useDashboardQuery } from "../hooks/useDashboardQuery";
 import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
@@ -302,51 +302,62 @@ export function Dashboard() {
       handleReorder,
       handleMoveWidgetToGroup,
     );
-  const renderSection = (section: DashboardSection) => {
-    const sectionWidgets = state
-      ? state.widgets
-          .filter(w => w.section === section.id)
-          .sort((a, b) => a.position - b.position)
-      : [];
+  const renderSection = useCallback(
+    (section: DashboardSection) => {
+      const sectionWidgets = state
+        ? state.widgets
+            .filter(w => w.section === section.id)
+            .sort((a, b) => a.position - b.position)
+        : [];
 
-    const seen = new Set<string>();
-    const uniqueSectionWidgets = sectionWidgets.filter(w => {
-      if (seen.has(w.id)) return false;
-      seen.add(w.id);
-      return true;
-    });
+      const seen = new Set<string>();
+      const uniqueSectionWidgets = sectionWidgets.filter(w => {
+        if (seen.has(w.id)) return false;
+        seen.add(w.id);
+        return true;
+      });
 
-    return (
-      <div className="section__content" key={section.id}>
-        <div className="section__grid" ref={getGridRef(section.id)}>
-          {uniqueSectionWidgets.map(widget => {
-            const Component = getWidgetComponent(widget.type);
-            if (!Component) {
+      return (
+        <div className="section__content" key={section.id}>
+          <div className="section__grid" ref={getGridRef(section.id)}>
+            {uniqueSectionWidgets.map(widget => {
+              const Component = getWidgetComponent(widget.type);
+              if (!Component) {
+                return (
+                  <div key={widget.id} {...getWidgetProps(widget.id, section.id)}>
+                    <div className="widget-card widget-card--error">
+                      <p>Unknown widget: {widget.type}</p>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div key={widget.id} {...getWidgetProps(widget.id, section.id)}>
-                  <div className="widget-card widget-card--error">
-                    <p>Unknown widget: {widget.type}</p>
-                  </div>
+                  <Suspense
+                    fallback={
+                      <div className="widget-card widget-card--loading">
+                        <div className="widget-card__loading">Loading…</div>
+                      </div>
+                    }
+                  >
+                    <Component
+                      instance={widget}
+                      globalSettings={state!.globalSettings}
+                      sleeping={sleeping}
+                    />
+                  </Suspense>
                 </div>
               );
-            }
-            return (
-              <div key={widget.id} {...getWidgetProps(widget.id, section.id)}>
-                <Component
-                  instance={widget}
-                  globalSettings={state!.globalSettings}
-                  sleeping={sleeping}
-                />
-              </div>
-            );
-          })}
-          {uniqueSectionWidgets.length === 0 && (
-            <div className="section__empty">Drop widgets here</div>
-          )}
+            })}
+            {uniqueSectionWidgets.length === 0 && (
+              <div className="section__empty">Drop widgets here</div>
+            )}
+          </div>
         </div>
-      </div>
-    );
-  };
+      );
+    },
+    [state, sleeping, getGridRef, getWidgetProps],
+  );
 
   if (!state && error) {
     return (

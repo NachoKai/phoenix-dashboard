@@ -45,16 +45,26 @@ export function Settings() {
 
     if (!dashboardState) return;
 
-    const masks: Record<string, string> = {};
+    const secretFields: { widgetId: string; key: string }[] = [];
     for (const w of dashboardState.widgets) {
       const def = reg.find(r => r.type === w.type);
       for (const field of def?.configSchema ?? []) {
         if (field.type === "secret") {
-          const result = await checkStoredKey(w.id, field.key);
-          if (result.hasValue && result.masked) {
-            masks[`${w.id}:${field.key}`] = result.masked;
-          }
+          secretFields.push({ widgetId: w.id, key: field.key });
         }
+      }
+    }
+
+    const results = await Promise.all(
+      secretFields.map(f =>
+        checkStoredKey(f.widgetId, f.key).then(r => ({ ...f, ...r })),
+      ),
+    );
+
+    const masks: Record<string, string> = {};
+    for (const r of results) {
+      if (r.hasValue && r.masked) {
+        masks[`${r.widgetId}:${r.key}`] = r.masked;
       }
     }
     setKeyMasks(masks);
@@ -78,15 +88,17 @@ export function Settings() {
     return () => el.removeEventListener("scroll", onScroll);
   }, [state]);
 
-  const updateWidgetConfig = (id: string, key: string, value: unknown) => {
-    if (!state) return;
-    setState({
-      ...state,
-      widgets: state.widgets.map(w =>
-        w.id === id ? { ...w, config: { ...w.config, [key]: value } } : w,
-      ),
+  const updateWidgetConfig = useCallback((id: string, key: string, value: unknown) => {
+    setState(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        widgets: prev.widgets.map(w =>
+          w.id === id ? { ...w, config: { ...w.config, [key]: value } } : w,
+        ),
+      };
     });
-  };
+  }, []);
 
   const addWidget = async (type: string) => {
     if (!state) return;
@@ -195,12 +207,14 @@ export function Settings() {
           : w,
       );
       const cleaned = { ...state, widgets: cleanedWidgets };
-      await saveWidgets(cleanedWidgets);
-      await saveGlobalSettings(state.globalSettings);
-      await reorderSections(
-        state.sections.map((s, i) => ({ ...s, position: i, name: `Section ${i + 1}` })),
-      );
-      await saveDashboardState(cleaned);
+      await Promise.all([
+        saveWidgets(cleanedWidgets),
+        saveGlobalSettings(state.globalSettings),
+        reorderSections(
+          state.sections.map((s, i) => ({ ...s, position: i, name: `Section ${i + 1}` })),
+        ),
+        saveDashboardState(cleaned),
+      ]);
       setState(cleaned);
       updateState(() => cleaned);
       setMessage("Saved successfully");

@@ -17,7 +17,7 @@ const DASHBOARD_KEY = ["dashboard"] as const;
 
 function deduplicateWidgets(state: DashboardState): DashboardState {
   const seen = new Set<string>();
-  const unique = state.widgets.filter((w) => {
+  const unique = state.widgets.filter(w => {
     if (seen.has(w.id)) return false;
     seen.add(w.id);
     return true;
@@ -68,9 +68,11 @@ export function useDashboardQuery() {
 
   const saveAll = async (state: DashboardState) => {
     const clean = deduplicateWidgets(state);
-    await apiSaveWidgets(clean.widgets);
-    await apiSaveGlobalSettings(clean.globalSettings);
-    await saveDashboardState(clean);
+    await Promise.all([
+      apiSaveWidgets(clean.widgets),
+      apiSaveGlobalSettings(clean.globalSettings),
+      saveDashboardState(clean),
+    ]);
     saveDashboardCache(deviceId, clean);
     queryClient.setQueryData(DASHBOARD_KEY, clean);
   };
