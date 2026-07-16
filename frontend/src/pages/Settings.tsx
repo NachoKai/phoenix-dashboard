@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NumberInput } from "../components/NumberInput";
 import { Link } from "react-router-dom";
-import { useAuth } from "../auth";
+import { useAuthStore } from "../stores/authStore";
 import {
   checkStoredKey,
   createSection,
@@ -23,7 +23,7 @@ import type {
 import { v4 as uuid } from "../utils/id";
 
 export function Settings() {
-  const { logout } = useAuth();
+  const logout = useAuthStore(s => s.logout);
   const { state: dashboardState, updateState } = useDashboardQuery();
   const [state, setState] = useState(dashboardState);
   const [registry, setRegistry] = useState<WidgetDefinition[]>([]);

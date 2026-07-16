@@ -15,9 +15,21 @@ import type { DashboardState } from "../types";
 
 const DASHBOARD_KEY = ["dashboard"] as const;
 
+function deduplicateWidgets(state: DashboardState): DashboardState {
+  const seen = new Set<string>();
+  const unique = state.widgets.filter((w) => {
+    if (seen.has(w.id)) return false;
+    seen.add(w.id);
+    return true;
+  });
+  if (unique.length === state.widgets.length) return state;
+  return { ...state, widgets: unique };
+}
+
 function getInitialData(): DashboardState | undefined {
   const deviceId = getDeviceId();
-  return loadDashboardCache(deviceId) ?? migrateLegacyCache(deviceId) ?? undefined;
+  const cached = loadDashboardCache(deviceId) ?? migrateLegacyCache(deviceId);
+  return cached ? deduplicateWidgets(cached) : undefined;
 }
 
 export function useDashboardQuery() {
@@ -27,6 +39,7 @@ export function useDashboardQuery() {
   const query = useQuery({
     queryKey: DASHBOARD_KEY,
     queryFn: fetchDashboard,
+    select: deduplicateWidgets,
     initialData: getInitialData,
     staleTime: 5 * 60_000,
     refetchInterval: 5 * 60_000,
@@ -43,21 +56,23 @@ export function useDashboardQuery() {
   const updateState = (updater: (prev: DashboardState) => DashboardState) => {
     queryClient.setQueryData<DashboardState>(DASHBOARD_KEY, old => {
       if (!old) return old;
-      return updater(old);
+      return deduplicateWidgets(updater(old));
     });
   };
 
   const persistState = (state: DashboardState) => {
-    saveDashboardCache(deviceId, state);
-    saveMutation.mutate(state);
+    const clean = deduplicateWidgets(state);
+    saveDashboardCache(deviceId, clean);
+    saveMutation.mutate(clean);
   };
 
   const saveAll = async (state: DashboardState) => {
-    await apiSaveWidgets(state.widgets);
-    await apiSaveGlobalSettings(state.globalSettings);
-    await saveDashboardState(state);
-    saveDashboardCache(deviceId, state);
-    queryClient.setQueryData(DASHBOARD_KEY, state);
+    const clean = deduplicateWidgets(state);
+    await apiSaveWidgets(clean.widgets);
+    await apiSaveGlobalSettings(clean.globalSettings);
+    await saveDashboardState(clean);
+    saveDashboardCache(deviceId, clean);
+    queryClient.setQueryData(DASHBOARD_KEY, clean);
   };
 
   return {

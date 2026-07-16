@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useAuth } from "../auth";
+import { useAuthStore } from "../stores/authStore";
 
 interface LoginProps {
   onSuccess: () => void;
 }
 
 export function Login({ onSuccess }: LoginProps) {
-  const { login } = useAuth();
+  const login = useAuthStore(s => s.login);
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
 

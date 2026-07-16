@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useDashboardQuery } from "../hooks/useDashboardQuery";
 import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
-import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import { useUiStore } from "../stores/uiStore";
 import { queryClient } from "../lib/queryClient";
 import { createSection, saveDashboardState, saveWidgets } from "../api";
 import type { DashboardSection, GlobalSettings, WidgetInstance } from "../types";
@@ -77,10 +77,23 @@ function isInSleepRange(settings: GlobalSettings): boolean {
 
 export function Dashboard() {
   const { state, error, updateState, persistState } = useDashboardQuery();
-  const [activeGroup, setActiveGroup] = useState<number>(1);
-  const [sleeping, setSleeping] = useState(false);
+  const activeGroup = useUiStore(s => s.activeGroup);
+  const sleeping = useUiStore(s => s.sleeping);
+  const online = useUiStore(s => s.online);
+  const setActiveGroup = useUiStore(s => s.setActiveGroup);
+  const setSleeping = useUiStore(s => s.setSleeping);
+  const setOnline = useUiStore(s => s.setOnline);
 
-  const online = useOnlineStatus();
+  useEffect(() => {
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, [setOnline]);
 
   useEffect(() => {
     if (online) {
@@ -137,20 +150,19 @@ export function Dashboard() {
     const interval = state?.globalSettings?.autoRotateInterval ?? 0;
     if (interval > 0 && occupiedGroups.length >= 2) {
       rotateTimerRef.current = setInterval(() => {
-        setActiveGroup(prev => {
-          const idx = occupiedGroups.indexOf(prev);
-          const nextIdx = (idx + 1) % occupiedGroups.length;
-          const nextGroup = occupiedGroups[nextIdx];
-          if (state) {
-            const updated = {
-              ...state,
-              globalSettings: { ...state.globalSettings, activeGroup: nextGroup },
-            };
-            updateState(() => updated);
-            persistState(updated);
-          }
-          return nextGroup;
-        });
+        const prev = useUiStore.getState().activeGroup;
+        const idx = occupiedGroups.indexOf(prev);
+        const nextIdx = (idx + 1) % occupiedGroups.length;
+        const nextGroup = occupiedGroups[nextIdx];
+        if (state) {
+          const updated = {
+            ...state,
+            globalSettings: { ...state.globalSettings, activeGroup: nextGroup },
+          };
+          updateState(() => updated);
+          persistState(updated);
+        }
+        setActiveGroup(nextGroup);
       }, interval * 1000);
     }
   }, [state, occupiedGroups, updateState, persistState]);
