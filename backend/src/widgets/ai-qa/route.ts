@@ -1,22 +1,9 @@
 import type { Request, Response } from "express";
-import { decrypt, getEncryptionKey } from "../../config/encryption.js";
-import { getEncryptedKey } from "../../db/index.js";
+import { resolveApiKey } from "../../utils/resolveApiKey.js";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-function resolveApiKey(widgetId?: string): string | null {
-  if (widgetId) {
-    const stored = getEncryptedKey(widgetId, "openrouterApiKey");
-    if (stored) {
-      try {
-        return decrypt(stored, getEncryptionKey());
-      } catch {
-        /* fall through */
-      }
-    }
-  }
-  return process.env.OPENROUTER_API_KEY ?? null;
-}
+
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -38,7 +25,7 @@ export async function aiQaHandler(req: Request, res: Response) {
     }
 
     const widgetId = req.query.widgetId as string | undefined;
-    const apiKey = resolveApiKey(widgetId);
+    const apiKey = resolveApiKey(widgetId, "openrouterApiKey", "OPENROUTER_API_KEY");
     if (!apiKey) {
       res.status(503).json({
         error: "OpenRouter API key not configured",

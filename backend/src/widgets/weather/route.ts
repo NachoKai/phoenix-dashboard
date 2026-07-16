@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import { decrypt, getEncryptionKey } from "../../config/encryption.js";
-import { getCachedValue, getEncryptedKey, setCachedValue } from "../../db/index.js";
+import { getCachedValue, setCachedValue } from "../../db/index.js";
+import { resolveApiKey } from "../../utils/resolveApiKey.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
@@ -21,19 +21,7 @@ interface WeatherResponse {
   cachedAt: string;
 }
 
-function resolveApiKey(widgetId?: string): string | null {
-  if (widgetId) {
-    const stored = getEncryptedKey(widgetId, "apiKey");
-    if (stored) {
-      try {
-        return decrypt(stored, getEncryptionKey());
-      } catch {
-        /* fall through */
-      }
-    }
-  }
-  return process.env.OPENWEATHER_API_KEY ?? null;
-}
+
 
 async function geocodeLocation(
   location: string,
@@ -74,7 +62,7 @@ export async function weatherHandler(req: Request, res: Response) {
     const lang = (req.query.lang as string) || "en";
     const widgetId = req.query.widgetId as string | undefined;
 
-    const apiKey = resolveApiKey(widgetId);
+    const apiKey = resolveApiKey(widgetId, "apiKey", "OPENWEATHER_API_KEY");
     if (!apiKey) {
       res.status(503).json({ error: "Weather API key not configured" });
       return;

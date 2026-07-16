@@ -1,22 +1,10 @@
 import type { Request, Response } from "express";
-import { decrypt, getEncryptionKey } from "../../config/encryption.js";
-import { getCachedValue, getEncryptedKey, setCachedValue } from "../../db/index.js";
+import { getCachedValue, setCachedValue } from "../../db/index.js";
+import { resolveApiKey } from "../../utils/resolveApiKey.js";
 
 const GIPHY_CACHE_TTL_MS = 30 * 60 * 1000;
 
-function resolveGiphyKey(widgetId?: string): string | null {
-  if (widgetId) {
-    const stored = getEncryptedKey(widgetId, "apiKey");
-    if (stored) {
-      try {
-        return decrypt(stored, getEncryptionKey());
-      } catch {
-        /* fall through */
-      }
-    }
-  }
-  return process.env.GIPHY_API_KEY ?? null;
-}
+
 
 export async function gifsHandler(req: Request, res: Response) {
   try {
@@ -46,7 +34,7 @@ export async function gifsHandler(req: Request, res: Response) {
     }
 
     if (source === "giphy") {
-      const apiKey = resolveGiphyKey(widgetId);
+      const apiKey = resolveApiKey(widgetId, "apiKey", "GIPHY_API_KEY");
       if (!apiKey) {
         res.status(503).json({ error: "Giphy API key not configured" });
         return;
