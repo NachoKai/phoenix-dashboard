@@ -1,22 +1,8 @@
-import { useCallback } from "react";
-import { fetchWithRetry } from "../../api";
+import { useWeatherQuery } from "../../hooks/useWeatherQuery";
 import { WidgetCard } from "../../components/WidgetCard";
-import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
+import { toWidgetStatus } from "../../types";
 import { WEATHER_ICONS } from "./icons";
-
-interface WeatherData {
-  location: string;
-  temp: number;
-  feelsLike: number;
-  humidity: number;
-  description: string;
-  icon: string;
-  windSpeed: number;
-  units: string;
-  forecast: { time: string; temp: number; description: string; icon: string }[];
-  cachedAt: string;
-}
 
 export function WeatherForecastWidget({ instance, sleeping }: WidgetProps) {
   const location = (instance.config.location as string) ?? "Buenos Aires";
@@ -25,25 +11,24 @@ export function WeatherForecastWidget({ instance, sleeping }: WidgetProps) {
   const refreshInterval = ((instance.config.refreshInterval as number) ?? 600) * 1000;
   const unitSymbol = units === "imperial" ? "°F" : "°C";
 
-  const fetcher = useCallback(async () => {
-    const params = new URLSearchParams({
-      location,
-      units,
-      lang,
-      widgetId: instance.id,
-    });
-    return fetchWithRetry<WeatherData>(`/api/weather?${params}`);
-  }, [location, units, lang, instance.id]);
-
-  const { data, status, error, retry } = useWidgetData<WeatherData>({
-    fetcher,
+  const { data, status, error, refetch } = useWeatherQuery({
+    location,
+    units,
+    lang,
+    widgetId: instance.id,
     refreshInterval,
-    staleAfterMs: refreshInterval * 1.5,
     enabled: !sleeping,
   });
 
+  const widgetStatus = toWidgetStatus(status, !!data);
+
   return (
-    <WidgetCard title="" status={status} error={error} onRetry={retry}>
+    <WidgetCard
+      title=""
+      status={widgetStatus}
+      error={error?.message ?? null}
+      onRetry={() => refetch()}
+    >
       {data && data.forecast.length > 0 && (
         <div className="weather-forecast-widget">
           <div className="weather-forecast-widget__location">{data.location}</div>

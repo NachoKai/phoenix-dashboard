@@ -1,22 +1,7 @@
-import { useCallback, useState } from "react";
-import { fetchWithRetry } from "../../api";
+import { useVacuumQuery } from "../../hooks/useVacuumQuery";
 import { WidgetCard } from "../../components/WidgetCard";
-import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
-
-interface VacuumData {
-  id: string;
-  name: string;
-  online: boolean;
-  isOn: boolean;
-  isCleaning: boolean;
-  battery: number;
-  status: string;
-  fanSpeed: string;
-  area: number;
-  time: number;
-  errorCode: number;
-}
+import { toWidgetStatus } from "../../types";
 
 function BatteryIcon({ level }: { level: number }) {
   let icon = "🪫";
@@ -31,36 +16,28 @@ function BatteryIcon({ level }: { level: number }) {
 export function VacuumWidget({ instance, sleeping }: WidgetProps) {
   const refreshInterval = ((instance.config.refreshInterval as number) ?? 15) * 1000;
 
-  const fetcher = useCallback(() => {
-    return fetchWithRetry<VacuumData>("/api/vacuum/status");
-  }, []);
-
-  const { data, status, error, retry } = useWidgetData<VacuumData>({
-    fetcher,
+  const { data, status, error, refetch, sendControl, isSending } = useVacuumQuery({
     refreshInterval,
-    staleAfterMs: refreshInterval * 3,
     enabled: !sleeping,
   });
 
-  const [sending, setSending] = useState<string | null>(null);
+  const widgetStatus = toWidgetStatus(status, !!data);
 
-  async function sendControl(action: string) {
-    if (!data) return;
-    setSending(action);
+  async function handleControl(action: string) {
     try {
-      await fetchWithRetry("/api/vacuum/control", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deviceId: data.id, action }),
-      });
-      retry();
-    } finally {
-      setSending(null);
+      await sendControl(action);
+    } catch {
+      // error handled by mutation
     }
   }
 
   return (
-    <WidgetCard title="Robot Vacuum" status={status} error={error} onRetry={retry}>
+    <WidgetCard
+      title="Robot Vacuum"
+      status={widgetStatus}
+      error={error?.message ?? null}
+      onRetry={() => refetch()}
+    >
       {data && (
         <div className="vacuum-widget">
           <div className="vacuum-widget__top">
@@ -116,25 +93,25 @@ export function VacuumWidget({ instance, sleeping }: WidgetProps) {
             <div className="vacuum-widget__controls-row">
               <button
                 type="button"
-                className={`vacuum-widget__btn vacuum-widget__btn--primary ${sending === "start" ? "vacuum-widget__btn--sending" : ""}`}
-                disabled={!!sending || data.isCleaning}
-                onClick={() => sendControl("start")}
+                className={`vacuum-widget__btn vacuum-widget__btn--primary ${isSending ? "vacuum-widget__btn--sending" : ""}`}
+                disabled={isSending || data.isCleaning}
+                onClick={() => handleControl("start")}
               >
                 Start
               </button>
               <button
                 type="button"
                 className="vacuum-widget__btn"
-                disabled={!!sending || !data.isCleaning}
-                onClick={() => sendControl("pause")}
+                disabled={isSending || !data.isCleaning}
+                onClick={() => handleControl("pause")}
               >
                 Pause
               </button>
               <button
                 type="button"
                 className="vacuum-widget__btn"
-                disabled={!!sending}
-                onClick={() => sendControl("stop")}
+                disabled={isSending}
+                onClick={() => handleControl("stop")}
               >
                 Stop
               </button>
@@ -143,8 +120,8 @@ export function VacuumWidget({ instance, sleeping }: WidgetProps) {
               <button
                 type="button"
                 className="vacuum-widget__btn"
-                disabled={!!sending}
-                onClick={() => sendControl("power_on")}
+                disabled={isSending}
+                onClick={() => handleControl("power_on")}
                 title="Turn on"
               >
                 On
@@ -152,8 +129,8 @@ export function VacuumWidget({ instance, sleeping }: WidgetProps) {
               <button
                 type="button"
                 className="vacuum-widget__btn"
-                disabled={!!sending}
-                onClick={() => sendControl("power_off")}
+                disabled={isSending}
+                onClick={() => handleControl("power_off")}
                 title="Turn off"
               >
                 Off
@@ -161,8 +138,8 @@ export function VacuumWidget({ instance, sleeping }: WidgetProps) {
               <button
                 type="button"
                 className="vacuum-widget__btn"
-                disabled={!!sending}
-                onClick={() => sendControl("dock")}
+                disabled={isSending}
+                onClick={() => handleControl("dock")}
                 title="Return to dock"
               >
                 Dock

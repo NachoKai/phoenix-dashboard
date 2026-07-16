@@ -1,14 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
-import { fetchWithRetry } from "../../api";
+import { useEffect, useState } from "react";
+import { useGifsQuery } from "../../hooks/useGifsQuery";
 import { WidgetCard } from "../../components/WidgetCard";
-import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
-
-interface GifsData {
-  source: string;
-  urls: string[];
-  cachedAt: string;
-}
+import { toWidgetStatus } from "../../types";
 
 export function GifsWidget({ instance, sleeping }: WidgetProps) {
   const source = (instance.config.source as string) ?? "static";
@@ -16,20 +10,12 @@ export function GifsWidget({ instance, sleeping }: WidgetProps) {
   const tag = (instance.config.tag as string) ?? "nature";
   const rotationInterval = ((instance.config.rotationInterval as number) ?? 30) * 1000;
 
-  const fetcher = useCallback(async () => {
-    const params = new URLSearchParams({
-      source,
-      widgetId: instance.id,
-      tag,
-      urls: JSON.stringify(urls),
-    });
-    return fetchWithRetry<GifsData>(`/api/gifs?${params}`);
-  }, [source, instance.id, tag, urls]);
-
-  const { data, status, error, retry } = useWidgetData<GifsData>({
-    fetcher,
+  const { data, status, error, refetch } = useGifsQuery({
+    source,
+    widgetId: instance.id,
+    tag,
+    urls,
     refreshInterval: source === "giphy" ? 30 * 60_000 : 0,
-    staleAfterMs: 60 * 60_000,
     enabled: !sleeping,
   });
 
@@ -57,11 +43,20 @@ export function GifsWidget({ instance, sleeping }: WidgetProps) {
     return () => clearInterval(id);
   }, [gifUrls.length, rotationInterval]);
 
-  const effectiveStatus = gifUrls.length === 0 && status === "success" ? "error" : status;
-  const effectiveError = gifUrls.length === 0 ? "No GIFs configured" : error;
+  const effectiveStatus =
+    gifUrls.length === 0 && status === "success"
+      ? "error"
+      : toWidgetStatus(status, gifUrls.length > 0);
+  const effectiveError =
+    gifUrls.length === 0 ? "No GIFs configured" : (error?.message ?? null);
 
   return (
-    <WidgetCard title="" status={effectiveStatus} error={effectiveError} onRetry={retry}>
+    <WidgetCard
+      title=""
+      status={effectiveStatus}
+      error={effectiveError}
+      onRetry={() => refetch()}
+    >
       {gifUrls.length > 0 && (
         <div className="gifs-widget">
           <img

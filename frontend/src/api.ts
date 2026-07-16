@@ -1,9 +1,6 @@
 import type { DashboardState } from "./types";
-import {
-  loadDashboardCache,
-  migrateLegacyCache,
-  saveDashboardCache,
-} from "./utils/storage";
+import { saveDashboardCache } from "./utils/storage";
+import { getDeviceId } from "./utils/deviceId";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
@@ -12,34 +9,6 @@ export async function fetchDashboard(): Promise<DashboardState> {
   if (!res.ok) throw new Error("Failed to load dashboard");
   return res.json();
 }
-
-export async function fetchDashboardWithCache(): Promise<DashboardState> {
-  const deviceId = getDeviceId();
-  const cached = loadDashboardCache(deviceId) ?? migrateLegacyCache(deviceId);
-  if (cached) {
-    fetchDashboard()
-      .then(serverState => {
-        const serverTime = serverState.lastModified ?? 0;
-        const cacheTime = cached.lastModified ?? 0;
-        if (serverTime > cacheTime) {
-          saveDashboardCache(deviceId, serverState);
-        } else if (
-          serverTime === 0 &&
-          cacheTime > 0 &&
-          (cached.widgets.length > 0 || cached.sections.length > 1)
-        ) {
-          // Server returned empty/default state but cache has real data — don't overwrite
-          // This happens after a fresh deploy before the state file is recreated
-          return;
-        }
-      })
-      .catch(() => {});
-    return cached;
-  }
-  return fetchDashboard();
-}
-
-import { getDeviceId } from "./utils/deviceId";
 
 export async function saveDashboardState(state: DashboardState): Promise<void> {
   const res = await fetch(`${API_BASE}/dashboard`, {
@@ -59,11 +28,6 @@ export async function fetchWidgetRegistry(): Promise<
   const res = await fetch(`${API_BASE}/widgets/registry`);
   if (!res.ok) throw new Error("Failed to load widget registry");
   return res.json();
-}
-
-export function persistDashboardState(state: DashboardState): void {
-  saveDashboardCache(getDeviceId(), state);
-  void saveDashboardState(state).catch(() => {});
 }
 
 export async function saveWidgets(
@@ -155,28 +119,4 @@ export async function reorderSections(
     body: JSON.stringify({ sections }),
   });
   if (!res.ok) throw new Error("Failed to reorder sections");
-}
-
-export async function fetchWithRetry<T>(
-  url: string,
-  options?: RequestInit,
-  maxRetries = 3,
-): Promise<T> {
-  let lastError: Error | null = null;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const res = await fetch(url, options);
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);
-      }
-      return (await res.json()) as T;
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-      if (attempt < maxRetries - 1) {
-        await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000));
-      }
-    }
-  }
-  throw lastError ?? new Error("Request failed");
 }

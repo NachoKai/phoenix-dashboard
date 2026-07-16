@@ -1,19 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  createSection,
-  fetchDashboardWithCache,
-  saveDashboardState,
-  saveWidgets,
-} from "../api";
+import { useDashboardQuery } from "../hooks/useDashboardQuery";
 import { useSectionDragDrop } from "../hooks/useSectionDragDrop";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
-import type {
-  DashboardSection,
-  DashboardState,
-  GlobalSettings,
-  WidgetInstance,
-} from "../types";
+import { queryClient } from "../lib/queryClient";
+import { createSection, saveDashboardState, saveWidgets } from "../api";
+import type { DashboardSection, GlobalSettings, WidgetInstance } from "../types";
 import { getWidgetComponent } from "../widgets/registry";
 
 interface GridPlacement {
@@ -84,31 +76,16 @@ function isInSleepRange(settings: GlobalSettings): boolean {
 }
 
 export function Dashboard() {
-  const [state, setState] = useState<DashboardState | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { state, error, updateState, persistState } = useDashboardQuery();
   const [activeGroup, setActiveGroup] = useState<number>(1);
   const [sleeping, setSleeping] = useState(false);
 
   const online = useOnlineStatus();
 
-  const load = async () => {
-    try {
-      const data = await fetchDashboardWithCache();
-      setState(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+  useEffect(() => {
+    if (online) {
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     }
-  };
-
-  useEffect(() => {
-    void load();
-    const id = setInterval(() => void load(), 5 * 60_000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (online) void load();
   }, [online]);
 
   useEffect(() => {
@@ -169,14 +146,14 @@ export function Dashboard() {
               ...state,
               globalSettings: { ...state.globalSettings, activeGroup: nextGroup },
             };
-            setState(updated);
-            void saveDashboardState(updated).catch(() => {});
+            updateState(() => updated);
+            persistState(updated);
           }
           return nextGroup;
         });
       }, interval * 1000);
     }
-  }, [state, occupiedGroups]);
+  }, [state, occupiedGroups, updateState, persistState]);
 
   useEffect(() => {
     resetRotateTimer();
@@ -193,12 +170,12 @@ export function Dashboard() {
           ...state,
           globalSettings: { ...state.globalSettings, activeGroup: group },
         };
-        setState(updated);
-        void saveDashboardState(updated).catch(() => {});
+        updateState(() => updated);
+        persistState(updated);
       }
       resetRotateTimer();
     },
-    [state, resetRotateTimer],
+    [state, resetRotateTimer, updateState, persistState],
   );
 
   const handleMoveWidgetToGroup = useCallback(
@@ -226,7 +203,10 @@ export function Dashboard() {
         .sort((a, b) => a.position - b.position);
 
       const movedWidget = { ...widget, section: targetSection!.id };
-      const newTarget = [...targetWidgets, movedWidget].map((w, i) => ({ ...w, position: i }));
+      const newTarget = [...targetWidgets, movedWidget].map((w, i) => ({
+        ...w,
+        position: i,
+      }));
       const newSource = sourceWidgets.map((w, i) => ({ ...w, position: i }));
 
       const others = state.widgets.filter(
@@ -248,13 +228,13 @@ export function Dashboard() {
       });
 
       const updated = { ...state, widgets: reordered, sections: updatedSections };
-      setState(updated);
+      updateState(() => updated);
       void saveWidgets(reordered).catch(() => {});
       if (needsNewSection) {
         void saveDashboardState(updated).catch(() => {});
       }
     },
-    [state],
+    [state, updateState],
   );
 
   useEffect(() => {
@@ -284,10 +264,10 @@ export function Dashboard() {
   const handleReorder = useCallback(
     (reordered: WidgetInstance[]) => {
       if (!state) return;
-      setState({ ...state, widgets: reordered });
+      updateState(() => ({ ...state, widgets: reordered }));
       void saveWidgets(reordered).catch(() => {});
     },
-    [state],
+    [state, updateState],
   );
 
   const visibleSections = useMemo(
@@ -317,10 +297,17 @@ export function Dashboard() {
           .sort((a, b) => a.position - b.position)
       : [];
 
+    const seen = new Set<string>();
+    const uniqueSectionWidgets = sectionWidgets.filter(w => {
+      if (seen.has(w.id)) return false;
+      seen.add(w.id);
+      return true;
+    });
+
     return (
       <div className="section__content" key={section.id}>
         <div className="section__grid" ref={getGridRef(section.id)}>
-          {sectionWidgets.map(widget => {
+          {uniqueSectionWidgets.map(widget => {
             const Component = getWidgetComponent(widget.type);
             if (!Component) {
               return (
@@ -341,7 +328,7 @@ export function Dashboard() {
               </div>
             );
           })}
-          {sectionWidgets.length === 0 && (
+          {uniqueSectionWidgets.length === 0 && (
             <div className="section__empty">Drop widgets here</div>
           )}
         </div>
@@ -352,8 +339,11 @@ export function Dashboard() {
   if (!state && error) {
     return (
       <div className="dashboard dashboard--error">
-        <p>{error}</p>
-        <button type="button" onClick={() => void load()}>
+        <p>{error.message}</p>
+        <button
+          type="button"
+          onClick={() => queryClient.invalidateQueries({ queryKey: ["dashboard"] })}
+        >
           Retry
         </button>
       </div>

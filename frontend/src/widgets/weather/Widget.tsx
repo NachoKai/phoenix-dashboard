@@ -1,28 +1,9 @@
-import { useCallback } from "react";
-import { fetchWithRetry } from "../../api";
+import { useWeatherQuery } from "../../hooks/useWeatherQuery";
 import { WidgetCard } from "../../components/WidgetCard";
-import { useWidgetData } from "../../hooks/useWidgetData";
 import type { WidgetProps } from "../../types";
+import { toWidgetStatus } from "../../types";
 import { AQI_COLORS, formatTime, getLabel } from "../../utils/weather";
-// import { DetailIcon } from "./DetailIcon";
 import { WEATHER_ICONS } from "./icons";
-
-interface WeatherData {
-  location: string;
-  temp: number;
-  feelsLike: number;
-  humidity: number;
-  description: string;
-  icon: string;
-  windSpeed: number;
-  units: string;
-  forecast: { time: string; temp: number; description: string; icon: string }[];
-  sunrise: number;
-  sunset: number;
-  aqi: number;
-  aqiLabel: string;
-  cachedAt: string;
-}
 
 export function WeatherWidget({ instance, sleeping }: WidgetProps) {
   const location = (instance.config.location as string) ?? "Buenos Aires";
@@ -31,25 +12,24 @@ export function WeatherWidget({ instance, sleeping }: WidgetProps) {
   const refreshInterval = ((instance.config.refreshInterval as number) ?? 600) * 1000;
   const unitSymbol = units === "imperial" ? "°F" : "°C";
 
-  const fetcher = useCallback(async () => {
-    const params = new URLSearchParams({
-      location,
-      units,
-      lang,
-      widgetId: instance.id,
-    });
-    return fetchWithRetry<WeatherData>(`/api/weather?${params}`);
-  }, [location, units, lang, instance.id]);
-
-  const { data, status, error, retry } = useWidgetData<WeatherData>({
-    fetcher,
+  const { data, status, error, refetch } = useWeatherQuery({
+    location,
+    units,
+    lang,
+    widgetId: instance.id,
     refreshInterval,
-    staleAfterMs: refreshInterval * 1.5,
     enabled: !sleeping,
   });
 
+  const widgetStatus = toWidgetStatus(status, !!data);
+
   return (
-    <WidgetCard title="" status={status} error={error} onRetry={retry}>
+    <WidgetCard
+      title=""
+      status={widgetStatus}
+      error={error?.message ?? null}
+      onRetry={() => refetch()}
+    >
       {data && (
         <div className="weather-widget">
           <div className="weather-widget__current">
@@ -68,7 +48,6 @@ export function WeatherWidget({ instance, sleeping }: WidgetProps) {
           <div className="weather-widget__details">
             <div className="weather-widget__detail-card">
               <div className="weather-widget__detail-header">
-                {/* <DetailIcon name="feels" /> */}
                 <span className="weather-widget__detail-label">
                   {getLabel(lang, "feels")}
                 </span>
@@ -80,7 +59,6 @@ export function WeatherWidget({ instance, sleeping }: WidgetProps) {
             </div>
             <div className="weather-widget__detail-card">
               <div className="weather-widget__detail-header">
-                {/* <DetailIcon name="humidity" /> */}
                 <span className="weather-widget__detail-label">
                   {getLabel(lang, "humidity")}
                 </span>
@@ -89,7 +67,6 @@ export function WeatherWidget({ instance, sleeping }: WidgetProps) {
             </div>
             <div className="weather-widget__detail-card">
               <div className="weather-widget__detail-header">
-                {/* <DetailIcon name="wind" /> */}
                 <span className="weather-widget__detail-label">
                   {getLabel(lang, "wind")}
                 </span>
@@ -100,7 +77,6 @@ export function WeatherWidget({ instance, sleeping }: WidgetProps) {
             </div>
             <div className="weather-widget__detail-card">
               <div className="weather-widget__detail-header">
-                {/* <DetailIcon name="sunrise" /> */}
                 <span className="weather-widget__detail-label">
                   {getLabel(lang, "sunrise")}
                 </span>
@@ -111,7 +87,6 @@ export function WeatherWidget({ instance, sleeping }: WidgetProps) {
             </div>
             <div className="weather-widget__detail-card">
               <div className="weather-widget__detail-header">
-                {/* <DetailIcon name="sunset" /> */}
                 <span className="weather-widget__detail-label">
                   {getLabel(lang, "sunset")}
                 </span>
@@ -122,7 +97,6 @@ export function WeatherWidget({ instance, sleeping }: WidgetProps) {
             </div>
             <div className="weather-widget__detail-card">
               <div className="weather-widget__detail-header">
-                {/* <DetailIcon name="aqi" /> */}
                 <span className="weather-widget__detail-label">
                   {getLabel(lang, "aqi")}
                 </span>

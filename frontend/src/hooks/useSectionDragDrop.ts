@@ -1,5 +1,4 @@
-import { useCallback, useRef, useState } from "react";
-import type { DashboardSection, WidgetInstance } from "../types";
+import { useCallback, useEffect, useRef, useState } from "react";import type { DashboardSection, WidgetInstance } from "../types";
 
 export interface SectionDragState {
   dragWidgetId: string | null;
@@ -108,7 +107,11 @@ export function useSectionDragDrop(
               .sort((a, b) => a.position - b.position);
 
       let adjustedIndex = toIndex;
-      if (fromSection === toSection && originalVisualIndex !== -1 && originalVisualIndex < toIndex) {
+      if (
+        fromSection === toSection &&
+        originalVisualIndex !== -1 &&
+        originalVisualIndex < toIndex
+      ) {
         adjustedIndex = Math.max(0, toIndex - 1);
       }
 
@@ -282,12 +285,20 @@ export function useSectionDragDrop(
         overIndex: null,
         overGroup: null,
       });
+
+      if (touchMoveHandlerRef.current) {
+        document.addEventListener("touchmove", touchMoveHandlerRef.current, {
+          passive: false,
+        });
+      }
     },
     [],
   );
 
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent<HTMLElement>) => {
+  const touchMoveHandlerRef = useRef<(e: TouchEvent) => void>(null);
+
+  useEffect(() => {
+    const handler = (e: TouchEvent) => {
       e.preventDefault();
       const touch = e.touches[0];
       const clone = touchCloneRef.current;
@@ -324,15 +335,23 @@ export function useSectionDragDrop(
       } else {
         setState(s => ({ ...s, overSection: null, overIndex: null, overGroup: null }));
       }
-    },
-    [findTargetSection, findTargetGroup],
-  );
+    };
+    touchMoveHandlerRef.current = handler;
+  }, [findTargetSection, findTargetGroup]);
+
+  const handleTouchMove = useCallback((_e: React.TouchEvent<HTMLElement>) => {
+    // no-op: actual work done by the non-passive document listener above
+  }, []);
 
   const handleTouchEnd = useCallback(
     (_e?: React.TouchEvent<HTMLElement>) => {
       const data = dragDataRef.current;
       const clone = touchCloneRef.current;
       const dragEl = touchDragElRef.current;
+
+      if (touchMoveHandlerRef.current) {
+        document.removeEventListener("touchmove", touchMoveHandlerRef.current);
+      }
 
       if (clone) {
         clone.remove();
@@ -369,6 +388,10 @@ export function useSectionDragDrop(
   );
 
   const handleTouchCancel = useCallback(() => {
+    if (touchMoveHandlerRef.current) {
+      document.removeEventListener("touchmove", touchMoveHandlerRef.current);
+    }
+
     const clone = touchCloneRef.current;
     const dragEl = touchDragElRef.current;
 

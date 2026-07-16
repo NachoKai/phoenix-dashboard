@@ -75,6 +75,19 @@ export interface WidgetProps {
 
 export type WidgetStatus = "loading" | "success" | "error" | "stale";
 
+export type QueryStatus = "pending" | "success" | "error";
+
+export function toWidgetStatus(
+  status: QueryStatus,
+  hasData: boolean,
+  isStale?: boolean,
+): WidgetStatus {
+  if (status === "pending") return "loading";
+  if (status === "error") return hasData ? "stale" : "error";
+  if (isStale) return "stale";
+  return "success";
+}
+
 export interface WidgetState<T> {
   data: T | null;
   status: WidgetStatus;

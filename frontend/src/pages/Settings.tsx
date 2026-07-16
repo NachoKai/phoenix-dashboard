@@ -6,7 +6,6 @@ import {
   checkStoredKey,
   createSection,
   deleteSection as apiDeleteSection,
-  fetchDashboardWithCache,
   fetchWidgetRegistry,
   reorderSections,
   saveApiKey,
@@ -14,9 +13,9 @@ import {
   saveGlobalSettings,
   saveWidgets,
 } from "../api";
+import { useDashboardQuery } from "../hooks/useDashboardQuery";
 import type {
   ConfigFieldSchema,
-  DashboardState,
   SectionLayout,
   WidgetDefinition,
   WidgetInstance,
@@ -25,7 +24,8 @@ import { v4 as uuid } from "../utils/id";
 
 export function Settings() {
   const { logout } = useAuth();
-  const [state, setState] = useState<DashboardState | null>(null);
+  const { state: dashboardState, updateState } = useDashboardQuery();
+  const [state, setState] = useState(dashboardState);
   const [registry, setRegistry] = useState<WidgetDefinition[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -33,16 +33,20 @@ export function Settings() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (dashboardState && !state) {
+      setState(dashboardState);
+    }
+  }, [dashboardState, state]);
+
   const load = useCallback(async () => {
-    const [dashboard, reg] = await Promise.all([
-      fetchDashboardWithCache(),
-      fetchWidgetRegistry(),
-    ]);
-    setState(dashboard);
+    const reg = await fetchWidgetRegistry();
     setRegistry(reg);
 
+    if (!dashboardState) return;
+
     const masks: Record<string, string> = {};
-    for (const w of dashboard.widgets) {
+    for (const w of dashboardState.widgets) {
       const def = reg.find(r => r.type === w.type);
       for (const field of def?.configSchema ?? []) {
         if (field.type === "secret") {
@@ -54,7 +58,7 @@ export function Settings() {
       }
     }
     setKeyMasks(masks);
-  }, []);
+  }, [dashboardState]);
 
   useEffect(() => {
     void load();
@@ -190,13 +194,15 @@ export function Settings() {
             }
           : w,
       );
+      const cleaned = { ...state, widgets: cleanedWidgets };
       await saveWidgets(cleanedWidgets);
       await saveGlobalSettings(state.globalSettings);
       await reorderSections(
         state.sections.map((s, i) => ({ ...s, position: i, name: `Section ${i + 1}` })),
       );
-      await saveDashboardState({ ...state, widgets: cleanedWidgets });
-      setState(s => (s ? { ...s, widgets: cleanedWidgets } : s));
+      await saveDashboardState(cleaned);
+      setState(cleaned);
+      updateState(() => cleaned);
       setMessage("Saved successfully");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Save failed");
