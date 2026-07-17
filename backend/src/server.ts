@@ -30,5 +30,5 @@ app.get("*", (req, res, next) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Phoenix Dashboard API running on http://0.0.0.0:${PORT}`);
+  console.info(`Phoenix Dashboard API running on http://0.0.0.0:${PORT}`);
 });

@@ -117,7 +117,6 @@ async function getUserToken(config: TuyaConfig): Promise<TokenData> {
   const authStringToSign = buildStringToSign("POST", authContentHash, "", authUrl);
   const authSign = signApiRequest(config, "", t1, nonce1, authStringToSign);
 
-  console.log("[Tuya] Attempting user login for:", username);
   const authRes = await fetch(`${config.endpoint}${authUrl}`, {
     method: "POST",
     headers: {
@@ -155,7 +154,6 @@ async function getUserToken(config: TuyaConfig): Promise<TokenData> {
     expiresAt: Date.now() + (authData.result.expire_time - 60) * 1000,
   };
   tokenCache.set(cacheKey, result);
-  console.log("[Tuya] User login successful for uid:", result.uid);
 
   return result;
 }
@@ -168,6 +166,7 @@ async function getToken(config: TuyaConfig): Promise<TokenData> {
     try {
       return await getUserToken(config);
     } catch {
+      console.error("[tuya] Failed to get user token");
       // Silent fallback — getUserToken already caches failures
     }
   }
@@ -334,6 +333,7 @@ export async function getAllDevices(): Promise<TuyaDevice[]> {
       return list;
     }
   } catch {
+    console.error("[tuya] Failed to fetch devices from iot-03 endpoint");
     // Silently try next strategy
   }
 
@@ -348,6 +348,7 @@ export async function getAllDevices(): Promise<TuyaDevice[]> {
       return list;
     }
   } catch {
+    console.error("[tuya] Failed to fetch devices from associated-users endpoint");
     // Silently try next strategy
   }
 
@@ -360,6 +361,7 @@ export async function getAllDevices(): Promise<TuyaDevice[]> {
         const device = await getDeviceStatus(id.trim());
         devices.push(device);
       } catch {
+        console.error(`[tuya] Failed to fetch device status for ID ${id.trim()}`);
         // Silently skip failed device
       }
     }
@@ -414,6 +416,7 @@ export async function getDeviceStatus(deviceId: string): Promise<TuyaDevice> {
   try {
     return await tuyaGet<TuyaDevice>(`/v1.0/devices/${deviceId}`);
   } catch {
+    console.error(`[tuya] Failed to fetch device status for ID ${deviceId}`);
     // Fallback: construct from iot-03 status endpoint
     const status = await tuyaGet<{ code: string; value: unknown }[]>(
       `/v1.0/iot-03/devices/${deviceId}/status`,
@@ -438,6 +441,7 @@ export async function sendDeviceCommand(
   try {
     await tuyaPost(`/v1.0/devices/${deviceId}/commands`, { commands });
   } catch {
+    console.error(`[tuya] Failed to send device command for ID ${deviceId}`);
     // Fallback to iot-03 endpoint (used by tinytuya)
     await tuyaPost(`/v1.0/iot-03/devices/${deviceId}/commands`, { commands });
   }

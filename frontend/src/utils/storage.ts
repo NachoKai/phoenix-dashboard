@@ -22,6 +22,7 @@ export function saveDashboardCache(deviceId: string, state: DashboardState): voi
   try {
     localStorage.setItem(deviceKey(deviceId), JSON.stringify(state));
   } catch {
+    console.error("[storage] Failed to save dashboard cache");
     // localStorage full or unavailable — silently ignore
   }
 }
@@ -30,6 +31,7 @@ export function clearDashboardCache(deviceId: string): void {
   try {
     localStorage.removeItem(deviceKey(deviceId));
   } catch {
+    console.error("[storage] Failed to clear dashboard cache");
     // ignore
   }
 }
@@ -44,6 +46,7 @@ export function migrateLegacyCache(deviceId: string): DashboardState | null {
     saveDashboardCache(deviceId, parsed);
     return parsed;
   } catch {
+    console.error("[storage] Failed to migrate legacy dashboard cache");
     return null;
   }
 }

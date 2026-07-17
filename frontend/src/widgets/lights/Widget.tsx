@@ -25,6 +25,7 @@ export function LightsWidget({ instance, sleeping }: WidgetProps) {
     try {
       await sendControl(deviceId, action, value);
     } catch {
+      console.error("[lights] Failed to send control");
       // error handled by mutation
     }
   }

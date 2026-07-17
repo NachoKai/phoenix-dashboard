@@ -1,10 +1,7 @@
-import type { Request, Response } from "express";
-import { getCachedValue, setCachedValue } from "../../db/index.js";
+import type { Request, Response } from "express";import { getCachedValue, setCachedValue } from "../../db/index.js";
 import { resolveApiKey } from "../../utils/resolveApiKey.js";
 
 const GIPHY_CACHE_TTL_MS = 30 * 60 * 1000;
-
-
 
 export async function gifsHandler(req: Request, res: Response) {
   try {
@@ -19,6 +16,7 @@ export async function gifsHandler(req: Request, res: Response) {
         try {
           urls = JSON.parse(urlsParam) as string[];
         } catch {
+          console.error("[gifs] Failed to parse static URLs");
           urls = urlsParam
             .split(",")
             .map(u => u.trim())

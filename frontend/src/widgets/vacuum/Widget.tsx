@@ -27,6 +27,7 @@ export function VacuumWidget({ instance, sleeping }: WidgetProps) {
     try {
       await sendControl(action);
     } catch {
+      console.error("[vacuum] Failed to send control");
       // error handled by mutation
     }
   }

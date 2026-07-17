@@ -286,6 +286,45 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   touch-action: none;
 }
 
+/* When a drag handle is used, only the handle activates dragging
+   so child elements can scroll naturally. */
+.drag-item--has-handle {
+  cursor: default;
+}
+
+.drag-item--has-handle:active {
+  cursor: default;
+}
+
+.drag-item--has-handle .widget-card__body,
+.drag-item--has-handle .widget-card__body * {
+  touch-action: auto;
+}
+
+/* Drag handle — rendered in the widget header */
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-handle::after {
+  content: "⠿";
+  margin-left: auto;
+  font-size: 1.2em;
+  color: var(--text-muted);
+  opacity: 0.5;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 /* =============================================
    WIDGET CARDS — compact landscape sizing
    ============================================= */
@@ -832,8 +871,10 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 4px 0;
+  padding: 6px 8px;
   scroll-behavior: smooth;
+  background: var(--bg-elevated);
+  border-radius: 8px;
 }
 
 .ai-qa-widget__empty {

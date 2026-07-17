@@ -1,10 +1,9 @@
-import { writeFileSync, mkdirSync } from 'fs';
-import { deflateSync } from 'zlib';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { writeFileSync, mkdirSync } from "fs";import { deflateSync } from "zlib";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const outDir = join(__dirname, '../public/icons');
+const outDir = join(__dirname, "../public/icons");
 mkdirSync(outDir, { recursive: true });
 
 function crc32(buf) {
@@ -63,13 +62,12 @@ function createPng(size) {
 
   return Buffer.concat([
     Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    chunk('IHDR', ihdr),
-    chunk('IDAT', compressed),
-    chunk('IEND', Buffer.alloc(0)),
+    chunk("IHDR", ihdr),
+    chunk("IDAT", compressed),
+    chunk("IEND", Buffer.alloc(0)),
   ]);
 }
 
 for (const size of [192, 512]) {
   writeFileSync(join(outDir, `icon-${size}.png`), createPng(size));
-  console.log(`Created icon-${size}.png`);
 }

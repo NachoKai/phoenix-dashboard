@@ -114,6 +114,7 @@ export function Settings() {
         setState({ ...state, sections: [...state.sections, section] });
         targetSectionId = section.id;
       } catch {
+        console.error("[dashboard] Failed to create section for new widget");
         return;
       }
     }
@@ -156,6 +157,7 @@ export function Settings() {
       const { section } = await createSection();
       setState({ ...state, sections: [...state.sections, section] });
     } catch {
+      console.error("[dashboard] Failed to create section");
       /* silent */
     }
   };
@@ -170,6 +172,7 @@ export function Settings() {
         widgets: state.widgets.filter(w => w.section !== sectionId),
       });
     } catch {
+      console.error("[dashboard] Failed to delete section");
       /* silent */
     }
   };

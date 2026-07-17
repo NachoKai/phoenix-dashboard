@@ -13,6 +13,7 @@ export function useWakeLock() {
           sentinelRef.current = null;
         });
       } catch {
+        console.error("[wakeLock] Wake lock request failed");
         // Wake lock request failed (e.g. permissions policy, not supported)
       }
     }

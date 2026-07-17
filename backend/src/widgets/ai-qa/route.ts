@@ -3,8 +3,6 @@ import { resolveApiKey } from "../../utils/resolveApiKey.js";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-
-
 interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
@@ -71,6 +69,7 @@ export async function aiQaHandler(req: Request, res: Response) {
         const parsed = JSON.parse(body) as { error?: { message?: string } };
         detail = parsed.error?.message ?? body;
       } catch {
+        console.error("[api] Failed to parse OpenRouter error response:", body);
         /* use raw body */
       }
 

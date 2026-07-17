@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -28,13 +28,32 @@ export function AiQaWidget({ instance }: WidgetProps) {
   const defaultModel = (instance.config.model as string) ?? MODELS[0]!.value;
   const systemPrompt = (instance.config.systemPrompt as string) ?? "";
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const storageKey = `ai-qa-${instance.id}`;
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? (JSON.parse(saved) as ChatMessage[]) : [];
+    } catch {
+      console.error("[widget] Failed to load chat history");
+      return [];
+    }
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState(defaultModel);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    } catch {
+      console.error("[widget] Failed to save chat history");
+      /* storage unavailable */
+    }
+  }, [messages, storageKey]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -108,7 +127,7 @@ export function AiQaWidget({ instance }: WidgetProps) {
   };
 
   return (
-    <WidgetCard title="" status="success" error={null}>
+    <WidgetCard title="AI Q&A" status="success" error={null} dragHandle={true}>
       <div className="ai-qa-widget">
         <div className="ai-qa-widget__toolbar">
           <select

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useContext, createContext, useRef, useState } from "react";
 import {
   PointerSensor,
   KeyboardSensor,
@@ -44,7 +44,7 @@ export function useSectionDragDrop(
 
   const moveWidget = useCallback(
     (widgetId: string, toSection: string, toIndex: number) => {
-      const widget = widgets.find((w) => w.id === widgetId);
+      const widget = widgets.find(w => w.id === widgetId);
       if (!widget) return;
 
       const fromSection = widget.section;
@@ -52,19 +52,19 @@ export function useSectionDragDrop(
       if (fromSection === toSection) {
         // ── Within-section reorder ──
         const sectionWidgets = widgets
-          .filter((w) => w.section === fromSection)
+          .filter(w => w.section === fromSection)
           .sort((a, b) => a.position - b.position);
-        const fromIdx = sectionWidgets.findIndex((w) => w.id === widgetId);
+        const fromIdx = sectionWidgets.findIndex(w => w.id === widgetId);
         const clampedTo = Math.min(toIndex, sectionWidgets.length - 1);
         if (fromIdx === -1 || fromIdx === clampedTo) return;
 
         const reordered = arrayMove(sectionWidgets, fromIdx, clampedTo);
         const reindexed = reordered.map((w, i) => ({ ...w, position: i }));
-        const others = widgets.filter((w) => w.section !== fromSection);
+        const others = widgets.filter(w => w.section !== fromSection);
         const final = [...others, ...reindexed].sort((a, b) => {
           if (a.section !== b.section) {
-            const sA = sections.find((s) => s.id === a.section);
-            const sB = sections.find((s) => s.id === b.section);
+            const sA = sections.find(s => s.id === a.section);
+            const sB = sections.find(s => s.id === b.section);
             return (sA?.position ?? 0) - (sB?.position ?? 0);
           }
           return a.position - b.position;
@@ -73,34 +73,30 @@ export function useSectionDragDrop(
       } else {
         // ── Cross-section move ──
         const sourceWidgets = widgets
-          .filter((w) => w.section === fromSection && w.id !== widgetId)
+          .filter(w => w.section === fromSection && w.id !== widgetId)
           .sort((a, b) => a.position - b.position);
         const targetWidgets = widgets
-          .filter((w) => w.section === toSection)
+          .filter(w => w.section === toSection)
           .sort((a, b) => a.position - b.position);
 
         const insertAt =
-          toIndex < 0
-            ? targetWidgets.length
-            : Math.min(toIndex, targetWidgets.length);
+          toIndex < 0 ? targetWidgets.length : Math.min(toIndex, targetWidgets.length);
         const updatedTarget = [...targetWidgets];
         updatedTarget.splice(insertAt, 0, { ...widget, section: toSection });
 
         const reindexedSource = sourceWidgets.map((w, i) => ({ ...w, position: i }));
         const reindexedTarget = updatedTarget.map((w, i) => ({ ...w, position: i }));
         const others = widgets.filter(
-          (w) => w.section !== fromSection && w.section !== toSection,
+          w => w.section !== fromSection && w.section !== toSection,
         );
-        const final = [...others, ...reindexedSource, ...reindexedTarget].sort(
-          (a, b) => {
-            if (a.section !== b.section) {
-              const sA = sections.find((s) => s.id === a.section);
-              const sB = sections.find((s) => s.id === b.section);
-              return (sA?.position ?? 0) - (sB?.position ?? 0);
-            }
-            return a.position - b.position;
-          },
-        );
+        const final = [...others, ...reindexedSource, ...reindexedTarget].sort((a, b) => {
+          if (a.section !== b.section) {
+            const sA = sections.find(s => s.id === a.section);
+            const sB = sections.find(s => s.id === b.section);
+            return (sA?.position ?? 0) - (sB?.position ?? 0);
+          }
+          return a.position - b.position;
+        });
         onReorder(final);
       }
     },
@@ -110,8 +106,8 @@ export function useSectionDragDrop(
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const widgetId = String(event.active.id);
-      const widget = widgets.find((w) => w.id === widgetId);
-      console.log('[dnd] handleDragStart', { widgetId, found: !!widget, widgetCount: widgets.length });
+      const widget = widgets.find(w => w.id === widgetId);
+
       if (!widget) return;
 
       activeRef.current = { id: widgetId, sectionId: widget.section };
@@ -124,13 +120,6 @@ export function useSectionDragDrop(
     (event: DragEndEvent) => {
       const { active, over } = event;
 
-      console.log('[dnd] handleDragEnd', {
-        activeId: active?.id,
-        overId: over?.id,
-        hasActiveRef: !!activeRef.current,
-        widgetCount: widgets.length,
-      });
-
       if (activeRef.current && over) {
         const activeWidgetId = String(active.id);
         const overId = String(over.id);
@@ -138,36 +127,25 @@ export function useSectionDragDrop(
         // ── Dropped on a group button ──
         if (overId.startsWith("group-")) {
           const groupNum = parseInt(overId.replace("group-", ""), 10);
-          console.log('[dnd] group drop', { groupNum });
           onMoveWidgetToGroup?.(activeWidgetId, groupNum);
         }
         // ── Dropped on an empty section area ──
         else if (overId.startsWith("section-")) {
           const sectionId = overId.replace("section-", "");
-          console.log('[dnd] section drop', { sectionId });
           moveWidget(activeWidgetId, sectionId, -1); // append to end
         }
         // ── Dropped on another widget ──
         else {
-          const overWidget = widgets.find((w) => w.id === overId);
-          const activeWidget = widgets.find((w) => w.id === activeWidgetId);
-          console.log('[dnd] widget drop', {
-            overWidgetFound: !!overWidget,
-            activeWidgetFound: !!activeWidget,
-            overId,
-            activeWidgetId,
-          });
+          const overWidget = widgets.find(w => w.id === overId);
+          const activeWidget = widgets.find(w => w.id === activeWidgetId);
+
           if (overWidget && activeWidget) {
             const targetSection = overWidget.section;
             const sectionWidgets = widgets
-              .filter((w) => w.section === targetSection)
+              .filter(w => w.section === targetSection)
               .sort((a, b) => a.position - b.position);
-            const overIndex = sectionWidgets.findIndex((w) => w.id === overId);
-            console.log('[dnd] moving widget', {
-              targetSection,
-              overIndex,
-              sectionWidgetCount: sectionWidgets.length,
-            });
+            const overIndex = sectionWidgets.findIndex(w => w.id === overId);
+
             if (overIndex >= 0) {
               moveWidget(activeWidgetId, targetSection, overIndex);
             }
@@ -200,12 +178,10 @@ export function useSectionDragDrop(
   );
 
   // Pure collision detection — no side effects
-  const groupAwareCollisionDetection: CollisionDetection = useCallback((args) => {
+  const groupAwareCollisionDetection: CollisionDetection = useCallback(args => {
     // 1. Check pointer collisions first (for small targets like group buttons)
     const pointerCollisions = pointerWithin(args);
-    const groupCollision = pointerCollisions.find((c) =>
-      String(c.id).startsWith("group-"),
-    );
+    const groupCollision = pointerCollisions.find(c => String(c.id).startsWith("group-"));
     if (groupCollision) return [groupCollision];
 
     // 2. Use rectIntersection to find all overlapping droppables
@@ -215,14 +191,20 @@ export function useSectionDragDrop(
     //    This prevents a section droppable from "stealing" the collision
     //    from the actual widget underneath the pointer.
     const widgetCollision = rectCollisions.find(
-      (c) =>
-        !String(c.id).startsWith("section-") &&
-        !String(c.id).startsWith("group-"),
+      c => !String(c.id).startsWith("section-") && !String(c.id).startsWith("group-"),
     );
     if (widgetCollision) return [widgetCollision];
 
     // 4. Fall back to section droppables (empty area / no widget under pointer)
-    return rectCollisions.length > 0 ? [rectCollisions[0]] : [];
+    if (rectCollisions.length > 0) return [rectCollisions[0]];
+
+    // 5. If rect intersection found nothing, use pointer position to find droppable
+    const pointerSectionCollision = pointerCollisions.find(
+      c => String(c.id).startsWith("section-"),
+    );
+    if (pointerSectionCollision) return [pointerSectionCollision];
+
+    return [];
   }, []);
 
   return {
@@ -286,19 +268,60 @@ export function DroppableGroupButton({
   );
 }
 
+// ─── Drag handle context ────────────────────────────────────────
+
+interface SortableHandleContextValue {
+  setActivatorNodeRef: (el: HTMLElement | null) => void;
+  listeners: any;
+  attributes: any;
+}
+
+const SortableHandleContext = createContext<SortableHandleContextValue | null>(null);
+
+export function useSortableHandle() {
+  return useContext(SortableHandleContext);
+}
+
+// ─── DragHandle ────────────────────────────────────────────────
+
+export function DragHandle({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const ctx = useSortableHandle();
+  if (!ctx) return <div className={className}>{children}</div>;
+
+  return (
+    <div
+      ref={ctx.setActivatorNodeRef}
+      {...ctx.listeners}
+      {...ctx.attributes}
+      className={`drag-handle ${className}`.trim()}
+    >
+      {children}
+    </div>
+  );
+}
+
 // ─── SortableWidgetItem ────────────────────────────────────────
 
 export function SortableWidgetItem({
   widgetId,
   children,
+  dragHandle,
 }: {
   widgetId: string;
   children: React.ReactNode;
+  dragHandle?: boolean;
 }) {
   const {
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
@@ -310,6 +333,22 @@ export function SortableWidgetItem({
     opacity: isDragging ? 0.3 : undefined,
     zIndex: isDragging ? 50 : undefined,
   };
+
+  if (dragHandle) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`drag-item drag-item--has-handle${isDragging ? " drag-item--dragging" : ""}`}
+      >
+        <SortableHandleContext.Provider
+          value={{ setActivatorNodeRef, listeners, attributes }}
+        >
+          {children}
+        </SortableHandleContext.Provider>
+      </div>
+    );
+  }
 
   const className = `drag-item${isDragging ? " drag-item--dragging" : ""}`;
 

@@ -170,6 +170,7 @@ apiRouter.get("/dashboard/keys/:widgetId/:keyName", (req, res) => {
     const decrypted = decrypt(stored, getEncryptionKey());
     res.json({ hasValue: true, masked: maskSecret(decrypted) });
   } catch {
+    console.error("[api] Failed to decrypt key", widgetId, keyName);
     res.json({ hasValue: true, masked: "****" });
   }
 });

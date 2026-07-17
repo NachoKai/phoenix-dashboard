@@ -209,6 +209,7 @@ export function Dashboard() {
           const { section } = await createSection();
           targetSection = { ...section, group: toGroup };
         } catch {
+          console.error("[dashboard] Failed to create section");
           return;
         }
       }
@@ -341,10 +342,7 @@ export function Dashboard() {
                 const Component = getWidgetComponent(widget.type);
                 if (!Component) {
                   return (
-                    <SortableWidgetItem
-                      key={widget.id}
-                      widgetId={widget.id}
-                    >
+                    <SortableWidgetItem key={widget.id} widgetId={widget.id}>
                       <div className="widget-card widget-card--error">
                         <p>Unknown widget: {widget.type}</p>
                       </div>
@@ -355,6 +353,7 @@ export function Dashboard() {
                   <SortableWidgetItem
                     key={widget.id}
                     widgetId={widget.id}
+                    dragHandle={widget.type === "ai-qa"}
                   >
                     <Suspense
                       fallback={

@@ -12,6 +12,7 @@ export function resolveApiKey(
       try {
         return decrypt(stored, getEncryptionKey());
       } catch {
+        console.error("[api] Failed to decrypt API key");
         /* fall through */
       }
     }

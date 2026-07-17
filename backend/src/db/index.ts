@@ -25,6 +25,7 @@ function loadFromDisk(): PersistedState {
     const raw = fs.readFileSync(PERSIST_FILE, "utf-8");
     return JSON.parse(raw) as PersistedState;
   } catch {
+    console.error("[db] Failed to load persisted state; initializing with defaults");
     return {
       globalSettings: {
         theme: "dark",
@@ -62,6 +63,7 @@ function persistToDisk(): void {
     };
     fs.writeFileSync(PERSIST_FILE, JSON.stringify(state, null, 2), "utf-8");
   } catch {
+    console.error("[db] Failed to persist state to disk; changes may be lost");
     // best-effort; don't crash the server on write failure
   }
 }
@@ -72,6 +74,7 @@ function loadEncryptedKeysFromDisk(): Map<string, string> {
     const parsed = JSON.parse(raw) as Record<string, string>;
     return new Map(Object.entries(parsed));
   } catch {
+    console.error("[db] Failed to load encrypted keys from disk");
     return new Map();
   }
 }
@@ -84,6 +87,7 @@ function persistEncryptedKeys(): void {
     }
     fs.writeFileSync(KEYS_FILE, JSON.stringify(obj, null, 2), "utf-8");
   } catch {
+    console.error("[db] Failed to persist encrypted keys to disk");
     // best-effort
   }
 }
