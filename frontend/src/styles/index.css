@@ -259,8 +259,10 @@ a {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   border-radius: 14px;
   pointer-events: none;
-}.drag-item > .widget-card,
-.drag-item > article {
+}
+
+.drag-item>.widget-card,
+.drag-item>article {
   min-width: unset;
   max-width: unset;
   width: 100%;
@@ -1474,6 +1476,26 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   z-index: 5;
 }
 
+.group-sidebar--sleep {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgba(0, 0, 0, 0.5);
+}
+.group-sidebar--sleep .group-sidebar__item {
+  color: rgba(255, 255, 255, 0.6);
+}
+.group-sidebar--sleep .group-sidebar__item:hover {
+  color: #fff;
+}
+
+.sleep-settings-link:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
 /* =============================================
    SETTINGS — sleep time
    ============================================= */
@@ -1575,6 +1597,14 @@ Interactive elements (buttons, inputs, selects) are also covered. */
 
 /* Portrait phone (Moto G8: ~720×1400 viewport) */
 @media (orientation: portrait) and (max-width: 480px) {
+  .dashboard--has-groups {
+    flex-direction: column;
+  }
+
+  .group-sidebar {
+    order: 1;
+  }
+
   .section__grid {
     grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
     gap: 2px;

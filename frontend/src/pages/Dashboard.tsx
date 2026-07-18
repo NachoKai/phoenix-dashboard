@@ -1,5 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";import { Link } from "react-router-dom";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { useDashboardQuery } from "../hooks/useDashboardQuery";
 import {
@@ -433,7 +432,9 @@ export function Dashboard() {
         <p>{error.message}</p>
         <button
           type="button"
-          onClick={() => queryClient.invalidateQueries({ queryKey: ["dashboard", deviceId] })}
+          onClick={() =>
+            queryClient.invalidateQueries({ queryKey: ["dashboard", deviceId] })
+          }
         >
           Retry
         </button>
@@ -511,7 +512,20 @@ export function Dashboard() {
           ))}
         </div>
 
-        {sleeping && <div className="sleep-overlay" />}
+        {sleeping && (
+          <>
+            <div className="sleep-overlay" />
+            <nav className="group-sidebar group-sidebar--sleep" aria-label="Sleep settings">
+              <Link
+                to="/settings"
+                className="group-sidebar__item group-sidebar__settings"
+                aria-label="Settings"
+              >
+                ⚙
+              </Link>
+            </nav>
+          </>
+        )}
       </div>
       <DragOverlay>
         {dragState.dragWidgetId ? (
