@@ -1,5 +1,5 @@
-import { useWeeklyWeatherQuery } from "../../hooks/useWeeklyWeatherQuery";
 import { WidgetCard } from "../../components/WidgetCard";
+import { useWeeklyWeatherQuery } from "../../hooks/useWeeklyWeatherQuery";
 import type { WidgetProps } from "../../types";
 import { toWidgetStatus } from "../../types";
 import { WEATHER_ICONS } from "./icons";

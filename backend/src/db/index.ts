@@ -1,10 +1,10 @@
-import { initDatabase, getClient } from "./turso.js";
 import type {
   DashboardSection,
   DashboardState,
   GlobalSettings,
   WidgetInstance,
 } from "../types.js";
+import { getClient, initDatabase } from "./turso.js";
 
 const DEFAULT_SETTINGS: GlobalSettings = {
   theme: "dark",
@@ -155,14 +155,11 @@ export async function addSection(deviceId: string): Promise<DashboardSection> {
   return section;
 }
 
-export async function deleteSection(
-  deviceId: string,
-  id: string,
-): Promise<boolean> {
+export async function deleteSection(deviceId: string, id: string): Promise<boolean> {
   const data = await getOrCreateDeviceData(deviceId);
   if (data.sections.length <= 1) return false;
-  data.widgets = data.widgets.filter((w) => w.section !== id);
-  data.sections = data.sections.filter((s) => s.id !== id);
+  data.widgets = data.widgets.filter(w => w.section !== id);
+  data.sections = data.sections.filter(s => s.id !== id);
   data.sections.forEach((s, i) => {
     s.position = i;
   });
@@ -195,9 +192,7 @@ export async function saveWidgets(
   });
 }
 
-export async function getDashboardState(
-  deviceId: string,
-): Promise<DashboardState> {
+export async function getDashboardState(deviceId: string): Promise<DashboardState> {
   const data = await getOrCreateDeviceData(deviceId);
   return {
     widgets: [...data.widgets].sort((a, b) => a.position - b.position),

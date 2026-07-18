@@ -1,26 +1,26 @@
-import { Suspense, useCallback, useEffect } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { useDashboardQuery } from "../hooks/useDashboardQuery";
-import {
-  useSectionDragDrop,
-  SortableWidgetItem,
-  DroppableSection,
-  WidgetSortableContext,
-} from "../hooks/useSectionDragDrop";
-import { useOnlineStatus } from "../hooks/useOnlineStatus";
-import { useSleepMode } from "../hooks/useSleepMode";
-import { useOrientationLock } from "../hooks/useOrientationLock";
-import { useAutoRotate } from "../hooks/useAutoRotate";
-import { useDashboardDerivedState } from "../hooks/useDashboardDerivedState";
-import { useUiStore } from "../stores/uiStore";
-import { getDeviceId } from "../utils/deviceId";
+import { Suspense, useCallback, useEffect } from "react";
 import { createSection, saveDashboardState, saveWidgets } from "../api";
-import type { DashboardSection, DashboardState, WidgetInstance } from "../types";
-import { getWidgetComponent } from "../widgets/registry";
 import { DashboardError } from "../components/DashboardError";
 import { DashboardLoading } from "../components/DashboardLoading";
 import { GroupSidebar } from "../components/GroupSidebar";
 import { SleepOverlay } from "../components/SleepOverlay";
+import { useAutoRotate } from "../hooks/useAutoRotate";
+import { useDashboardDerivedState } from "../hooks/useDashboardDerivedState";
+import { useDashboardQuery } from "../hooks/useDashboardQuery";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import { useOrientationLock } from "../hooks/useOrientationLock";
+import {
+  DroppableSection,
+  SortableWidgetItem,
+  useSectionDragDrop,
+  WidgetSortableContext,
+} from "../hooks/useSectionDragDrop";
+import { useSleepMode } from "../hooks/useSleepMode";
+import { useUiStore } from "../stores/uiStore";
+import type { DashboardSection, DashboardState, WidgetInstance } from "../types";
+import { getDeviceId } from "../utils/deviceId";
+import { getWidgetComponent } from "../widgets/registry";
 
 export function Dashboard() {
   const deviceId = getDeviceId();

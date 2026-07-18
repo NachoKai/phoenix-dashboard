@@ -1,8 +1,8 @@
-import { useLightsQuery } from "../../hooks/useLightsQuery";
 import { WidgetCard } from "../../components/WidgetCard";
+import { COLOR_PRESETS } from "../../constants";
+import { useLightsQuery } from "../../hooks/useLightsQuery";
 import type { WidgetProps } from "../../types";
 import { toWidgetStatus } from "../../types";
-import { COLOR_PRESETS } from "../../constants";
 
 export function LightsWidget({ instance, sleeping }: WidgetProps) {
   const refreshInterval = ((instance.config.refreshInterval as number) ?? 30) * 1000;

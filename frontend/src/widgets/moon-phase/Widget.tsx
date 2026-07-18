@@ -17,7 +17,7 @@ function getMoonPhase(date: Date): PhaseInfo {
   const days = diff / 86400000;
   const age = ((days % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
   const illumination = Math.round(
-    (1 - Math.cos((2 * Math.PI * age) / SYNODIC_MONTH)) / 2 * 100,
+    ((1 - Math.cos((2 * Math.PI * age) / SYNODIC_MONTH)) / 2) * 100,
   );
 
   if (age < 1.85) return { name: "New Moon", emoji: "🌑", illumination, age };

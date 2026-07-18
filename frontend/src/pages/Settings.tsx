@@ -1,14 +1,14 @@
 import { useRef } from "react";
 import { Link } from "react-router-dom";
-import { NumberInput } from "../components/NumberInput";
 import { ConfigField } from "../components/ConfigField";
-import { useAuthStore } from "../stores/authStore";
-import { useDashboardQuery } from "../hooks/useDashboardQuery";
-import { useSettingsState } from "../hooks/useSettingsState";
-import { useScrollToTop } from "../hooks/useScrollToTop";
+import { NumberInput } from "../components/NumberInput";
 import { useAutoDismiss } from "../hooks/useAutoDismiss";
-import { getDeviceId } from "../utils/deviceId";
+import { useDashboardQuery } from "../hooks/useDashboardQuery";
+import { useScrollToTop } from "../hooks/useScrollToTop";
+import { useSettingsState } from "../hooks/useSettingsState";
+import { useAuthStore } from "../stores/authStore";
 import type { SectionLayout } from "../types";
+import { getDeviceId } from "../utils/deviceId";
 
 export function Settings() {
   const deviceId = getDeviceId();

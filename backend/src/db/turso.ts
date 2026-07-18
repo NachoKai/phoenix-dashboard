@@ -15,8 +15,7 @@ let client: ReturnType<typeof createClient>;
 
 export async function initDatabase(): Promise<void> {
   const url =
-    process.env.TURSO_DATABASE_URL ||
-    `file:${path.join(DATA_DIR, "dashboard.db")}`;
+    process.env.TURSO_DATABASE_URL || `file:${path.join(DATA_DIR, "dashboard.db")}`;
   const authToken = process.env.TURSO_AUTH_TOKEN;
 
   client = createClient(authToken ? { url, authToken } : { url });
@@ -51,10 +50,8 @@ export function getClient(): ReturnType<typeof createClient> {
 }
 
 async function migrateFromJsonIfNeeded(): Promise<void> {
-  const result = await client.execute(
-    "SELECT COUNT(*) as count FROM device_state",
-  );
-  if (result.rows[0].count as number > 0) return;
+  const result = await client.execute("SELECT COUNT(*) as count FROM device_state");
+  if ((result.rows[0].count as number) > 0) return;
 
   const persistRaw = tryReadFile(PERSIST_FILE);
   if (!persistRaw) return;
@@ -84,8 +81,7 @@ async function migrateFromJsonIfNeeded(): Promise<void> {
     const keysRaw = tryReadFile(KEYS_FILE);
     if (keysRaw) {
       const keys = JSON.parse(keysRaw) as Record<string, string>;
-      const keyStmt =
-        "INSERT OR REPLACE INTO encrypted_keys (key, value) VALUES (?, ?)";
+      const keyStmt = "INSERT OR REPLACE INTO encrypted_keys (key, value) VALUES (?, ?)";
       for (const [k, v] of Object.entries(keys)) {
         await client.execute({ sql: keyStmt, args: [k, v] });
       }
@@ -106,7 +102,8 @@ function tryReadFile(filePath: string): string | null {
     if (!parsed || (typeof parsed === "object" && Object.keys(parsed).length === 0))
       return null;
     return raw;
-  } catch {
+  } catch (err) {
+    console.warn(`[turso] Failed to read ${filePath}:`, err);
     return null;
   }
 }
@@ -114,7 +111,8 @@ function tryReadFile(filePath: string): string | null {
 function renameToBak(filePath: string): void {
   try {
     fs.renameSync(filePath, filePath + ".bak");
-  } catch {
+  } catch (err) {
+    console.error(`[turso] Failed to rename ${filePath} to .bak `, err);
     // ignore
   }
 }

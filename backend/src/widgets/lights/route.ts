@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { getAllDevices, sendDeviceCommand, getDeviceStatus } from "../tuya/client.js";
+import { getAllDevices, getDeviceStatus, sendDeviceCommand } from "../tuya/client.js";
 
 export interface LightDevice {
   id: string;

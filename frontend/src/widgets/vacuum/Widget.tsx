@@ -1,5 +1,5 @@
-import { useVacuumQuery } from "../../hooks/useVacuumQuery";
 import { WidgetCard } from "../../components/WidgetCard";
+import { useVacuumQuery } from "../../hooks/useVacuumQuery";
 import type { WidgetProps } from "../../types";
 import { toWidgetStatus } from "../../types";
 

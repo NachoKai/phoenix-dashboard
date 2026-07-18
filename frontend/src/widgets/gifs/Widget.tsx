@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useGifsQuery } from "../../hooks/useGifsQuery";
 import { WidgetCard } from "../../components/WidgetCard";
+import { useGifsQuery } from "../../hooks/useGifsQuery";
 import type { WidgetProps } from "../../types";
 import { toWidgetStatus } from "../../types";
 
