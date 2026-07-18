@@ -6,13 +6,18 @@ import {
   useSectionDragDrop,
   SortableWidgetItem,
   DroppableSection,
-  DroppableGroupButton,
+  DraggableGroupButton,
   WidgetSortableContext,
 } from "../hooks/useSectionDragDrop";
 import { useUiStore } from "../stores/uiStore";
 import { queryClient } from "../lib/queryClient";
 import { createSection, saveDashboardState, saveWidgets } from "../api";
-import type { DashboardSection, GlobalSettings, WidgetInstance } from "../types";
+import type {
+  DashboardSection,
+  DashboardState,
+  GlobalSettings,
+  WidgetInstance,
+} from "../types";
 import { getWidgetComponent } from "../widgets/registry";
 
 interface GridPlacement {
@@ -257,6 +262,43 @@ export function Dashboard() {
     [state, updateState],
   );
 
+  const handleGroupsReorder = useCallback(
+    (activeGroup: number, overGroup: number) => {
+      if (!state) return;
+
+      const ordered = [...occupiedGroups];
+      const fromIdx = ordered.indexOf(activeGroup);
+      const toIdx = ordered.indexOf(overGroup);
+      if (fromIdx === -1 || toIdx === -1) return;
+
+      ordered.splice(fromIdx, 1);
+      ordered.splice(toIdx, 0, activeGroup);
+
+      const groupMapping: Record<number, number> = {};
+      ordered.forEach((oldGroup, index) => {
+        groupMapping[oldGroup] = index + 1;
+      });
+
+      const updatedSections = state.sections.map(s => ({
+        ...s,
+        group: s.group != null ? (groupMapping[s.group] ?? s.group) : s.group,
+      }));
+
+      const newActiveGroup = groupMapping[activeGroup] ?? activeGroup;
+
+      const updated: DashboardState = {
+        ...state,
+        sections: updatedSections,
+        globalSettings: { ...state.globalSettings, activeGroup: newActiveGroup },
+      };
+      updateState(() => updated);
+      persistState(updated);
+      setActiveGroup(newActiveGroup);
+      resetRotateTimer();
+    },
+    [state, occupiedGroups, updateState, persistState, setActiveGroup, resetRotateTimer],
+  );
+
   useEffect(() => {
     if (state === null) return;
     const orientation = state.globalSettings?.orientation;
@@ -315,6 +357,7 @@ export function Dashboard() {
     state?.widgets ?? [],
     handleReorder,
     handleMoveWidgetToGroup,
+    handleGroupsReorder,
   );
 
   const renderSection = useCallback(
@@ -417,11 +460,11 @@ export function Dashboard() {
       >
         <nav className="group-sidebar" role="tablist" aria-label="Widget groups">
           {hasGroups &&
-            [1, 2, 3, 4, 5, 6].map(g => {
+            occupiedGroups.map(g => {
               const isActive = g === activeGroup;
               const hasContent = sortedSections.some(s => s.group === g);
               return (
-                <DroppableGroupButton
+                <DraggableGroupButton
                   key={g}
                   group={g}
                   type="button"
@@ -431,7 +474,7 @@ export function Dashboard() {
                   onClick={() => handleGroupChange(g)}
                 >
                   {g}
-                </DroppableGroupButton>
+                </DraggableGroupButton>
               );
             })}
           <Link

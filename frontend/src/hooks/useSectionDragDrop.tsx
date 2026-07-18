@@ -5,6 +5,7 @@ import {
   useSensor,
   useSensors,
   useDroppable,
+  useDraggable,
   pointerWithin,
   rectIntersection,
   type CollisionDetection,
@@ -34,6 +35,7 @@ export function useSectionDragDrop(
   widgets: WidgetInstance[],
   onReorder: (widgets: WidgetInstance[]) => void,
   onMoveWidgetToGroup?: (widgetId: string, toGroup: number) => void,
+  onGroupsReorder?: (activeGroup: number, overGroup: number) => void,
 ) {
   const [state, setState] = useState<SectionDragState>({
     dragWidgetId: null,
@@ -120,24 +122,32 @@ export function useSectionDragDrop(
     (event: DragEndEvent) => {
       const { active, over } = event;
 
-      if (activeRef.current && over) {
-        const activeWidgetId = String(active.id);
+      if (active && over) {
+        const activeId = String(active.id);
         const overId = String(over.id);
 
-        // ── Dropped on a group button ──
-        if (overId.startsWith("group-")) {
+        // ── Group reorder ──
+        if (activeId.startsWith("group-btn-") && overId.startsWith("group-")) {
+          const activeGroupNum = parseInt(activeId.replace("group-btn-", ""), 10);
+          const overGroupNum = parseInt(overId.replace("group-", ""), 10);
+          if (activeGroupNum !== overGroupNum) {
+            onGroupsReorder?.(activeGroupNum, overGroupNum);
+          }
+        }
+        // ── Dropped on a group button (move widget to group) ──
+        else if (overId.startsWith("group-") && activeRef.current) {
           const groupNum = parseInt(overId.replace("group-", ""), 10);
-          onMoveWidgetToGroup?.(activeWidgetId, groupNum);
+          onMoveWidgetToGroup?.(activeId, groupNum);
         }
         // ── Dropped on an empty section area ──
-        else if (overId.startsWith("section-")) {
+        else if (overId.startsWith("section-") && activeRef.current) {
           const sectionId = overId.replace("section-", "");
-          moveWidget(activeWidgetId, sectionId, -1); // append to end
+          moveWidget(activeId, sectionId, -1);
         }
         // ── Dropped on another widget ──
-        else {
+        else if (activeRef.current) {
           const overWidget = widgets.find(w => w.id === overId);
-          const activeWidget = widgets.find(w => w.id === activeWidgetId);
+          const activeWidget = widgets.find(w => w.id === activeId);
 
           if (overWidget && activeWidget) {
             const targetSection = overWidget.section;
@@ -147,7 +157,7 @@ export function useSectionDragDrop(
             const overIndex = sectionWidgets.findIndex(w => w.id === overId);
 
             if (overIndex >= 0) {
-              moveWidget(activeWidgetId, targetSection, overIndex);
+              moveWidget(activeId, targetSection, overIndex);
             }
           }
         }
@@ -156,7 +166,7 @@ export function useSectionDragDrop(
       activeRef.current = null;
       setState({ dragWidgetId: null, dragFromSection: null });
     },
-    [widgets, moveWidget, onMoveWidgetToGroup],
+    [widgets, moveWidget, onMoveWidgetToGroup, onGroupsReorder],
   );
 
   const handleDragCancel = useCallback(() => {
@@ -199,8 +209,8 @@ export function useSectionDragDrop(
     if (rectCollisions.length > 0) return [rectCollisions[0]];
 
     // 5. If rect intersection found nothing, use pointer position to find droppable
-    const pointerSectionCollision = pointerCollisions.find(
-      c => String(c.id).startsWith("section-"),
+    const pointerSectionCollision = pointerCollisions.find(c =>
+      String(c.id).startsWith("section-"),
     );
     if (pointerSectionCollision) return [pointerSectionCollision];
 
@@ -243,9 +253,9 @@ export function DroppableSection({
   );
 }
 
-// ─── DroppableGroupButton ──────────────────────────────────────
+// ─── DraggableGroupButton ──────────────────────────────────────
 
-export function DroppableGroupButton({
+export function DraggableGroupButton({
   group,
   children,
   className = "",
@@ -255,14 +265,46 @@ export function DroppableGroupButton({
   children: React.ReactNode;
   className?: string;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "className">) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `group-${group}`,
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDraggableNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: `group-btn-${group}`,
+    data: { group },
   });
 
-  const combinedClassName = `${className}${isOver ? " group-sidebar__item--over" : ""}`;
+  const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
+    id: `group-${group}`,
+    data: { group },
+  });
+
+  const setNodeRef = (el: HTMLElement | null) => {
+    setDraggableNodeRef(el);
+    setDroppableNodeRef(el);
+  };
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    opacity: isDragging ? 0.5 : undefined,
+    zIndex: isDragging ? 50 : undefined,
+    cursor: isDragging ? "grabbing" : "grab",
+    touchAction: "none",
+  };
+
+  const combinedClassName = `${className}${isOver ? " group-sidebar__item--over" : ""}${isDragging ? " group-sidebar__item--dragging" : ""}`;
 
   return (
-    <button ref={setNodeRef} className={combinedClassName} {...buttonProps}>
+    <button
+      ref={setNodeRef}
+      style={style}
+      className={combinedClassName}
+      {...attributes}
+      {...listeners}
+      {...buttonProps}
+    >
       {children}
     </button>
   );
