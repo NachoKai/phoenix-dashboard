@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import type { WidgetStatus } from "../types";
+import type { ReactNode } from "react";import type { WidgetStatus } from "../types";
 import { DragHandle } from "../hooks/useSectionDragDrop";
 
 interface WidgetCardProps {
@@ -33,7 +32,9 @@ export function WidgetCard({
 
       <div className="widget-card__body">
         {status === "loading" && !children ? (
-          <div className="widget-card__loading">Loading…</div>
+          <div className="widget-card__loading">
+            <div className="spinner" />
+          </div>
         ) : status === "error" && !children ? (
           <div className="widget-card__error">
             <p>{error ?? "Something went wrong"}</p>

@@ -231,7 +231,9 @@ export function Dashboard() {
                     <Suspense
                       fallback={
                         <div className="widget-card widget-card--loading">
-                          <div className="widget-card__loading">Loading…</div>
+                          <div className="widget-card__loading">
+                            <div className="spinner" />
+                          </div>
                         </div>
                       }
                     >
