@@ -380,14 +380,18 @@ Interactive elements (buttons, inputs, selects) are also covered. */
 
 .widget-card__body:has(.weather-widget),
 .widget-card__body:has(.weather-forecast-widget),
-.widget-card__body:has(.gifs-widget) {
+.widget-card__body:has(.weather-weekly-widget),
+.widget-card__body:has(.gifs-widget),
+.widget-card__body:has(.clock-widget-card),
+.widget-card__body:has(.moon-widget) {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .widget-card__body:has(.lights-widget),
-.widget-card__body:has(.vacuum-widget) {
+.widget-card__body:has(.vacuum-widget),
+.widget-card__body:has(.ai-qa-widget) {
   display: flex;
   flex-direction: column;
 }
