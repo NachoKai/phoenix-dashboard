@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchDashboard,
@@ -35,26 +36,33 @@ function getInitialData(): DashboardState | undefined {
 export function useDashboardQuery() {
   const queryClient = useQueryClient();
   const deviceId = getDeviceId();
+  const deviceKey = [...DASHBOARD_KEY, deviceId] as const;
 
   const query = useQuery({
-    queryKey: DASHBOARD_KEY,
-    queryFn: fetchDashboard,
+    queryKey: deviceKey,
+    queryFn: () => fetchDashboard(deviceId),
     select: deduplicateWidgets,
     initialData: getInitialData,
     staleTime: 5 * 60_000,
     refetchInterval: 5 * 60_000,
   });
 
+  useEffect(() => {
+    if (query.data) {
+      saveDashboardCache(deviceId, query.data);
+    }
+  }, [query.data, deviceId]);
+
   const saveMutation = useMutation({
-    mutationFn: (state: DashboardState) => saveDashboardState(state),
+    mutationFn: (state: DashboardState) => saveDashboardState(deviceId, state),
     onSuccess: (_data, variables) => {
       saveDashboardCache(deviceId, variables);
-      queryClient.setQueryData<DashboardState>(DASHBOARD_KEY, variables);
+      queryClient.setQueryData<DashboardState>(deviceKey, variables);
     },
   });
 
   const updateState = (updater: (prev: DashboardState) => DashboardState) => {
-    queryClient.setQueryData<DashboardState>(DASHBOARD_KEY, old => {
+    queryClient.setQueryData<DashboardState>(deviceKey, old => {
       if (!old) return old;
       return deduplicateWidgets(updater(old));
     });
@@ -69,12 +77,12 @@ export function useDashboardQuery() {
   const saveAll = async (state: DashboardState) => {
     const clean = deduplicateWidgets(state);
     await Promise.all([
-      apiSaveWidgets(clean.widgets),
-      apiSaveGlobalSettings(clean.globalSettings),
-      saveDashboardState(clean),
+      apiSaveWidgets(deviceId, clean.widgets),
+      apiSaveGlobalSettings(deviceId, clean.globalSettings),
+      saveDashboardState(deviceId, clean),
     ]);
     saveDashboardCache(deviceId, clean);
-    queryClient.setQueryData(DASHBOARD_KEY, clean);
+    queryClient.setQueryData(deviceKey, clean);
   };
 
   return {

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface UiState {
   activeGroup: number;
@@ -9,12 +10,23 @@ interface UiState {
   setOnline: (online: boolean) => void;
 }
 
-export const useUiStore = create<UiState>(set => ({
-  activeGroup: 1,
-  sleeping: false,
-  online: navigator.onLine,
+export const useUiStore = create<UiState>()(
+  persist(
+    set => ({
+      activeGroup: 1,
+      sleeping: false,
+      online: navigator.onLine,
 
-  setActiveGroup: group => set({ activeGroup: group }),
-  setSleeping: sleeping => set({ sleeping }),
-  setOnline: online => set({ online }),
-}));
+      setActiveGroup: group => set({ activeGroup: group }),
+      setSleeping: sleeping => set({ sleeping }),
+      setOnline: online => set({ online }),
+    }),
+    {
+      name: "phoenix-ui",
+      partialize: state => ({
+        activeGroup: state.activeGroup,
+        sleeping: state.sleeping,
+      }),
+    },
+  ),
+);

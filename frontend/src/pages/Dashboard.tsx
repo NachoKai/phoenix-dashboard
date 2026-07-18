@@ -11,6 +11,7 @@ import {
 } from "../hooks/useSectionDragDrop";
 import { useUiStore } from "../stores/uiStore";
 import { queryClient } from "../lib/queryClient";
+import { getDeviceId } from "../utils/deviceId";
 import { createSection, saveDashboardState, saveWidgets } from "../api";
 import type {
   DashboardSection,
@@ -88,6 +89,7 @@ function isInSleepRange(settings: GlobalSettings): boolean {
 }
 
 export function Dashboard() {
+  const deviceId = getDeviceId();
   const { state, error, updateState, persistState } = useDashboardQuery();
   const activeGroup = useUiStore(s => s.activeGroup);
   const sleeping = useUiStore(s => s.sleeping);
@@ -109,9 +111,9 @@ export function Dashboard() {
 
   useEffect(() => {
     if (online) {
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", deviceId] });
     }
-  }, [online]);
+  }, [online, deviceId]);
 
   useEffect(() => {
     if (!state?.globalSettings?.sleepTimeEnabled) {
@@ -211,7 +213,7 @@ export function Dashboard() {
       let targetSection = state.sections.find(s => s.group === toGroup);
       if (!targetSection) {
         try {
-          const { section } = await createSection();
+          const { section } = await createSection(deviceId);
           targetSection = { ...section, group: toGroup };
         } catch {
           console.error("[dashboard] Failed to create section");
@@ -254,12 +256,12 @@ export function Dashboard() {
 
       const updated = { ...state, widgets: reordered, sections: updatedSections };
       updateState(() => updated);
-      void saveWidgets(reordered).catch(() => {});
+      void saveWidgets(deviceId, reordered).catch(() => {});
       if (needsNewSection) {
-        void saveDashboardState(updated).catch(() => {});
+        void saveDashboardState(deviceId, updated).catch(() => {});
       }
     },
-    [state, updateState],
+    [state, updateState, deviceId],
   );
 
   const handleGroupsReorder = useCallback(
@@ -327,9 +329,9 @@ export function Dashboard() {
     (reordered: WidgetInstance[]) => {
       if (!state) return;
       updateState(() => ({ ...state, widgets: reordered }));
-      void saveWidgets(reordered).catch(() => {});
+      void saveWidgets(deviceId, reordered).catch(() => {});
     },
-    [state, updateState],
+    [state, updateState, deviceId],
   );
 
   const visibleSections = useMemo(
@@ -431,7 +433,7 @@ export function Dashboard() {
         <p>{error.message}</p>
         <button
           type="button"
-          onClick={() => queryClient.invalidateQueries({ queryKey: ["dashboard"] })}
+          onClick={() => queryClient.invalidateQueries({ queryKey: ["dashboard", deviceId] })}
         >
           Retry
         </button>

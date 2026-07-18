@@ -1,24 +1,29 @@
 import type { DashboardState } from "./types";
 import { saveDashboardCache } from "./utils/storage";
-import { getDeviceId } from "./utils/deviceId";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
-export async function fetchDashboard(): Promise<DashboardState> {
-  const res = await fetch(`${API_BASE}/dashboard`);
+function qp(deviceId: string): string {
+  return `?deviceId=${encodeURIComponent(deviceId)}`;
+}
+
+export async function fetchDashboard(deviceId: string): Promise<DashboardState> {
+  const res = await fetch(`${API_BASE}/dashboard${qp(deviceId)}`);
   if (!res.ok) throw new Error("Failed to load dashboard");
   return res.json();
 }
 
-export async function saveDashboardState(state: DashboardState): Promise<void> {
-  const res = await fetch(`${API_BASE}/dashboard`, {
+export async function saveDashboardState(
+  deviceId: string,
+  state: DashboardState,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/dashboard${qp(deviceId)}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(state),
   });
   if (!res.ok) throw new Error("Failed to save dashboard state");
   const body = (await res.json()) as { lastModified?: number };
-  const deviceId = getDeviceId();
   saveDashboardCache(deviceId, { ...state, lastModified: body.lastModified });
 }
 
@@ -31,9 +36,10 @@ export async function fetchWidgetRegistry(): Promise<
 }
 
 export async function saveWidgets(
+  deviceId: string,
   widgets: import("./types").WidgetInstance[],
 ): Promise<void> {
-  const res = await fetch(`${API_BASE}/dashboard/widgets`, {
+  const res = await fetch(`${API_BASE}/dashboard/widgets${qp(deviceId)}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ widgets }),
@@ -42,9 +48,10 @@ export async function saveWidgets(
 }
 
 export async function saveGlobalSettings(
+  deviceId: string,
   settings: import("./types").GlobalSettings,
 ): Promise<void> {
-  const res = await fetch(`${API_BASE}/dashboard/settings`, {
+  const res = await fetch(`${API_BASE}/dashboard/settings${qp(deviceId)}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(settings),
@@ -53,11 +60,12 @@ export async function saveGlobalSettings(
 }
 
 export async function saveApiKey(
+  deviceId: string,
   widgetId: string,
   keyName: string,
   value: string,
 ): Promise<{ masked: string }> {
-  const res = await fetch(`${API_BASE}/dashboard/keys`, {
+  const res = await fetch(`${API_BASE}/dashboard/keys${qp(deviceId)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ widgetId, keyName, value }),
@@ -77,16 +85,18 @@ export async function checkStoredKey(
 
 // ── Section management ──
 
-export async function fetchSections(): Promise<import("./types").DashboardSection[]> {
-  const res = await fetch(`${API_BASE}/dashboard/sections`);
+export async function fetchSections(
+  deviceId: string,
+): Promise<import("./types").DashboardSection[]> {
+  const res = await fetch(`${API_BASE}/dashboard/sections${qp(deviceId)}`);
   if (!res.ok) throw new Error("Failed to load sections");
   return res.json();
 }
 
-export async function createSection(): Promise<{
-  section: import("./types").DashboardSection;
-}> {
-  const res = await fetch(`${API_BASE}/dashboard/sections`, {
+export async function createSection(
+  deviceId: string,
+): Promise<{ section: import("./types").DashboardSection }> {
+  const res = await fetch(`${API_BASE}/dashboard/sections${qp(deviceId)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
@@ -94,8 +104,12 @@ export async function createSection(): Promise<{
   return res.json();
 }
 
-export async function renameSection(id: string, name: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/dashboard/sections/${id}`, {
+export async function renameSection(
+  deviceId: string,
+  id: string,
+  name: string,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/dashboard/sections/${id}${qp(deviceId)}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
@@ -103,17 +117,21 @@ export async function renameSection(id: string, name: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to rename section");
 }
 
-export async function deleteSection(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/dashboard/sections/${id}`, {
+export async function deleteSection(
+  deviceId: string,
+  id: string,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/dashboard/sections/${id}${qp(deviceId)}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete section");
 }
 
 export async function reorderSections(
+  deviceId: string,
   sections: import("./types").DashboardSection[],
 ): Promise<void> {
-  const res = await fetch(`${API_BASE}/dashboard/sections/reorder`, {
+  const res = await fetch(`${API_BASE}/dashboard/sections/reorder${qp(deviceId)}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sections }),

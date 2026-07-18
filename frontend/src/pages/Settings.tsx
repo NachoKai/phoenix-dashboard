@@ -14,6 +14,7 @@ import {
   saveWidgets,
 } from "../api";
 import { useDashboardQuery } from "../hooks/useDashboardQuery";
+import { getDeviceId } from "../utils/deviceId";
 import type {
   ConfigFieldSchema,
   SectionLayout,
@@ -23,6 +24,7 @@ import type {
 import { v4 as uuid } from "../utils/id";
 
 export function Settings() {
+  const deviceId = getDeviceId();
   const logout = useAuthStore(s => s.logout);
   const { state: dashboardState, updateState } = useDashboardQuery();
   const [state, setState] = useState(dashboardState);
@@ -110,7 +112,7 @@ export function Settings() {
 
     if (!targetSectionId) {
       try {
-        const { section } = await createSection();
+        const { section } = await createSection(deviceId);
         setState({ ...state, sections: [...state.sections, section] });
         targetSectionId = section.id;
       } catch {
@@ -154,7 +156,7 @@ export function Settings() {
   const handleAddSection = async () => {
     if (!state) return;
     try {
-      const { section } = await createSection();
+      const { section } = await createSection(deviceId);
       setState({ ...state, sections: [...state.sections, section] });
     } catch {
       console.error("[dashboard] Failed to create section");
@@ -165,7 +167,7 @@ export function Settings() {
   const handleDeleteSection = async (sectionId: string) => {
     if (!state) return;
     try {
-      await apiDeleteSection(sectionId);
+      await apiDeleteSection(deviceId, sectionId);
       setState({
         ...state,
         sections: state.sections.filter(s => s.id !== sectionId),
@@ -211,12 +213,13 @@ export function Settings() {
       );
       const cleaned = { ...state, widgets: cleanedWidgets };
       await Promise.all([
-        saveWidgets(cleanedWidgets),
-        saveGlobalSettings(state.globalSettings),
+        saveWidgets(deviceId, cleanedWidgets),
+        saveGlobalSettings(deviceId, state.globalSettings),
         reorderSections(
+          deviceId,
           state.sections.map((s, i) => ({ ...s, position: i, name: `Section ${i + 1}` })),
         ),
-        saveDashboardState(cleaned),
+        saveDashboardState(deviceId, cleaned),
       ]);
       setState(cleaned);
       updateState(() => cleaned);
@@ -231,7 +234,7 @@ export function Settings() {
   const handleSecretSave = async (widgetId: string, keyName: string, value: string) => {
     if (!value.trim()) return;
     try {
-      const result = await saveApiKey(widgetId, keyName, value);
+      const result = await saveApiKey(deviceId, widgetId, keyName, value);
       setKeyMasks(m => ({ ...m, [`${widgetId}:${keyName}`]: result.masked }));
       setMessage("API key saved");
     } catch (err) {

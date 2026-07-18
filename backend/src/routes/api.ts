@@ -37,15 +37,23 @@ import {
 
 export const apiRouter = Router();
 
+function getDeviceId(req: { query: { deviceId?: string } }): string | null {
+  return req.query.deviceId ?? null;
+}
+
 apiRouter.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-apiRouter.get("/dashboard", (_req, res) => {
-  res.json(getDashboardState());
+apiRouter.get("/dashboard", (req, res) => {
+  const deviceId = getDeviceId(req);
+  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+  res.json(getDashboardState(deviceId));
 });
 
 apiRouter.put("/dashboard", (req, res) => {
+  const deviceId = getDeviceId(req);
+  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
   const state = req.body as DashboardState;
   if (!state.widgets || !state.sections || !state.globalSettings) {
     res.status(400).json({
@@ -53,8 +61,8 @@ apiRouter.put("/dashboard", (req, res) => {
     });
     return;
   }
-  saveDashboardState(state);
-  res.json({ ok: true, lastModified: getDashboardState().lastModified });
+  saveDashboardState(deviceId, state);
+  res.json({ ok: true, lastModified: getDashboardState(deviceId).lastModified });
 });
 
 apiRouter.get("/widgets/registry", (_req, res) => {
@@ -71,38 +79,48 @@ apiRouter.get("/widgets/registry", (_req, res) => {
 });
 
 apiRouter.put("/dashboard/widgets", (req, res) => {
+  const deviceId = getDeviceId(req);
+  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
   const widgets = req.body.widgets as WidgetInstance[];
   if (!Array.isArray(widgets)) {
     res.status(400).json({ error: "widgets array required" });
     return;
   }
-  saveWidgets(widgets);
-  res.json({ ok: true, widgets: getWidgets() });
+  saveWidgets(deviceId, widgets);
+  res.json({ ok: true, widgets: getWidgets(deviceId) });
 });
 
 // ── Section management ──
 
-apiRouter.get("/dashboard/sections", (_req, res) => {
-  res.json(getSections());
+apiRouter.get("/dashboard/sections", (req, res) => {
+  const deviceId = getDeviceId(req);
+  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+  res.json(getSections(deviceId));
 });
 
-apiRouter.post("/dashboard/sections", (_req, res) => {
-  const section = addSection();
+apiRouter.post("/dashboard/sections", (req, res) => {
+  const deviceId = getDeviceId(req);
+  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+  const section = addSection(deviceId);
   res.json({ ok: true, section });
 });
 
 apiRouter.put("/dashboard/sections/reorder", (req, res) => {
+  const deviceId = getDeviceId(req);
+  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
   const sections = req.body.sections as DashboardSection[];
   if (!Array.isArray(sections)) {
     res.status(400).json({ error: "sections array required" });
     return;
   }
-  saveSections(sections);
-  res.json({ ok: true, sections: getSections() });
+  saveSections(deviceId, sections);
+  res.json({ ok: true, sections: getSections(deviceId) });
 });
 
 apiRouter.delete("/dashboard/sections/:id", (req, res) => {
-  const ok = deleteSection(req.params.id);
+  const deviceId = getDeviceId(req);
+  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+  const ok = deleteSection(deviceId, req.params.id);
   if (!ok) {
     res.status(400).json({ error: "Cannot delete last section" });
     return;
@@ -113,12 +131,14 @@ apiRouter.delete("/dashboard/sections/:id", (req, res) => {
 // ── Settings ──
 
 apiRouter.put("/dashboard/settings", (req, res) => {
+  const deviceId = getDeviceId(req);
+  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
   const settings = req.body as GlobalSettings;
   if (!settings.theme || settings.defaultRefreshInterval == null) {
     res.status(400).json({ error: "Invalid settings" });
     return;
   }
-  saveGlobalSettings({
+  saveGlobalSettings(deviceId, {
     ...settings,
     sleepStartHour: Math.max(0, Math.min(23, settings.sleepStartHour ?? 23)),
     sleepStartMinute: Math.max(0, Math.min(59, settings.sleepStartMinute ?? 0)),
@@ -131,6 +151,8 @@ apiRouter.put("/dashboard/settings", (req, res) => {
 // ── API keys ──
 
 apiRouter.post("/dashboard/keys", (req, res) => {
+  const deviceId = getDeviceId(req);
+  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
   const { widgetId, keyName, value } = req.body as {
     widgetId: string;
     keyName: string;
@@ -141,7 +163,7 @@ apiRouter.post("/dashboard/keys", (req, res) => {
     return;
   }
 
-  const widget = getWidgets().find(w => w.id === widgetId);
+  const widget = getWidgets(deviceId).find(w => w.id === widgetId);
   if (!widget) {
     res.status(404).json({ error: "Widget not found" });
     return;
