@@ -1553,12 +1553,11 @@ Interactive elements (buttons, inputs, selects) are also covered. */
     padding: 2px 2px 2px calc(2px + var(--safe-left));
     width: 52px;
     flex-shrink: 0;
-    overflow-y: auto;
   }
 
   .group-sidebar__item {
     flex: 1;
-    min-height: 35px;
+    min-height: 0;
   }
 
   .section__grid {
@@ -1644,16 +1643,15 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   .group-sidebar {
     flex-direction: column;
     justify-content: flex-start;
-    gap: 4px;
+    gap: 2px;
     padding: 2px 2px 2px calc(2px + var(--safe-left));
     width: 42px;
-    overflow-y: auto;
   }
 
   .group-sidebar__item {
     flex: 1;
-    min-height: 35px;
-    font-size: 0.85rem;
+    min-height: 0;
+    font-size: 0.7rem;
   }
 
   .section__grid {
