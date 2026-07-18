@@ -183,7 +183,7 @@ a {
 
 .section__empty {
   grid-column: 1 / -1;
-  border: 2px dashed var(--border);
+  border: 2px solid var(--border);
   padding: 6px;
   text-align: center;
   color: var(--text-muted);
@@ -1312,7 +1312,7 @@ Interactive elements (buttons, inputs, selects) are also covered. */
 .settings__add-btn {
   padding: 6px 12px;
   background: var(--bg-elevated);
-  border: 1px dashed var(--border);
+  border: 1px solid var(--border);
   cursor: pointer;
   font-size: 0.8rem;
 }
@@ -1485,9 +1485,11 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: rgba(0, 0, 0, 0.5);
 }
+
 .group-sidebar--sleep .group-sidebar__item {
   color: rgba(255, 255, 255, 0.6);
 }
+
 .group-sidebar--sleep .group-sidebar__item:hover {
   color: #fff;
 }

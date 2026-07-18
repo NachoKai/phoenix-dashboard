@@ -1,91 +1,26 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";import { Link } from "react-router-dom";
+import { Suspense, useCallback, useEffect } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { useDashboardQuery } from "../hooks/useDashboardQuery";
 import {
   useSectionDragDrop,
   SortableWidgetItem,
   DroppableSection,
-  DraggableGroupButton,
   WidgetSortableContext,
 } from "../hooks/useSectionDragDrop";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import { useSleepMode } from "../hooks/useSleepMode";
+import { useOrientationLock } from "../hooks/useOrientationLock";
+import { useAutoRotate } from "../hooks/useAutoRotate";
+import { useDashboardDerivedState } from "../hooks/useDashboardDerivedState";
 import { useUiStore } from "../stores/uiStore";
-import { queryClient } from "../lib/queryClient";
 import { getDeviceId } from "../utils/deviceId";
 import { createSection, saveDashboardState, saveWidgets } from "../api";
-import type {
-  DashboardSection,
-  DashboardState,
-  GlobalSettings,
-  WidgetInstance,
-} from "../types";
+import type { DashboardSection, DashboardState, WidgetInstance } from "../types";
 import { getWidgetComponent } from "../widgets/registry";
-
-interface GridPlacement {
-  section: DashboardSection;
-  gridColumn: string;
-  gridRow: string;
-}
-
-interface GridResult {
-  placements: GridPlacement[];
-  totalRows: number;
-}
-
-function computeGrid(sections: DashboardSection[]): GridResult {
-  const sorted = [...sections].sort((a, b) => a.position - b.position);
-  const fullWidths = sorted.filter(s => !s.layout || s.layout === "full-width");
-  const fullHeights = sorted.filter(
-    s => s.layout === "left-full-height" || s.layout === "right-full-height",
-  );
-  const leftOnly = sorted.filter(s => s.layout === "left");
-  const rightOnly = sorted.filter(s => s.layout === "right");
-
-  const totalRows =
-    fullWidths.length +
-    Math.max(leftOnly.length, rightOnly.length, fullHeights.length > 0 ? 1 : 0);
-  const placements: GridPlacement[] = [];
-
-  let row = 1;
-  for (const s of fullWidths) {
-    placements.push({ section: s, gridColumn: "1 / -1", gridRow: `${row}` });
-    row++;
-  }
-
-  const pairCount = Math.max(leftOnly.length, rightOnly.length);
-  for (let i = 0; i < pairCount; i++) {
-    const r = row + i;
-    if (i < leftOnly.length) {
-      placements.push({ section: leftOnly[i], gridColumn: "1", gridRow: `${r}` });
-    }
-    if (i < rightOnly.length) {
-      placements.push({ section: rightOnly[i], gridColumn: "2", gridRow: `${r}` });
-    }
-  }
-
-  for (const s of fullHeights) {
-    const col = s.layout === "left-full-height" ? "1" : "2";
-    placements.push({
-      section: s,
-      gridColumn: col,
-      gridRow: totalRows > 0 ? `1 / ${totalRows + 1}` : "1",
-    });
-  }
-
-  return { placements, totalRows };
-}
-
-function isInSleepRange(settings: GlobalSettings): boolean {
-  if (!settings.sleepTimeEnabled) return false;
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const startMinutes = settings.sleepStartHour * 60 + settings.sleepStartMinute;
-  const endMinutes = settings.sleepEndHour * 60 + settings.sleepEndMinute;
-
-  if (startMinutes <= endMinutes) {
-    return currentMinutes >= startMinutes && currentMinutes < endMinutes;
-  }
-  return currentMinutes >= startMinutes || currentMinutes < endMinutes;
-}
+import { DashboardError } from "../components/DashboardError";
+import { DashboardLoading } from "../components/DashboardLoading";
+import { GroupSidebar } from "../components/GroupSidebar";
+import { SleepOverlay } from "../components/SleepOverlay";
 
 export function Dashboard() {
   const deviceId = getDeviceId();
@@ -97,35 +32,9 @@ export function Dashboard() {
   const setSleeping = useUiStore(s => s.setSleeping);
   const setOnline = useUiStore(s => s.setOnline);
 
-  useEffect(() => {
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, [setOnline]);
-
-  useEffect(() => {
-    if (online) {
-      queryClient.invalidateQueries({ queryKey: ["dashboard", deviceId] });
-    }
-  }, [online, deviceId]);
-
-  useEffect(() => {
-    if (!state?.globalSettings?.sleepTimeEnabled) {
-      setSleeping(false);
-      return;
-    }
-
-    const check = () => setSleeping(isInSleepRange(state.globalSettings));
-
-    check();
-    const id = setInterval(check, 30_000);
-    return () => clearInterval(id);
-  }, [state?.globalSettings]);
+  useOnlineStatus(online, setOnline);
+  useSleepMode(state?.globalSettings, setSleeping);
+  useOrientationLock(state?.globalSettings?.orientation);
 
   useEffect(() => {
     if (state?.globalSettings?.activeGroup != null) {
@@ -133,59 +42,16 @@ export function Dashboard() {
     }
   }, [state?.globalSettings?.activeGroup]);
 
-  const sortedSections = useMemo(
-    () => [...(state?.sections ?? [])].sort((a, b) => a.position - b.position),
-    [state?.sections],
+  const { sortedSections, hasGroups, occupiedGroups, gridPlacements, totalRows } =
+    useDashboardDerivedState(state, activeGroup);
+
+  const resetRotateTimer = useAutoRotate(
+    state,
+    occupiedGroups,
+    updateState,
+    persistState,
+    setActiveGroup,
   );
-
-  const hasGroups = useMemo(
-    () => sortedSections.some(s => s.group != null),
-    [sortedSections],
-  );
-
-  const occupiedGroups = useMemo(
-    () =>
-      [
-        ...new Set(
-          sortedSections.filter(s => s.group != null).map(s => s.group as number),
-        ),
-      ].sort((a, b) => a - b),
-    [sortedSections],
-  );
-
-  const rotateTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const resetRotateTimer = useCallback(() => {
-    if (rotateTimerRef.current != null) {
-      clearInterval(rotateTimerRef.current);
-      rotateTimerRef.current = null;
-    }
-    const interval = state?.globalSettings?.autoRotateInterval ?? 0;
-    if (interval > 0 && occupiedGroups.length >= 2) {
-      rotateTimerRef.current = setInterval(() => {
-        const prev = useUiStore.getState().activeGroup;
-        const idx = occupiedGroups.indexOf(prev);
-        const nextIdx = (idx + 1) % occupiedGroups.length;
-        const nextGroup = occupiedGroups[nextIdx];
-        if (state) {
-          const updated = {
-            ...state,
-            globalSettings: { ...state.globalSettings, activeGroup: nextGroup },
-          };
-          updateState(() => updated);
-          persistState(updated);
-        }
-        setActiveGroup(nextGroup);
-      }, interval * 1000);
-    }
-  }, [state, occupiedGroups, updateState, persistState]);
-
-  useEffect(() => {
-    resetRotateTimer();
-    return () => {
-      if (rotateTimerRef.current != null) clearInterval(rotateTimerRef.current);
-    };
-  }, [resetRotateTimer]);
 
   const handleGroupChange = useCallback(
     (group: number) => {
@@ -300,30 +166,6 @@ export function Dashboard() {
     [state, occupiedGroups, updateState, persistState, setActiveGroup, resetRotateTimer],
   );
 
-  useEffect(() => {
-    if (state === null) return;
-    const orientation = state.globalSettings?.orientation;
-    const so = screen.orientation as any;
-    if (!orientation || orientation === "auto") {
-      so?.unlock?.();
-      return;
-    }
-    if (!so?.lock) return;
-
-    const lockOrientation = () => {
-      so.lock(orientation).catch(() => {});
-    };
-
-    if (document.fullscreenElement) {
-      lockOrientation();
-    } else {
-      document.documentElement
-        .requestFullscreen()
-        .then(lockOrientation)
-        .catch(() => {});
-    }
-  }, [state?.globalSettings?.orientation]);
-
   const handleReorder = useCallback(
     (reordered: WidgetInstance[]) => {
       if (!state) return;
@@ -331,19 +173,6 @@ export function Dashboard() {
       void saveWidgets(deviceId, reordered).catch(() => {});
     },
     [state, updateState, deviceId],
-  );
-
-  const visibleSections = useMemo(
-    () =>
-      hasGroups
-        ? sortedSections.filter(s => s.group === undefined || s.group === activeGroup)
-        : sortedSections,
-    [sortedSections, activeGroup, hasGroups],
-  );
-
-  const { placements: gridPlacements, totalRows } = useMemo(
-    () => computeGrid(visibleSections),
-    [visibleSections],
   );
 
   const {
@@ -427,27 +256,11 @@ export function Dashboard() {
   );
 
   if (!state && error) {
-    return (
-      <div className="dashboard dashboard--error">
-        <p>{error.message}</p>
-        <button
-          type="button"
-          onClick={() =>
-            queryClient.invalidateQueries({ queryKey: ["dashboard", deviceId] })
-          }
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return <DashboardError error={error} deviceId={deviceId} />;
   }
 
   if (!state) {
-    return (
-      <div className="dashboard dashboard--loading">
-        <div className="spinner" />
-      </div>
-    );
+    return <DashboardLoading />;
   }
 
   return (
@@ -461,33 +274,13 @@ export function Dashboard() {
       <div
         className={`dashboard theme-${state.globalSettings.theme} dashboard--has-groups`}
       >
-        <nav className="group-sidebar" role="tablist" aria-label="Widget groups">
-          {hasGroups &&
-            occupiedGroups.map(g => {
-              const isActive = g === activeGroup;
-              const hasContent = sortedSections.some(s => s.group === g);
-              return (
-                <DraggableGroupButton
-                  key={g}
-                  group={g}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  className={`group-sidebar__item${isActive ? " group-sidebar__item--active" : ""}${hasContent ? " group-sidebar__item--has-content" : ""}`}
-                  onClick={() => handleGroupChange(g)}
-                >
-                  {g}
-                </DraggableGroupButton>
-              );
-            })}
-          <Link
-            to="/settings"
-            className="group-sidebar__item group-sidebar__settings"
-            aria-label="Settings"
-          >
-            ⚙
-          </Link>
-        </nav>
+        <GroupSidebar
+          hasGroups={hasGroups}
+          occupiedGroups={occupiedGroups}
+          activeGroup={activeGroup}
+          sortedSections={sortedSections}
+          onGroupChange={handleGroupChange}
+        />
 
         <div
           className="dashboard__grid"
@@ -512,21 +305,9 @@ export function Dashboard() {
           ))}
         </div>
 
-        {sleeping && (
-          <>
-            <div className="sleep-overlay" />
-            <nav className="group-sidebar group-sidebar--sleep" aria-label="Sleep settings">
-              <Link
-                to="/settings"
-                className="group-sidebar__item group-sidebar__settings"
-                aria-label="Settings"
-              >
-                ⚙
-              </Link>
-            </nav>
-          </>
-        )}
+        {sleeping && <SleepOverlay />}
       </div>
+
       <DragOverlay>
         {dragState.dragWidgetId ? (
           <div className="drag-item drag-item--overlay">
