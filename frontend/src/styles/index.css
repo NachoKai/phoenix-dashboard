@@ -183,7 +183,7 @@ a {
 
 .section__empty {
   grid-column: 1 / -1;
-  border: 2px solid var(--border);
+  border: 1px dashed var(--border);
   padding: 6px;
   text-align: center;
   color: var(--text-muted);
@@ -1057,7 +1057,7 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   width: 90px;
   text-decoration: none;
   padding: 6px 14px;
-  border: 2px solid var(--accent);
+  border: 1px solid var(--accent);
   background: transparent;
   color: var(--accent);
   font-weight: 600;
@@ -1073,7 +1073,7 @@ Interactive elements (buttons, inputs, selects) are also covered. */
 
 .settings__logout {
   padding: 6px 14px;
-  border: 2px solid var(--error);
+  border: 1px solid var(--error);
   background: transparent;
   color: var(--error);
   font-weight: 600;
@@ -1387,7 +1387,7 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   padding: 6px 14px;
   background: var(--accent);
   color: #fff;
-  border: 2px solid var(--accent);
+  border: 1px solid var(--accent);
   font-weight: 600;
   border-radius: 4px;
   cursor: pointer;
@@ -1401,7 +1401,7 @@ Interactive elements (buttons, inputs, selects) are also covered. */
 .settings__scroll-top {
   flex: 0 0 auto;
   padding: 6px 14px;
-  border: 2px solid var(--accent);
+  border: 1px solid var(--accent);
   background: var(--accent);
   color: #fff;
   font-weight: 600;
@@ -1858,7 +1858,7 @@ Interactive elements (buttons, inputs, selects) are also covered. */
 .lights-widget__preset {
   flex: 1;
   height: clamp(28px, 7.5cqw, 38px);
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
