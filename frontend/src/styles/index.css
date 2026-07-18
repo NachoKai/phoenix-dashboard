@@ -395,6 +395,7 @@ Interactive elements (buttons, inputs, selects) are also covered. */
 .widget-card__body:has(.ai-qa-widget) {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .widget-card__loading {
@@ -1552,10 +1553,12 @@ Interactive elements (buttons, inputs, selects) are also covered. */
     padding: 2px 2px 2px calc(2px + var(--safe-left));
     width: 52px;
     flex-shrink: 0;
+    overflow-y: auto;
   }
 
   .group-sidebar__item {
     flex: 1;
+    min-height: 35px;
   }
 
   .section__grid {
@@ -1644,10 +1647,12 @@ Interactive elements (buttons, inputs, selects) are also covered. */
     gap: 4px;
     padding: 2px 2px 2px calc(2px + var(--safe-left));
     width: 42px;
+    overflow-y: auto;
   }
 
   .group-sidebar__item {
     flex: 1;
+    min-height: 35px;
     font-size: 0.85rem;
   }
 
