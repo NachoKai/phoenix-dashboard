@@ -1,246 +1,25 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { NumberInput } from "../components/NumberInput";
+import { useRef } from "react";
 import { Link } from "react-router-dom";
+import { NumberInput } from "../components/NumberInput";
+import { ConfigField } from "../components/ConfigField";
 import { useAuthStore } from "../stores/authStore";
-import {
-  checkStoredKey,
-  createSection,
-  deleteSection as apiDeleteSection,
-  fetchWidgetRegistry,
-  reorderSections,
-  saveApiKey,
-  saveDashboardState,
-  saveGlobalSettings,
-  saveWidgets,
-} from "../api";
 import { useDashboardQuery } from "../hooks/useDashboardQuery";
+import { useSettingsState } from "../hooks/useSettingsState";
+import { useScrollToTop } from "../hooks/useScrollToTop";
+import { useAutoDismiss } from "../hooks/useAutoDismiss";
 import { getDeviceId } from "../utils/deviceId";
-import type {
-  ConfigFieldSchema,
-  SectionLayout,
-  WidgetDefinition,
-  WidgetInstance,
-} from "../types";
-import { v4 as uuid } from "../utils/id";
+import type { SectionLayout } from "../types";
 
 export function Settings() {
   const deviceId = getDeviceId();
   const logout = useAuthStore(s => s.logout);
   const { state: dashboardState, updateState } = useDashboardQuery();
-  const [state, setState] = useState(dashboardState);
-  const [registry, setRegistry] = useState<WidgetDefinition[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [keyMasks, setKeyMasks] = useState<Record<string, string>>({});
-  const [showScrollTop, setShowScrollTop] = useState(false);
+  const settings = useSettingsState(deviceId, dashboardState, updateState);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const showScrollTop = useScrollToTop(scrollRef);
+  useAutoDismiss(settings.message, () => settings.setMessage(null));
 
-  useEffect(() => {
-    if (dashboardState && !state) {
-      setState(dashboardState);
-    }
-  }, [dashboardState, state]);
-
-  const load = useCallback(async () => {
-    const reg = await fetchWidgetRegistry();
-    setRegistry(reg);
-
-    if (!dashboardState) return;
-
-    const secretFields: { widgetId: string; key: string }[] = [];
-    for (const w of dashboardState.widgets) {
-      const def = reg.find(r => r.type === w.type);
-      for (const field of def?.configSchema ?? []) {
-        if (field.type === "secret") {
-          secretFields.push({ widgetId: w.id, key: field.key });
-        }
-      }
-    }
-
-    const results = await Promise.all(
-      secretFields.map(f =>
-        checkStoredKey(f.widgetId, f.key).then(r => ({ ...f, ...r })),
-      ),
-    );
-
-    const masks: Record<string, string> = {};
-    for (const r of results) {
-      if (r.hasValue && r.masked) {
-        masks[`${r.widgetId}:${r.key}`] = r.masked;
-      }
-    }
-    setKeyMasks(masks);
-  }, [dashboardState]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  useEffect(() => {
-    if (!message) return;
-    const t = setTimeout(() => setMessage(null), 4000);
-    return () => clearTimeout(t);
-  }, [message]);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const onScroll = () => setShowScrollTop(el.scrollTop > 300);
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [state]);
-
-  const updateWidgetConfig = useCallback((id: string, key: string, value: unknown) => {
-    setState(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        widgets: prev.widgets.map(w =>
-          w.id === id ? { ...w, config: { ...w.config, [key]: value } } : w,
-        ),
-      };
-    });
-  }, []);
-
-  const addWidget = async (type: string) => {
-    if (!state) return;
-    const def = registry.find(r => r.type === type);
-    if (!def) return;
-    const sorted = [...state.sections].sort((a, b) => a.position - b.position);
-    const emptySection = sorted.find(s => !state.widgets.some(w => w.section === s.id));
-    let targetSectionId = emptySection?.id;
-
-    if (!targetSectionId) {
-      try {
-        const { section } = await createSection(deviceId);
-        setState({ ...state, sections: [...state.sections, section] });
-        targetSectionId = section.id;
-      } catch {
-        console.error("[dashboard] Failed to create section for new widget");
-        return;
-      }
-    }
-    const newWidget: WidgetInstance = {
-      id: `${type}-${uuid()}`,
-      type,
-      position: state.widgets.filter(w => w.section === targetSectionId).length,
-      section: targetSectionId,
-      config: { ...def.defaultConfig },
-    };
-    setState(s => (s ? { ...s, widgets: [...s.widgets, newWidget] } : s));
-  };
-
-  const removeWidget = (id: string) => {
-    if (!state) return;
-    setState({ ...state, widgets: state.widgets.filter(w => w.id !== id) });
-  };
-
-  const moveWidget = (id: string, direction: -1 | 1) => {
-    if (!state) return;
-    const idx = state.widgets.findIndex(w => w.id === id);
-    const newIdx = idx + direction;
-    if (idx < 0 || newIdx < 0 || newIdx >= state.widgets.length) return;
-    const widgets = [...state.widgets];
-    [widgets[idx], widgets[newIdx]] = [widgets[newIdx], widgets[idx]];
-    setState({ ...state, widgets });
-  };
-
-  const changeWidgetSection = (id: string, sectionId: string) => {
-    if (!state) return;
-    setState({
-      ...state,
-      widgets: state.widgets.map(w => (w.id === id ? { ...w, section: sectionId } : w)),
-    });
-  };
-
-  const handleAddSection = async () => {
-    if (!state) return;
-    try {
-      const { section } = await createSection(deviceId);
-      setState({ ...state, sections: [...state.sections, section] });
-    } catch {
-      console.error("[dashboard] Failed to create section");
-      /* silent */
-    }
-  };
-
-  const handleDeleteSection = async (sectionId: string) => {
-    if (!state) return;
-    try {
-      await apiDeleteSection(deviceId, sectionId);
-      setState({
-        ...state,
-        sections: state.sections.filter(s => s.id !== sectionId),
-        widgets: state.widgets.filter(w => w.section !== sectionId),
-      });
-    } catch {
-      console.error("[dashboard] Failed to delete section");
-      /* silent */
-    }
-  };
-
-  const handleSetLayout = (sectionId: string, layout: SectionLayout) => {
-    if (!state) return;
-    setState({
-      ...state,
-      sections: state.sections.map(s => (s.id === sectionId ? { ...s, layout } : s)),
-    });
-  };
-
-  const handleSetSectionGroup = (sectionId: string, group: number | undefined) => {
-    if (!state) return;
-    setState({
-      ...state,
-      sections: state.sections.map(s => (s.id === sectionId ? { ...s, group } : s)),
-    });
-  };
-
-  const handleSave = async () => {
-    if (!state) return;
-    setSaving(true);
-    setMessage(null);
-    try {
-      const cleanedWidgets = state.widgets.map(w =>
-        w.type === "gifs" && Array.isArray(w.config.urls)
-          ? {
-              ...w,
-              config: {
-                ...w.config,
-                urls: (w.config.urls as string[]).filter(u => u.trim() !== ""),
-              },
-            }
-          : w,
-      );
-      const cleaned = { ...state, widgets: cleanedWidgets };
-      await Promise.all([
-        saveWidgets(deviceId, cleanedWidgets),
-        saveGlobalSettings(deviceId, state.globalSettings),
-        reorderSections(
-          deviceId,
-          state.sections.map((s, i) => ({ ...s, position: i, name: `Section ${i + 1}` })),
-        ),
-        saveDashboardState(deviceId, cleaned),
-      ]);
-      setState(cleaned);
-      updateState(() => cleaned);
-      setMessage("Saved successfully");
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Save failed");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSecretSave = async (widgetId: string, keyName: string, value: string) => {
-    if (!value.trim()) return;
-    try {
-      const result = await saveApiKey(deviceId, widgetId, keyName, value);
-      setKeyMasks(m => ({ ...m, [`${widgetId}:${keyName}`]: result.masked }));
-      setMessage("API key saved");
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Failed to save key");
-    }
-  };
+  const { state } = settings;
 
   if (!state) {
     return <div className="settings settings--loading">Loading…</div>;
@@ -273,7 +52,7 @@ export function Settings() {
             <select
               value={state.globalSettings.theme}
               onChange={e =>
-                setState({
+                settings.setState({
                   ...state,
                   globalSettings: {
                     ...state.globalSettings,
@@ -292,7 +71,7 @@ export function Settings() {
               min={10}
               value={state.globalSettings.defaultRefreshInterval}
               onChange={n =>
-                setState({
+                settings.setState({
                   ...state,
                   globalSettings: {
                     ...state.globalSettings,
@@ -307,7 +86,7 @@ export function Settings() {
             <select
               value={state.globalSettings.orientation ?? "auto"}
               onChange={e =>
-                setState({
+                settings.setState({
                   ...state,
                   globalSettings: {
                     ...state.globalSettings,
@@ -328,7 +107,7 @@ export function Settings() {
               step={1}
               value={state.globalSettings.autoRotateInterval ?? 0}
               onChange={n =>
-                setState({
+                settings.setState({
                   ...state,
                   globalSettings: {
                     ...state.globalSettings,
@@ -346,7 +125,7 @@ export function Settings() {
               type="checkbox"
               checked={state.globalSettings.sleepTimeEnabled}
               onChange={e =>
-                setState({
+                settings.setState({
                   ...state,
                   globalSettings: {
                     ...state.globalSettings,
@@ -368,7 +147,7 @@ export function Settings() {
                     max={23}
                     value={state.globalSettings.sleepStartHour}
                     onChange={n =>
-                      setState({
+                      settings.setState({
                         ...state,
                         globalSettings: {
                           ...state.globalSettings,
@@ -383,7 +162,7 @@ export function Settings() {
                     max={59}
                     value={state.globalSettings.sleepStartMinute}
                     onChange={n =>
-                      setState({
+                      settings.setState({
                         ...state,
                         globalSettings: {
                           ...state.globalSettings,
@@ -402,7 +181,7 @@ export function Settings() {
                     max={23}
                     value={state.globalSettings.sleepEndHour}
                     onChange={n =>
-                      setState({
+                      settings.setState({
                         ...state,
                         globalSettings: {
                           ...state.globalSettings,
@@ -417,7 +196,7 @@ export function Settings() {
                     max={59}
                     value={state.globalSettings.sleepEndMinute}
                     onChange={n =>
-                      setState({
+                      settings.setState({
                         ...state,
                         globalSettings: {
                           ...state.globalSettings,
@@ -443,7 +222,10 @@ export function Settings() {
                     className="settings__layout-select"
                     value={section.layout ?? "full-width"}
                     onChange={e =>
-                      void handleSetLayout(section.id, e.target.value as SectionLayout)
+                      void settings.handleSetLayout(
+                        section.id,
+                        e.target.value as SectionLayout,
+                      )
                     }
                   >
                     <option value="full-width">Full width</option>
@@ -456,7 +238,7 @@ export function Settings() {
                     className="settings__layout-select"
                     value={section.group ?? ""}
                     onChange={e =>
-                      void handleSetSectionGroup(
+                      void settings.handleSetSectionGroup(
                         section.id,
                         e.target.value === "" ? undefined : Number(e.target.value),
                       )
@@ -476,7 +258,7 @@ export function Settings() {
                 <button
                   type="button"
                   className="settings__remove-btn"
-                  onClick={() => void handleDeleteSection(section.id)}
+                  onClick={() => void settings.handleDeleteSection(section.id)}
                 >
                   Remove
                 </button>
@@ -485,7 +267,7 @@ export function Settings() {
             <button
               type="button"
               className="settings__add-btn"
-              onClick={() => void handleAddSection()}
+              onClick={() => void settings.handleAddSection()}
             >
               + Section
             </button>
@@ -495,12 +277,12 @@ export function Settings() {
         <section className="settings__section">
           <h2>Widgets</h2>
           <div className="settings__add-widgets">
-            {registry.map(def => (
+            {settings.registry.map(def => (
               <button
                 key={def.type}
                 type="button"
                 className="settings__add-btn"
-                onClick={() => addWidget(def.type)}
+                onClick={() => settings.addWidget(def.type)}
               >
                 + {def.name}
               </button>
@@ -514,7 +296,7 @@ export function Settings() {
               <div key={section.id} className="settings__section-group">
                 <h3 className="settings__section-group-title">{section.name}</h3>
                 {sectionWidgets.map(widget => {
-                  const def = registry.find(r => r.type === widget.type);
+                  const def = settings.registry.find(r => r.type === widget.type);
                   return (
                     <div key={widget.id} className="settings__widget-card">
                       <div className="settings__widget-header">
@@ -525,7 +307,7 @@ export function Settings() {
                               className="settings__section-select"
                               value={widget.section}
                               onChange={e =>
-                                changeWidgetSection(widget.id, e.target.value)
+                                settings.changeWidgetSection(widget.id, e.target.value)
                               }
                             >
                               {state.sections.map(s => (
@@ -537,14 +319,14 @@ export function Settings() {
                           )}
                           <button
                             type="button"
-                            onClick={() => moveWidget(widget.id, -1)}
+                            onClick={() => settings.moveWidget(widget.id, -1)}
                             aria-label="Move up"
                           >
                             ↑
                           </button>
                           <button
                             type="button"
-                            onClick={() => moveWidget(widget.id, 1)}
+                            onClick={() => settings.moveWidget(widget.id, 1)}
                             aria-label="Move down"
                           >
                             ↓
@@ -552,7 +334,7 @@ export function Settings() {
                           <button
                             type="button"
                             className="settings__remove-btn"
-                            onClick={() => removeWidget(widget.id)}
+                            onClick={() => settings.removeWidget(widget.id)}
                           >
                             Remove
                           </button>
@@ -563,10 +345,12 @@ export function Settings() {
                           key={field.key}
                           field={field}
                           value={widget.config[field.key]}
-                          mask={keyMasks[`${widget.id}:${field.key}`]}
-                          onChange={val => updateWidgetConfig(widget.id, field.key, val)}
+                          mask={settings.keyMasks[`${widget.id}:${field.key}`]}
+                          onChange={val =>
+                            settings.updateWidgetConfig(widget.id, field.key, val)
+                          }
                           onSecretSave={val =>
-                            void handleSecretSave(widget.id, field.key, val)
+                            void settings.handleSecretSave(widget.id, field.key, val)
                           }
                         />
                       ))}
@@ -583,16 +367,16 @@ export function Settings() {
         <button
           type="button"
           className="settings__save-btn"
-          onClick={() => void handleSave()}
-          disabled={saving}
+          onClick={() => void settings.handleSave()}
+          disabled={settings.saving}
         >
-          {saving ? "Saving…" : "Save"}
+          {settings.saving ? "Saving…" : "Save"}
         </button>
-        {message && (
+        {settings.message && (
           <div
-            className={`settings__toast ${message.includes("fail") || message.includes("Invalid") ? "settings__toast--error" : ""}`}
+            className={`settings__toast ${settings.message.includes("fail") || settings.message.includes("Invalid") ? "settings__toast--error" : ""}`}
           >
-            {message}
+            {settings.message}
           </div>
         )}
         <button
@@ -605,239 +389,5 @@ export function Settings() {
         </button>
       </div>
     </>
-  );
-}
-
-function ConfigField({
-  field,
-  value,
-  mask,
-  onChange,
-  onSecretSave,
-}: {
-  field: ConfigFieldSchema;
-  value: unknown;
-  mask?: string;
-  onChange: (val: unknown) => void;
-  onSecretSave: (val: string) => void;
-}) {
-  const [secretInput, setSecretInput] = useState("");
-  const [bulkInput, setBulkInput] = useState("");
-  const [showBulk, setShowBulk] = useState(false);
-  const [bulkReplace, setBulkReplace] = useState(false);
-
-  if (field.type === "secret") {
-    return (
-      <label className="settings__field">
-        {field.label}
-        {mask && <span className="settings__mask"> (stored: {mask})</span>}
-        <input
-          type="password"
-          value={secretInput}
-          onChange={e => setSecretInput(e.target.value)}
-          placeholder="Enter new key"
-          className="settings__input"
-        />
-        <button
-          type="button"
-          className="settings__key-btn"
-          onClick={() => {
-            onSecretSave(secretInput);
-            setSecretInput("");
-          }}
-        >
-          Save key
-        </button>
-        {field.description && <small>{field.description}</small>}
-      </label>
-    );
-  }
-
-  if (field.type === "boolean") {
-    return (
-      <label className="settings__field settings__field--checkbox">
-        <input
-          type="checkbox"
-          checked={Boolean(value)}
-          onChange={e => onChange(e.target.checked)}
-        />
-        {field.label}
-      </label>
-    );
-  }
-
-  if (field.type === "select" && field.options) {
-    return (
-      <label className="settings__field">
-        {field.label}
-        <select
-          value={String(value ?? field.default)}
-          onChange={e => onChange(e.target.value)}
-        >
-          {field.options.map(opt => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </label>
-    );
-  }
-
-  if (field.type === "number") {
-    return (
-      <label className="settings__field">
-        {field.label}
-        <NumberInput value={Number(value ?? field.default ?? 0)} onChange={onChange} />
-        {field.description && <small>{field.description}</small>}
-      </label>
-    );
-  }
-
-  if (field.type === "string-list") {
-    const list = Array.isArray(value) ? (value as string[]) : [];
-    const updateItem = (index: number, newVal: string) => {
-      const updated = [...list];
-      updated[index] = newVal;
-      onChange(updated);
-    };
-    const addItem = () => {
-      onChange([...list, ""]);
-    };
-    const removeItem = (index: number) => {
-      onChange(list.filter((_, i) => i !== index));
-    };
-    return (
-      <div className="settings__field">
-        <span className="settings__field-label">{field.label}</span>
-        <div className="settings__url-grid">
-          {list.map((url, i) => (
-            <div key={i} className="settings__url-card">
-              <div className="settings__url-card-preview">
-                {url ? (
-                  <img
-                    src={url}
-                    alt={`GIF ${i + 1}`}
-                    className="settings__url-preview"
-                    onError={e => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <span className="settings__url-preview-placeholder">No preview</span>
-                )}
-              </div>
-              <div className="settings__url-card-footer">
-                <input
-                  type="text"
-                  value={url}
-                  onChange={e => updateItem(i, e.target.value)}
-                  placeholder="Paste GIF URL"
-                  className="settings__url-input"
-                />
-                <button
-                  type="button"
-                  className="settings__remove-btn"
-                  onClick={() => removeItem(i)}
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          ))}
-          <button
-            type="button"
-            className="settings__add-btn settings__add-btn--card"
-            onClick={addItem}
-          >
-            + GIF
-          </button>
-        </div>
-        <button
-          type="button"
-          className="settings__bulk-toggle"
-          onClick={() => setShowBulk(s => !s)}
-        >
-          {showBulk ? "Hide bulk import" : "Bulk import"}
-        </button>
-        {showBulk && (
-          <div className="settings__bulk-area">
-            <textarea
-              className="settings__bulk-textarea"
-              value={bulkInput}
-              onChange={e => setBulkInput(e.target.value)}
-              onPaste={e => {
-                e.preventDefault();
-                const text = e.clipboardData.getData("text/plain");
-                const el = e.currentTarget;
-                const start = el.selectionStart;
-                const end = el.selectionEnd;
-                const next =
-                  bulkInput.substring(0, start) + text + bulkInput.substring(end);
-                setBulkInput(next);
-              }}
-              placeholder="Paste URLs, one per line or comma-separated"
-              rows={5}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-            />
-            {bulkInput.trim() && (
-              <small className="settings__bulk-count">
-                {
-                  bulkInput
-                    .split(/[\n,]/)
-                    .map(u => u.trim())
-                    .filter(u => u.length > 0).length
-                }{" "}
-                URL(s) detected
-              </small>
-            )}
-            <div className="settings__bulk-actions">
-              <label className="settings__field settings__field--checkbox settings__bulk-replace">
-                <input
-                  type="checkbox"
-                  checked={bulkReplace}
-                  onChange={e => setBulkReplace(e.target.checked)}
-                />
-                Replace existing
-              </label>
-              <button
-                type="button"
-                className="settings__add-btn"
-                onClick={() => {
-                  const parsed = bulkInput
-                    .split(/[\n,]/)
-                    .map(u => u.trim())
-                    .filter(u => u.length > 0);
-                  if (parsed.length === 0) return;
-                  const merged = bulkReplace ? parsed : [...list, ...parsed];
-                  const deduped = [...new Set(merged)].filter(u => u.trim() !== "");
-                  onChange(deduped);
-                  setBulkInput("");
-                  setShowBulk(false);
-                }}
-              >
-                Import
-              </button>
-            </div>
-          </div>
-        )}
-        {field.description && <small>{field.description}</small>}
-      </div>
-    );
-  }
-
-  return (
-    <label className="settings__field">
-      {field.label}
-      <input
-        type="text"
-        value={String(value ?? field.default ?? "")}
-        onChange={e => onChange(e.target.value)}
-      />
-      {field.description && <small>{field.description}</small>}
-    </label>
   );
 }
