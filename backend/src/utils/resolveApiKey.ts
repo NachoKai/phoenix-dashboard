@@ -1,19 +1,18 @@
 import { decrypt, getEncryptionKey } from "../config/encryption.js";
 import { getEncryptedKey } from "../db/index.js";
 
-export function resolveApiKey(
+export async function resolveApiKey(
   widgetId: string | undefined,
   keyName: string,
   fallbackEnvKey: string,
-): string | null {
+): Promise<string | null> {
   if (widgetId) {
-    const stored = getEncryptedKey(widgetId, keyName);
+    const stored = await getEncryptedKey(widgetId, keyName);
     if (stored) {
       try {
         return decrypt(stored, getEncryptionKey());
       } catch {
         console.error("[api] Failed to decrypt API key");
-        /* fall through */
       }
     }
   }

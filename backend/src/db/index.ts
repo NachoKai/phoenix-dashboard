@@ -1,40 +1,10 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import { initDatabase, getClient } from "./turso.js";
 import type {
   DashboardSection,
   DashboardState,
   GlobalSettings,
   WidgetInstance,
 } from "../types.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const DATA_DIR =
-  process.env.DATA_DIR || path.resolve(path.dirname(__filename), "../../data");
-const PERSIST_FILE = path.join(DATA_DIR, "dashboard-state.json");
-const BACKUP_FILE = path.join(DATA_DIR, "dashboard-state.json.bak");
-const KEYS_FILE = path.join(DATA_DIR, "encrypted-keys.json");
-
-const CURRENT_VERSION = 2;
-
-interface PerDeviceData {
-  widgets: WidgetInstance[];
-  sections: DashboardSection[];
-  globalSettings: GlobalSettings;
-  lastModified: number;
-}
-
-interface PersistedStateV2 {
-  version: typeof CURRENT_VERSION;
-  devices: Record<string, PerDeviceData>;
-}
-
-interface PersistedStateV1 {
-  globalSettings: GlobalSettings;
-  sections: DashboardSection[];
-  widgets: WidgetInstance[];
-  lastModified?: number;
-}
 
 const DEFAULT_SETTINGS: GlobalSettings = {
   theme: "dark",
@@ -49,144 +19,123 @@ const DEFAULT_SETTINGS: GlobalSettings = {
   sleepEndMinute: 0,
 };
 
-function createDefaultDeviceData(): PerDeviceData {
+export async function initDb(): Promise<void> {
+  await initDatabase();
+}
+
+async function getOrCreateDeviceData(deviceId: string): Promise<{
+  widgets: WidgetInstance[];
+  sections: DashboardSection[];
+  globalSettings: GlobalSettings;
+  lastModified: number;
+}> {
+  const client = getClient();
+  const row = await client.execute({
+    sql: "SELECT widgets, sections, global_settings, last_modified FROM device_state WHERE device_id = ?",
+    args: [deviceId],
+  });
+
+  if (row.rows.length > 0) {
+    const r = row.rows[0];
+    return {
+      widgets: JSON.parse(r.widgets as string),
+      sections: JSON.parse(r.sections as string),
+      globalSettings: JSON.parse(r.global_settings as string),
+      lastModified: r.last_modified as number,
+    };
+  }
+
+  const template = await client.execute({
+    sql: "SELECT widgets, sections, global_settings, last_modified FROM device_state WHERE device_id = ?",
+    args: ["_migrated_"],
+  });
+
+  if (template.rows.length > 0) {
+    const t = template.rows[0];
+    const data = {
+      widgets: JSON.parse(t.widgets as string),
+      sections: JSON.parse(t.sections as string),
+      globalSettings: JSON.parse(t.global_settings as string),
+      lastModified: t.last_modified as number,
+    };
+    await client.execute({
+      sql: "INSERT INTO device_state (device_id, widgets, sections, global_settings, last_modified) VALUES (?, ?, ?, ?, ?)",
+      args: [
+        deviceId,
+        JSON.stringify(data.widgets),
+        JSON.stringify(data.sections),
+        JSON.stringify(data.globalSettings),
+        data.lastModified,
+      ],
+    });
+    return data;
+  }
+
+  await client.execute({
+    sql: "INSERT INTO device_state (device_id, widgets, sections, global_settings, last_modified) VALUES (?, ?, ?, ?, ?)",
+    args: [
+      deviceId,
+      JSON.stringify([]),
+      JSON.stringify([]),
+      JSON.stringify(DEFAULT_SETTINGS),
+      0,
+    ],
+  });
+
   return {
-    globalSettings: { ...DEFAULT_SETTINGS },
-    sections: [],
     widgets: [],
+    sections: [],
+    globalSettings: { ...DEFAULT_SETTINGS },
     lastModified: 0,
   };
 }
 
-function ensureDataDir(): void {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-  } catch {
-    console.error("[db] Failed to create data directory at", DATA_DIR);
-  }
+function touch(deviceId: string): void {
+  getClient().execute({
+    sql: "UPDATE device_state SET last_modified = ? WHERE device_id = ?",
+    args: [Date.now(), deviceId],
+  });
 }
 
-let devices: Record<string, PerDeviceData> = {};
-
-function loadFromDisk(): void {
-  ensureDataDir();
-  try {
-    const raw = fs.readFileSync(PERSIST_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-
-    if (parsed.version === CURRENT_VERSION && parsed.devices) {
-      devices = parsed.devices as Record<string, PerDeviceData>;
-      return;
-    }
-
-    const v1 = parsed as PersistedStateV1;
-    if (v1.globalSettings) {
-      devices = {
-        _migrated_: {
-          globalSettings: v1.globalSettings,
-          sections: v1.sections ?? [],
-          widgets: v1.widgets ?? [],
-          lastModified: v1.lastModified ?? 0,
-        },
-      };
-      persistToDisk();
-      console.warn("[db] Migrated v1 format to v2");
-      return;
-    }
-
-    console.error("[db] Unknown persisted format; initializing with defaults");
-    devices = {};
-  } catch {
-    try {
-      console.warn("[db] Primary file missing; trying backup…");
-      const raw = fs.readFileSync(BACKUP_FILE, "utf-8");
-      const parsed = JSON.parse(raw);
-      if (parsed.version === CURRENT_VERSION && parsed.devices) {
-        devices = parsed.devices;
-      } else {
-        devices = {};
-      }
-      persistToDisk();
-      console.warn("[db] Restored primary file from backup");
-    } catch {
-      console.error("[db] No backup either; initializing with defaults");
-      devices = {};
-    }
-  }
+export async function getGlobalSettings(deviceId: string): Promise<GlobalSettings> {
+  const data = await getOrCreateDeviceData(deviceId);
+  return { ...data.globalSettings };
 }
 
-function persistToDisk(): void {
-  try {
-    const state: PersistedStateV2 = {
-      version: CURRENT_VERSION,
-      devices,
-    };
-    const json = JSON.stringify(state, null, 2);
-    fs.writeFileSync(PERSIST_FILE, json, "utf-8");
-    const tmp = BACKUP_FILE + ".tmp";
-    fs.writeFileSync(tmp, json, "utf-8");
-    fs.renameSync(tmp, BACKUP_FILE);
-  } catch {
-    console.error("[db] Failed to persist state to disk; changes may be lost");
-  }
+export async function saveGlobalSettings(
+  deviceId: string,
+  settings: GlobalSettings,
+): Promise<void> {
+  const client = getClient();
+  await client.execute({
+    sql: "UPDATE device_state SET global_settings = ?, last_modified = ? WHERE device_id = ?",
+    args: [JSON.stringify(settings), Date.now(), deviceId],
+  });
 }
 
-loadFromDisk();
-
-function getOrCreateDeviceData(deviceId: string): PerDeviceData {
-  let data = devices[deviceId];
-  if (data) return data;
-
-  const template = devices["_migrated_"];
-  if (template) {
-    data = {
-      globalSettings: { ...template.globalSettings },
-      sections: template.sections.map(s => ({ ...s })),
-      widgets: template.widgets.map(w => ({ ...w, config: { ...w.config } })),
-      lastModified: template.lastModified,
-    };
-    devices[deviceId] = data;
-    persistToDisk();
-    return data;
-  }
-
-  data = createDefaultDeviceData();
-  devices[deviceId] = data;
-  persistToDisk();
-  return data;
-}
-
-export function getGlobalSettings(deviceId: string): GlobalSettings {
-  return { ...getOrCreateDeviceData(deviceId).globalSettings };
-}
-
-export function saveGlobalSettings(deviceId: string, settings: GlobalSettings): void {
-  const data = getOrCreateDeviceData(deviceId);
-  data.globalSettings = { ...settings };
-  data.lastModified = Date.now();
-  persistToDisk();
-}
-
-export function getSections(deviceId: string): DashboardSection[] {
-  const data = getOrCreateDeviceData(deviceId);
+export async function getSections(deviceId: string): Promise<DashboardSection[]> {
+  const data = await getOrCreateDeviceData(deviceId);
   return [...data.sections].sort((a, b) => a.position - b.position);
 }
 
-export function saveSections(deviceId: string, newSections: DashboardSection[]): void {
-  const data = getOrCreateDeviceData(deviceId);
-  data.sections = newSections.map((s, i) => ({
+export async function saveSections(
+  deviceId: string,
+  newSections: DashboardSection[],
+): Promise<void> {
+  const sections = newSections.map((s, i) => ({
     ...s,
     position: i,
     name: s.name || `Section ${i + 1}`,
   }));
-  data.lastModified = Date.now();
-  persistToDisk();
+  const client = getClient();
+  await client.execute({
+    sql: "UPDATE device_state SET sections = ?, last_modified = ? WHERE device_id = ?",
+    args: [JSON.stringify(sections), Date.now(), deviceId],
+  });
 }
 
-export function addSection(deviceId: string): DashboardSection {
-  const data = getOrCreateDeviceData(deviceId);
+export async function addSection(deviceId: string): Promise<DashboardSection> {
+  const data = await getOrCreateDeviceData(deviceId);
   const maxPos = data.sections.reduce((max, s) => Math.max(max, s.position), -1);
   const id = `section-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const name = `Section ${data.sections.length + 1}`;
@@ -198,36 +147,58 @@ export function addSection(deviceId: string): DashboardSection {
     layout: "full-width",
   };
   data.sections.push(section);
-  data.lastModified = Date.now();
-  persistToDisk();
+  const client = getClient();
+  await client.execute({
+    sql: "UPDATE device_state SET sections = ?, last_modified = ? WHERE device_id = ?",
+    args: [JSON.stringify(data.sections), Date.now(), deviceId],
+  });
   return section;
 }
 
-export function deleteSection(deviceId: string, id: string): boolean {
-  const data = getOrCreateDeviceData(deviceId);
-  if (data.sections.length === 0) return false;
-  data.widgets = data.widgets.filter(w => w.section !== id);
-  data.sections = data.sections.filter(s => s.id !== id);
-  data.sections.forEach((s, i) => { s.position = i; });
-  data.lastModified = Date.now();
-  persistToDisk();
+export async function deleteSection(
+  deviceId: string,
+  id: string,
+): Promise<boolean> {
+  const data = await getOrCreateDeviceData(deviceId);
+  if (data.sections.length <= 1) return false;
+  data.widgets = data.widgets.filter((w) => w.section !== id);
+  data.sections = data.sections.filter((s) => s.id !== id);
+  data.sections.forEach((s, i) => {
+    s.position = i;
+  });
+  const client = getClient();
+  await client.execute({
+    sql: "UPDATE device_state SET widgets = ?, sections = ?, last_modified = ? WHERE device_id = ?",
+    args: [
+      JSON.stringify(data.widgets),
+      JSON.stringify(data.sections),
+      Date.now(),
+      deviceId,
+    ],
+  });
   return true;
 }
 
-export function getWidgets(deviceId: string): WidgetInstance[] {
-  const data = getOrCreateDeviceData(deviceId);
+export async function getWidgets(deviceId: string): Promise<WidgetInstance[]> {
+  const data = await getOrCreateDeviceData(deviceId);
   return [...data.widgets].sort((a, b) => a.position - b.position);
 }
 
-export function saveWidgets(deviceId: string, newWidgets: WidgetInstance[]): void {
-  const data = getOrCreateDeviceData(deviceId);
-  data.widgets = [...newWidgets];
-  data.lastModified = Date.now();
-  persistToDisk();
+export async function saveWidgets(
+  deviceId: string,
+  newWidgets: WidgetInstance[],
+): Promise<void> {
+  const client = getClient();
+  await client.execute({
+    sql: "UPDATE device_state SET widgets = ?, last_modified = ? WHERE device_id = ?",
+    args: [JSON.stringify(newWidgets), Date.now(), deviceId],
+  });
 }
 
-export function getDashboardState(deviceId: string): DashboardState {
-  const data = getOrCreateDeviceData(deviceId);
+export async function getDashboardState(
+  deviceId: string,
+): Promise<DashboardState> {
+  const data = await getOrCreateDeviceData(deviceId);
   return {
     widgets: [...data.widgets].sort((a, b) => a.position - b.position),
     sections: [...data.sections].sort((a, b) => a.position - b.position),
@@ -236,85 +207,81 @@ export function getDashboardState(deviceId: string): DashboardState {
   };
 }
 
-export function saveDashboardState(deviceId: string, state: DashboardState): void {
-  const data = getOrCreateDeviceData(deviceId);
-  data.widgets = [...state.widgets];
-  data.sections = [...state.sections.map(s => ({ ...s }))];
-  data.globalSettings = { ...state.globalSettings };
-  data.lastModified = Date.now();
-  persistToDisk();
+export async function saveDashboardState(
+  deviceId: string,
+  state: DashboardState,
+): Promise<void> {
+  const client = getClient();
+  await client.execute({
+    sql: "UPDATE device_state SET widgets = ?, sections = ?, global_settings = ?, last_modified = ? WHERE device_id = ?",
+    args: [
+      JSON.stringify(state.widgets),
+      JSON.stringify(state.sections),
+      JSON.stringify(state.globalSettings),
+      Date.now(),
+      deviceId,
+    ],
+  });
 }
 
-export function saveEncryptedKey(
+export async function saveEncryptedKey(
   widgetId: string,
   keyName: string,
   encrypted: string,
-): void {
-  encryptedKeys.set(`${widgetId}:${keyName}`, encrypted);
-  persistEncryptedKeys();
+): Promise<void> {
+  const client = getClient();
+  await client.execute({
+    sql: "INSERT OR REPLACE INTO encrypted_keys (key, value) VALUES (?, ?)",
+    args: [`${widgetId}:${keyName}`, encrypted],
+  });
 }
 
-export function getEncryptedKey(widgetId: string, keyName: string): string | null {
-  return encryptedKeys.get(`${widgetId}:${keyName}`) ?? null;
+export async function getEncryptedKey(
+  widgetId: string,
+  keyName: string,
+): Promise<string | null> {
+  const client = getClient();
+  const row = await client.execute({
+    sql: "SELECT value FROM encrypted_keys WHERE key = ?",
+    args: [`${widgetId}:${keyName}`],
+  });
+  return row.rows.length > 0 ? (row.rows[0].value as string) : null;
 }
 
-export function deleteEncryptedKeysForWidget(widgetId: string): void {
-  for (const key of encryptedKeys.keys()) {
-    if (key.startsWith(`${widgetId}:`)) {
-      encryptedKeys.delete(key);
-    }
-  }
-  persistEncryptedKeys();
+export async function deleteEncryptedKeysForWidget(widgetId: string): Promise<void> {
+  const client = getClient();
+  await client.execute({
+    sql: "DELETE FROM encrypted_keys WHERE key LIKE ?",
+    args: [`${widgetId}:%`],
+  });
 }
 
-function loadEncryptedKeysFromDisk(): Map<string, string> {
-  try {
-    const raw = fs.readFileSync(KEYS_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    return new Map(Object.entries(parsed));
-  } catch {
-    console.error("[db] Failed to load encrypted keys from disk");
-    return new Map();
-  }
+export async function getCachedValue(cacheKey: string): Promise<string | null> {
+  const client = getClient();
+  const row = await client.execute({
+    sql: "SELECT value, expires_at FROM api_cache WHERE cache_key = ? AND expires_at > ?",
+    args: [cacheKey, Date.now()],
+  });
+  if (row.rows.length === 0) return null;
+  return row.rows[0].value as string;
 }
 
-function persistEncryptedKeys(): void {
-  try {
-    const obj: Record<string, string> = {};
-    for (const [k, v] of encryptedKeys) {
-      obj[k] = v;
-    }
-    const json = JSON.stringify(obj, null, 2);
-    fs.writeFileSync(KEYS_FILE, json, "utf-8");
-    const bak = KEYS_FILE + ".bak";
-    const tmp = bak + ".tmp";
-    fs.writeFileSync(tmp, json, "utf-8");
-    fs.renameSync(tmp, bak);
-  } catch {
-    console.error("[db] Failed to persist encrypted keys to disk");
-  }
+export async function setCachedValue(
+  cacheKey: string,
+  value: string,
+  ttlMs: number,
+): Promise<void> {
+  const client = getClient();
+  await client.execute({
+    sql: "INSERT OR REPLACE INTO api_cache (cache_key, value, expires_at) VALUES (?, ?, ?)",
+    args: [cacheKey, value, Date.now() + ttlMs],
+  });
 }
 
-const encryptedKeys = loadEncryptedKeysFromDisk();
-const apiCache = new Map<string, { value: string; expiresAt: number }>();
-
-export function getCachedValue(cacheKey: string): string | null {
-  const entry = apiCache.get(cacheKey);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) {
-    apiCache.delete(cacheKey);
-    return null;
-  }
-  return entry.value;
-}
-
-export function setCachedValue(cacheKey: string, value: string, ttlMs: number): void {
-  apiCache.set(cacheKey, { value, expiresAt: Date.now() + ttlMs });
-}
-
-export function cleanupExpiredCache(): void {
-  const now = Date.now();
-  for (const [key, entry] of apiCache) {
-    if (now > entry.expiresAt) apiCache.delete(key);
-  }
+export async function cleanupExpiredCache(): Promise<void> {
+  const client = getClient();
+  await client.execute({
+    sql: "DELETE FROM api_cache WHERE expires_at <= ?",
+    args: [Date.now()],
+  });
 }

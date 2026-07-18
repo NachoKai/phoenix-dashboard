@@ -12,7 +12,7 @@ A self-hosted, always-on widget dashboard designed to turn any phone into a smar
 - **Orientation lock** — force portrait, landscape, or auto
 - **Encrypted secrets** — API keys stored with AES-256-GCM encryption
 - **Password-protected dashboard** — environment-variable-based password gate (`VITE_DASHBOARD_PASSWORD`)
-- **Shared state across devices** — all settings save to the server's `dashboard-state.json`, visible to every logged-in device
+- **Shared state across devices** — all settings persist to the database (Turso / SQLite), visible to every logged-in device
 - **localStorage fallback** — offline-capable with cached state when the server is unreachable
 - **Per-widget refresh** — configurable refresh intervals with stale data detection
 - **Safe area support** — respects notches, rounded corners, and system insets
@@ -62,6 +62,10 @@ ENCRYPTION_KEY=change-me-to-a-32-byte-random-string!!
 # Required — set a password to lock the dashboard
 VITE_DASHBOARD_PASSWORD=your-password-here
 
+# Database — default: local SQLite (no setup). For persistence across deploys, use Turso:
+# TURSO_DATABASE_URL=libsql://phoenix-dashboard-<org>.turso.io
+# TURSO_AUTH_TOKEN=<your-token>
+
 # Optional — global fallback API keys (can also be set per-widget in Settings)
 OPENWEATHER_API_KEY=
 GIPHY_API_KEY=
@@ -107,6 +111,38 @@ The backend serves the compiled frontend from `frontend/dist/` on port 3001.
 5. Copy your **Access ID** and **Access Secret** into `.env` as `TUYA_ACCESS_ID` and `TUYA_ACCESS_SECRET`
 6. If devices can't be discovered via API, set `TUYA_KNOWN_DEVICE_IDS` to a comma-separated list of device IDs (visible in the Tuya platform device list)
 
+### Turso Database Setup (Production Persistence)
+
+By default, the app uses a local SQLite file (`backend/data/dashboard.db`) — same as before, still lost on deploy. For persistence across deployments, set up a free Turso database:
+
+1. Install the Turso CLI:
+   ```bash
+   npm install -g turso
+   # or: curl -sSfL https://get.turso.sh | sh
+   ```
+
+2. Create a free account and database:
+   ```bash
+   turso auth signup
+   turso db create phoenix-dashboard
+   ```
+
+3. Get your connection details:
+   ```bash
+   turso db show phoenix-dashboard --url        # → libsql://phoenix-dashboard-<org>.turso.io
+   turso db tokens create phoenix-dashboard     # → long auth token
+   ```
+
+4. Add to `.env`:
+   ```env
+   TURSO_DATABASE_URL=libsql://phoenix-dashboard-<org>.turso.io
+   TURSO_AUTH_TOKEN=<your-token>
+   ```
+
+5. On first deploy with Turso, the app automatically migrates existing data from `dashboard-state.json` and `encrypted-keys.json` into the remote database. The old JSON files are renamed to `.bak`.
+
+> **Local dev note:** If `TURSO_DATABASE_URL` is not set, the app falls back to a local SQLite file at `backend/data/dashboard.db` — no Turso account needed.
+
 ## Project Structure
 
 ```
@@ -116,7 +152,8 @@ phoenix-dashboard/
 │       ├── server.ts              # Express entry point
 │       ├── types.ts               # Shared types (WidgetDefinition, DashboardSection, etc.)
 │       ├── config/encryption.ts   # AES-256-GCM encrypt/decrypt
-│       ├── db/index.ts            # JSON file persistence (dashboard-state.json)
+│       ├── db/index.ts            # Database persistence (Turso / SQLite)
+│       ├── db/turso.ts            # Turso client, schema, JSON migration
 │       ├── routes/api.ts          # REST API routes
 │       └── widgets/               # Per-widget route handlers + registry
 │           ├── registry.ts        # Widget definitions and config schemas
@@ -182,7 +219,7 @@ All endpoints are prefixed with `/api`.
 |-------|------------|
 | Frontend | React 19, React Router DOM 7, Vite 6, TypeScript 5.7 |
 | Backend | Express 4, TypeScript 5.7, tsx (dev) |
-| Storage | JSON file persistence (server), localStorage (client-side cache/offline fallback) |
+| Storage | Turso (SQLite-compatible remote DB) / local SQLite (server), localStorage (client-side cache/offline fallback) |
 | PWA | vite-plugin-pwa, Workbox |
 | Encryption | Node.js crypto (AES-256-GCM) |
 

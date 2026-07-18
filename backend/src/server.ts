@@ -4,6 +4,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { apiRouter } from "./routes/api.js";
+import { initDb } from "./db/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,13 @@ app.get("*", (req, res, next) => {
   });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.info(`Phoenix Dashboard API running on http://0.0.0.0:${PORT}`);
-});
+initDb()
+  .then(() => {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.info(`Phoenix Dashboard API running on http://0.0.0.0:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error("[server] Database initialization failed:", err);
+    process.exit(1);
+  });

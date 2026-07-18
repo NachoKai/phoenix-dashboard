@@ -69,14 +69,14 @@ export async function weatherWeeklyHandler(req: Request, res: Response) {
     const lang = (req.query.lang as string) || "en";
     const widgetId = req.query.widgetId as string | undefined;
 
-    const apiKey = resolveApiKey(widgetId, "apiKey", "OPENWEATHER_API_KEY");
+    const apiKey = await resolveApiKey(widgetId, "apiKey", "OPENWEATHER_API_KEY");
     if (!apiKey) {
       res.status(503).json({ error: "Weather API key not configured" });
       return;
     }
 
     const cacheKey = `weather-weekly:${location}:${units}`;
-    const cached = getCachedValue(cacheKey);
+    const cached = await getCachedValue(cacheKey);
     if (cached) {
       res.json(JSON.parse(cached));
       return;
@@ -164,7 +164,7 @@ export async function weatherWeeklyHandler(req: Request, res: Response) {
       cachedAt: new Date().toISOString(),
     };
 
-    setCachedValue(cacheKey, JSON.stringify(result), CACHE_TTL_MS);
+    await setCachedValue(cacheKey, JSON.stringify(result), CACHE_TTL_MS);
     res.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Weather fetch failed";

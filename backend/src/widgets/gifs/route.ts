@@ -1,4 +1,5 @@
-import type { Request, Response } from "express";import { getCachedValue, setCachedValue } from "../../db/index.js";
+import type { Request, Response } from "express";
+import { getCachedValue, setCachedValue } from "../../db/index.js";
 import { resolveApiKey } from "../../utils/resolveApiKey.js";
 
 const GIPHY_CACHE_TTL_MS = 30 * 60 * 1000;
@@ -32,14 +33,14 @@ export async function gifsHandler(req: Request, res: Response) {
     }
 
     if (source === "giphy") {
-      const apiKey = resolveApiKey(widgetId, "apiKey", "GIPHY_API_KEY");
+      const apiKey = await resolveApiKey(widgetId, "apiKey", "GIPHY_API_KEY");
       if (!apiKey) {
         res.status(503).json({ error: "Giphy API key not configured" });
         return;
       }
 
       const cacheKey = `giphy:${tag}`;
-      const cached = getCachedValue(cacheKey);
+      const cached = await getCachedValue(cacheKey);
       if (cached) {
         res.json(JSON.parse(cached));
         return;
@@ -63,7 +64,7 @@ export async function gifsHandler(req: Request, res: Response) {
         cachedAt: new Date().toISOString(),
       };
 
-      setCachedValue(cacheKey, JSON.stringify(result), GIPHY_CACHE_TTL_MS);
+      await setCachedValue(cacheKey, JSON.stringify(result), GIPHY_CACHE_TTL_MS);
       res.json(result);
       return;
     }

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { decrypt, encrypt, getEncryptionKey, maskSecret } from "../config/encryption.js";
 import {
   addSection,
@@ -37,6 +37,17 @@ import {
 
 export const apiRouter = Router();
 
+type AsyncHandler = (req: Request, res: Response) => void | Promise<void>;
+
+function wrap(fn: AsyncHandler) {
+  return (req: Request, res: Response) => {
+    Promise.resolve(fn(req, res)).catch(err => {
+      console.error("[api] Unhandled error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    });
+  };
+}
+
 function getDeviceId(req: { query: { deviceId?: string } }): string | null {
   return req.query.deviceId ?? null;
 }
@@ -45,25 +56,33 @@ apiRouter.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-apiRouter.get("/dashboard", (req, res) => {
-  const deviceId = getDeviceId(req);
-  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
-  res.json(getDashboardState(deviceId));
-});
+apiRouter.get(
+  "/dashboard",
+  wrap(async (req, res) => {
+    const deviceId = getDeviceId(req);
+    if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+    const state = await getDashboardState(deviceId);
+    res.json(state);
+  }),
+);
 
-apiRouter.put("/dashboard", (req, res) => {
-  const deviceId = getDeviceId(req);
-  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
-  const state = req.body as DashboardState;
-  if (!state.widgets || !state.sections || !state.globalSettings) {
-    res.status(400).json({
-      error: "Full dashboard state required (widgets, sections, globalSettings)",
-    });
-    return;
-  }
-  saveDashboardState(deviceId, state);
-  res.json({ ok: true, lastModified: getDashboardState(deviceId).lastModified });
-});
+apiRouter.put(
+  "/dashboard",
+  wrap(async (req, res) => {
+    const deviceId = getDeviceId(req);
+    if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+    const state = req.body as DashboardState;
+    if (!state.widgets || !state.sections || !state.globalSettings) {
+      res.status(400).json({
+        error: "Full dashboard state required (widgets, sections, globalSettings)",
+      });
+      return;
+    }
+    await saveDashboardState(deviceId, state);
+    const saved = await getDashboardState(deviceId);
+    res.json({ ok: true, lastModified: saved.lastModified });
+  }),
+);
 
 apiRouter.get("/widgets/registry", (_req, res) => {
   res.json(
@@ -78,129 +97,161 @@ apiRouter.get("/widgets/registry", (_req, res) => {
   );
 });
 
-apiRouter.put("/dashboard/widgets", (req, res) => {
-  const deviceId = getDeviceId(req);
-  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
-  const widgets = req.body.widgets as WidgetInstance[];
-  if (!Array.isArray(widgets)) {
-    res.status(400).json({ error: "widgets array required" });
-    return;
-  }
-  saveWidgets(deviceId, widgets);
-  res.json({ ok: true, widgets: getWidgets(deviceId) });
-});
+apiRouter.put(
+  "/dashboard/widgets",
+  wrap(async (req, res) => {
+    const deviceId = getDeviceId(req);
+    if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+    const widgets = req.body.widgets as WidgetInstance[];
+    if (!Array.isArray(widgets)) {
+      res.status(400).json({ error: "widgets array required" });
+      return;
+    }
+    await saveWidgets(deviceId, widgets);
+    const saved = await getWidgets(deviceId);
+    res.json({ ok: true, widgets: saved });
+  }),
+);
 
 // ── Section management ──
 
-apiRouter.get("/dashboard/sections", (req, res) => {
-  const deviceId = getDeviceId(req);
-  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
-  res.json(getSections(deviceId));
-});
+apiRouter.get(
+  "/dashboard/sections",
+  wrap(async (req, res) => {
+    const deviceId = getDeviceId(req);
+    if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+    const sections = await getSections(deviceId);
+    res.json(sections);
+  }),
+);
 
-apiRouter.post("/dashboard/sections", (req, res) => {
-  const deviceId = getDeviceId(req);
-  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
-  const section = addSection(deviceId);
-  res.json({ ok: true, section });
-});
+apiRouter.post(
+  "/dashboard/sections",
+  wrap(async (req, res) => {
+    const deviceId = getDeviceId(req);
+    if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+    const section = await addSection(deviceId);
+    res.json({ ok: true, section });
+  }),
+);
 
-apiRouter.put("/dashboard/sections/reorder", (req, res) => {
-  const deviceId = getDeviceId(req);
-  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
-  const sections = req.body.sections as DashboardSection[];
-  if (!Array.isArray(sections)) {
-    res.status(400).json({ error: "sections array required" });
-    return;
-  }
-  saveSections(deviceId, sections);
-  res.json({ ok: true, sections: getSections(deviceId) });
-});
+apiRouter.put(
+  "/dashboard/sections/reorder",
+  wrap(async (req, res) => {
+    const deviceId = getDeviceId(req);
+    if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+    const sections = req.body.sections as DashboardSection[];
+    if (!Array.isArray(sections)) {
+      res.status(400).json({ error: "sections array required" });
+      return;
+    }
+    await saveSections(deviceId, sections);
+    const saved = await getSections(deviceId);
+    res.json({ ok: true, sections: saved });
+  }),
+);
 
-apiRouter.delete("/dashboard/sections/:id", (req, res) => {
-  const deviceId = getDeviceId(req);
-  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
-  const ok = deleteSection(deviceId, req.params.id);
-  if (!ok) {
-    res.status(400).json({ error: "Cannot delete last section" });
-    return;
-  }
-  res.json({ ok: true });
-});
+apiRouter.delete(
+  "/dashboard/sections/:id",
+  wrap(async (req, res) => {
+    const deviceId = getDeviceId(req);
+    if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+    const ok = await deleteSection(deviceId, String(req.params.id));
+    if (!ok) {
+      res.status(400).json({ error: "Cannot delete last section" });
+      return;
+    }
+    res.json({ ok: true });
+  }),
+);
 
 // ── Settings ──
 
-apiRouter.put("/dashboard/settings", (req, res) => {
-  const deviceId = getDeviceId(req);
-  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
-  const settings = req.body as GlobalSettings;
-  if (!settings.theme || settings.defaultRefreshInterval == null) {
-    res.status(400).json({ error: "Invalid settings" });
-    return;
-  }
-  saveGlobalSettings(deviceId, {
-    ...settings,
-    sleepStartHour: Math.max(0, Math.min(23, settings.sleepStartHour ?? 23)),
-    sleepStartMinute: Math.max(0, Math.min(59, settings.sleepStartMinute ?? 0)),
-    sleepEndHour: Math.max(0, Math.min(23, settings.sleepEndHour ?? 7)),
-    sleepEndMinute: Math.max(0, Math.min(59, settings.sleepEndMinute ?? 0)),
-  });
-  res.json({ ok: true, settings });
-});
+apiRouter.put(
+  "/dashboard/settings",
+  wrap(async (req, res) => {
+    const deviceId = getDeviceId(req);
+    if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+    const settings = req.body as GlobalSettings;
+    if (!settings.theme || settings.defaultRefreshInterval == null) {
+      res.status(400).json({ error: "Invalid settings" });
+      return;
+    }
+    await saveGlobalSettings(deviceId, {
+      ...settings,
+      sleepStartHour: Math.max(0, Math.min(23, settings.sleepStartHour ?? 23)),
+      sleepStartMinute: Math.max(0, Math.min(59, settings.sleepStartMinute ?? 0)),
+      sleepEndHour: Math.max(0, Math.min(23, settings.sleepEndHour ?? 7)),
+      sleepEndMinute: Math.max(0, Math.min(59, settings.sleepEndMinute ?? 0)),
+    });
+    res.json({ ok: true, settings });
+  }),
+);
 
 // ── API keys ──
 
-apiRouter.post("/dashboard/keys", (req, res) => {
-  const deviceId = getDeviceId(req);
-  if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
-  const { widgetId, keyName, value } = req.body as {
-    widgetId: string;
-    keyName: string;
-    value: string;
-  };
-  if (!widgetId || !keyName || !value) {
-    res.status(400).json({ error: "widgetId, keyName, and value required" });
-    return;
-  }
+apiRouter.post(
+  "/dashboard/keys",
+  wrap(async (req, res) => {
+    const deviceId = getDeviceId(req);
+    if (!deviceId) { res.status(400).json({ error: "deviceId required" }); return; }
+    const { widgetId, keyName, value } = req.body as {
+      widgetId: string;
+      keyName: string;
+      value: string;
+    };
+    if (!widgetId || !keyName || !value) {
+      res.status(400).json({ error: "widgetId, keyName, and value required" });
+      return;
+    }
 
-  const widget = getWidgets(deviceId).find(w => w.id === widgetId);
-  if (!widget) {
-    res.status(404).json({ error: "Widget not found" });
-    return;
-  }
+    const widgets = await getWidgets(deviceId);
+    const widget = widgets.find(w => w.id === widgetId);
+    if (!widget) {
+      res.status(404).json({ error: "Widget not found" });
+      return;
+    }
 
-  const def = getWidgetDefinition(widget.type);
-  const field = def?.configSchema.find(f => f.key === keyName && f.type === "secret");
-  if (!field) {
-    res.status(400).json({ error: "Invalid secret key field" });
-    return;
-  }
+    const def = getWidgetDefinition(widget.type);
+    const field = def?.configSchema.find(f => f.key === keyName && f.type === "secret");
+    if (!field) {
+      res.status(400).json({ error: "Invalid secret key field" });
+      return;
+    }
 
-  const encrypted = encrypt(value, getEncryptionKey());
-  saveEncryptedKey(widgetId, keyName, encrypted);
-  res.json({ ok: true, masked: maskSecret(value) });
-});
+    const encrypted = encrypt(value, getEncryptionKey());
+    await saveEncryptedKey(widgetId, keyName, encrypted);
+    res.json({ ok: true, masked: maskSecret(value) });
+  }),
+);
 
-apiRouter.get("/dashboard/keys/:widgetId/:keyName", (req, res) => {
-  const { widgetId, keyName } = req.params;
-  const stored = getEncryptedKey(widgetId, keyName);
-  if (!stored) {
-    res.json({ hasValue: false });
-    return;
-  }
-  try {
-    const decrypted = decrypt(stored, getEncryptionKey());
-    res.json({ hasValue: true, masked: maskSecret(decrypted) });
-  } catch {
-    console.error("[api] Failed to decrypt key", widgetId, keyName);
-    res.json({ hasValue: true, masked: "****" });
-  }
-});
+apiRouter.get(
+  "/dashboard/keys/:widgetId/:keyName",
+  wrap(async (req, res) => {
+    const widgetId = String(req.params.widgetId);
+    const keyName = String(req.params.keyName);
+    const stored = await getEncryptedKey(widgetId, keyName);
+    if (!stored) {
+      res.json({ hasValue: false });
+      return;
+    }
+    try {
+      const decrypted = decrypt(stored, getEncryptionKey());
+      res.json({ hasValue: true, masked: maskSecret(decrypted) });
+    } catch {
+      console.error("[api] Failed to decrypt key", widgetId, keyName);
+      res.json({ hasValue: true, masked: "****" });
+    }
+  }),
+);
 
-apiRouter.delete("/dashboard/keys/:widgetId", (req, res) => {
-  deleteEncryptedKeysForWidget(req.params.widgetId);
-  res.json({ ok: true });
-});
+apiRouter.delete(
+  "/dashboard/keys/:widgetId",
+  wrap(async (req, res) => {
+    await deleteEncryptedKeysForWidget(String(req.params.widgetId));
+    res.json({ ok: true });
+  }),
+);
 
 apiRouter.get("/weather", weatherHandler);
 apiRouter.get("/weather-weekly", weatherWeeklyHandler);
