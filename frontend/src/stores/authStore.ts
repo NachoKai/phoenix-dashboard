@@ -9,19 +9,19 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>(set => ({
-  isAuthenticated: sessionStorage.getItem("phoenix_auth") === "1",
+  isAuthenticated: localStorage.getItem("phoenix_auth") === "1",
 
   login: (password: string) => {
     const ok = password === PASSWORD_ENV;
     if (ok) {
-      sessionStorage.setItem("phoenix_auth", "1");
+      localStorage.setItem("phoenix_auth", "1");
       set({ isAuthenticated: true });
     }
     return ok;
   },
 
   logout: () => {
-    sessionStorage.removeItem("phoenix_auth");
+    localStorage.removeItem("phoenix_auth");
     set({ isAuthenticated: false });
   },
 }));
