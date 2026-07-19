@@ -1,5 +1,6 @@
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { Suspense, useCallback, useEffect } from "react";
+import { Suspense, useCallback, useContext, useEffect } from "react";
+import styled from "styled-components";
 import { DashboardError } from "../components/DashboardError";
 import { DashboardLoading } from "../components/DashboardLoading";
 import { GroupSidebar } from "../components/GroupSidebar";
@@ -19,9 +20,11 @@ import {
   SortableWidgetItem,
   useSectionDragDrop,
   WidgetSortableContext,
+  DragOverlayItem,
 } from "../hooks/useSectionDragDrop";
 import { useSleepMode } from "../hooks/useSleepMode";
 import { useUiStore } from "../stores/uiStore";
+import { ThemeModeContext } from "../styles/theme";
 import type { DashboardSection, DashboardState, WidgetInstance } from "../types";
 import { getDeviceId } from "../utils/deviceId";
 import { getWidgetComponent } from "../widgets/registry";
@@ -35,6 +38,7 @@ export function Dashboard() {
   const setActiveGroup = useUiStore(s => s.setActiveGroup);
   const setSleeping = useUiStore(s => s.setSleeping);
   const setOnline = useUiStore(s => s.setOnline);
+  const { setThemeMode } = useContext(ThemeModeContext);
 
   const createSectionMutation = useCreateSectionMutation();
   const saveWidgetsMutation = useSaveWidgetsMutation();
@@ -49,6 +53,12 @@ export function Dashboard() {
       setActiveGroup(state.globalSettings.activeGroup);
     }
   }, [state?.globalSettings?.activeGroup]);
+
+  useEffect(() => {
+    if (state?.globalSettings?.theme) {
+      setThemeMode(state.globalSettings.theme);
+    }
+  }, [state?.globalSettings?.theme, setThemeMode]);
 
   const { sortedSections, hasGroups, occupiedGroups, gridPlacements, totalRows } =
     useDashboardDerivedState(state, activeGroup);
@@ -222,17 +232,15 @@ export function Dashboard() {
       const widgetIds = uniqueSectionWidgets.map(w => w.id);
 
       return (
-        <div className="section__content" key={section.id}>
-          <div className="section__grid">
+        <SectionContent key={section.id}>
+          <SectionGrid>
             <WidgetSortableContext widgetIds={widgetIds}>
               {uniqueSectionWidgets.map(widget => {
                 const Component = getWidgetComponent(widget.type);
                 if (!Component) {
                   return (
                     <SortableWidgetItem key={widget.id} widgetId={widget.id}>
-                      <div className="widget-card widget-card--error">
-                        <p>Unknown widget: {widget.type}</p>
-                      </div>
+                      <UnknownWidget>Unknown widget: {widget.type}</UnknownWidget>
                     </SortableWidgetItem>
                   );
                 }
@@ -259,11 +267,9 @@ export function Dashboard() {
                   >
                     <Suspense
                       fallback={
-                        <div className="widget-card widget-card--loading">
-                          <div className="widget-card__loading">
-                            <div className="spinner" />
-                          </div>
-                        </div>
+                        <LoadingCard>
+                          <Spinner />
+                        </LoadingCard>
                       }
                     >
                       <Component
@@ -276,11 +282,9 @@ export function Dashboard() {
                 );
               })}
             </WidgetSortableContext>
-            {uniqueSectionWidgets.length === 0 && (
-              <div className="section__empty">Drop widgets here</div>
-            )}
-          </div>
-        </div>
+            {uniqueSectionWidgets.length === 0 && <Empty>Drop widgets here</Empty>}
+          </SectionGrid>
+        </SectionContent>
       );
     },
     [state, sleeping],
@@ -302,9 +306,7 @@ export function Dashboard() {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div
-        className={`dashboard theme-${state.globalSettings.theme} dashboard--has-groups`}
-      >
+      <Wrapper $hasGroups={hasGroups}>
         <GroupSidebar
           hasGroups={hasGroups}
           occupiedGroups={occupiedGroups}
@@ -313,35 +315,33 @@ export function Dashboard() {
           onGroupChange={handleGroupChange}
         />
 
-        <div
-          className="dashboard__grid"
+        <Grid
           style={
             totalRows > 0 ? { gridTemplateRows: `repeat(${totalRows}, 1fr)` } : undefined
           }
         >
           {gridPlacements.length === 0 && (
-            <div className="section__empty" style={{ gridColumn: "1 / -1" }}>
+            <Empty style={{ gridColumn: "1 / -1" }}>
               No sections yet — add one in Settings
-            </div>
+            </Empty>
           )}
           {gridPlacements.map(({ section, gridColumn, gridRow }) => (
             <DroppableSection
               key={section.id}
               sectionId={section.id}
-              className="dashboard__section"
               style={{ gridColumn, gridRow }}
             >
               {renderSection(section)}
             </DroppableSection>
           ))}
-        </div>
+        </Grid>
 
         {sleeping && <SleepOverlay />}
-      </div>
+      </Wrapper>
 
       <DragOverlay>
         {dragState.dragWidgetId ? (
-          <div className="drag-item drag-item--overlay">
+          <DragOverlayItem>
             {(() => {
               const widget = state.widgets.find(w => w.id === dragState.dragWidgetId);
               if (!widget) return null;
@@ -355,9 +355,130 @@ export function Dashboard() {
                 />
               );
             })()}
-          </div>
+          </DragOverlayItem>
         ) : null}
       </DragOverlay>
     </DndContext>
   );
 }
+
+const Wrapper = styled.div<{ $hasGroups: boolean }>`
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  padding: 2px calc(2px + env(safe-area-inset-right, 0px)) 2px
+    calc(2px + env(safe-area-inset-left, 0px));
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+
+  ${({ $hasGroups }) =>
+    $hasGroups &&
+    `
+    @media (orientation: landscape) and (max-height: 500px) {
+      flex-direction: row;
+      padding-left: 0;
+    }
+    @media (orientation: portrait) and (max-width: 480px) {
+      flex-direction: column;
+    }
+    @media (orientation: landscape) and (max-height: 400px) {
+      flex-direction: row;
+    }
+  `}
+`;
+
+const Grid = styled.div`
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+`;
+
+const SectionContent = styled.div`
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+`;
+
+const SectionGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 2px;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+
+  @media (orientation: landscape) and (max-height: 500px) {
+    grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+    gap: 2px;
+  }
+  @media (orientation: portrait) and (max-width: 480px) {
+    grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+    gap: 2px;
+  }
+  @media (orientation: landscape) and (max-height: 400px) {
+    grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+    gap: 2px;
+  }
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: 12px;
+  }
+`;
+
+const Empty = styled.div`
+  grid-column: 1 / -1;
+  border: 1px dashed ${({ theme }) => theme.border};
+  padding: 6px;
+  text-align: center;
+  color: ${({ theme }) => theme.textMuted};
+  font-size: 0.75rem;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const UnknownWidget = styled.div`
+  background: transparent;
+  border: none;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  container-type: inline-size;
+`;
+
+const LoadingCard = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+`;
+
+const Spinner = styled.div`
+  width: 28px;
+  height: 28px;
+  border: 3px solid ${({ theme }) => theme.border};
+  border-top-color: ${({ theme }) => theme.accent};
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;

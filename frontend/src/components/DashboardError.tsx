@@ -1,10 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
+import styled from "styled-components";
 
 export function DashboardError({ error, deviceId }: { error: Error; deviceId: string }) {
   const queryClient = useQueryClient();
 
   return (
-    <div className="dashboard dashboard--error">
+    <Wrapper>
       <p>{error.message}</p>
       <button
         type="button"
@@ -14,6 +15,16 @@ export function DashboardError({ error, deviceId }: { error: Error; deviceId: st
       >
         Retry
       </button>
-    </div>
+    </Wrapper>
   );
 }
+
+const Wrapper = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+`;

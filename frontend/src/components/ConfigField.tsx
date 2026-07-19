@@ -1,4 +1,5 @@
 import { useState } from "react";
+import styled from "styled-components";
 import { NumberInput } from "../components/NumberInput";
 import type { ConfigFieldSchema } from "../types";
 
@@ -22,47 +23,45 @@ export function ConfigField({
 
   if (field.type === "secret") {
     return (
-      <label className="settings__field">
+      <FieldRow>
         {field.label}
-        {mask && <span className="settings__mask"> (stored: {mask})</span>}
+        {mask && <Mask>(stored: {mask})</Mask>}
         <input
           type="password"
           value={secretInput}
           onChange={e => setSecretInput(e.target.value)}
           placeholder="Enter new key"
-          className="settings__input"
         />
-        <button
+        <KeyBtn
           type="button"
-          className="settings__key-btn"
           onClick={() => {
             onSecretSave(secretInput);
             setSecretInput("");
           }}
         >
           Save key
-        </button>
+        </KeyBtn>
         {field.description && <small>{field.description}</small>}
-      </label>
+      </FieldRow>
     );
   }
 
   if (field.type === "boolean") {
     return (
-      <label className="settings__field settings__field--checkbox">
+      <CheckboxRow>
         <input
           type="checkbox"
           checked={Boolean(value)}
           onChange={e => onChange(e.target.checked)}
         />
         {field.label}
-      </label>
+      </CheckboxRow>
     );
   }
 
   if (field.type === "select" && field.options) {
     return (
-      <label className="settings__field">
+      <FieldRow>
         {field.label}
         <select
           value={String(value ?? field.default)}
@@ -74,17 +73,17 @@ export function ConfigField({
             </option>
           ))}
         </select>
-      </label>
+      </FieldRow>
     );
   }
 
   if (field.type === "number") {
     return (
-      <label className="settings__field">
+      <FieldRow>
         {field.label}
         <NumberInput value={Number(value ?? field.default ?? 0)} onChange={onChange} />
         {field.description && <small>{field.description}</small>}
-      </label>
+      </FieldRow>
     );
   }
 
@@ -102,62 +101,51 @@ export function ConfigField({
       onChange(list.filter((_, i) => i !== index));
     };
     return (
-      <div className="settings__field">
-        <span className="settings__field-label">{field.label}</span>
-        <div className="settings__url-grid">
+      <FieldRow>
+        <FieldLabel>{field.label}</FieldLabel>
+        <UrlGrid>
           {list.map((url, i) => (
-            <div key={i} className="settings__url-card">
-              <div className="settings__url-card-preview">
+            <UrlCard key={i}>
+              <UrlCardPreview>
                 {url ? (
                   <img
                     src={url}
                     alt={`GIF ${i + 1}`}
-                    className="settings__url-preview"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     onError={e => {
                       (e.target as HTMLImageElement).style.display = "none";
                     }}
                   />
                 ) : (
-                  <span className="settings__url-preview-placeholder">No preview</span>
+                  <Placeholder>No preview</Placeholder>
                 )}
-              </div>
-              <div className="settings__url-card-footer">
-                <input
+              </UrlCardPreview>
+              <UrlCardFooter>
+                <UrlInput
                   type="text"
                   value={url}
                   onChange={e => updateItem(i, e.target.value)}
                   placeholder="Paste GIF URL"
-                  className="settings__url-input"
                 />
-                <button
+                <RemoveBtn
                   type="button"
-                  className="settings__remove-btn"
                   onClick={() => removeItem(i)}
                 >
                   ✕
-                </button>
-              </div>
-            </div>
+                </RemoveBtn>
+              </UrlCardFooter>
+            </UrlCard>
           ))}
-          <button
-            type="button"
-            className="settings__add-btn settings__add-btn--card"
-            onClick={addItem}
-          >
+          <AddCardBtn type="button" onClick={addItem}>
             + GIF
-          </button>
-        </div>
-        <button
-          type="button"
-          className="settings__bulk-toggle"
-          onClick={() => setShowBulk(s => !s)}
-        >
+          </AddCardBtn>
+        </UrlGrid>
+        <BulkToggle type="button" onClick={() => setShowBulk(s => !s)}>
           {showBulk ? "Hide bulk import" : "Bulk import"}
-        </button>
+        </BulkToggle>
         {showBulk && (
-          <div className="settings__bulk-area">
-            <textarea
-              className="settings__bulk-textarea"
+          <BulkArea>
+            <BulkTextarea
               value={bulkInput}
               onChange={e => setBulkInput(e.target.value)}
               onPaste={e => {
@@ -178,7 +166,7 @@ export function ConfigField({
               spellCheck={false}
             />
             {bulkInput.trim() && (
-              <small className="settings__bulk-count">
+              <BulkCount>
                 {
                   bulkInput
                     .split(/[\n,]/)
@@ -186,20 +174,19 @@ export function ConfigField({
                     .filter(u => u.length > 0).length
                 }{" "}
                 URL(s) detected
-              </small>
+              </BulkCount>
             )}
-            <div className="settings__bulk-actions">
-              <label className="settings__field settings__field--checkbox settings__bulk-replace">
+            <BulkActions>
+              <CheckboxRow>
                 <input
                   type="checkbox"
                   checked={bulkReplace}
                   onChange={e => setBulkReplace(e.target.checked)}
                 />
                 Replace existing
-              </label>
-              <button
+              </CheckboxRow>
+              <AddBtn
                 type="button"
-                className="settings__add-btn"
                 onClick={() => {
                   const parsed = bulkInput
                     .split(/[\n,]/)
@@ -214,17 +201,17 @@ export function ConfigField({
                 }}
               >
                 Import
-              </button>
-            </div>
-          </div>
+              </AddBtn>
+            </BulkActions>
+          </BulkArea>
         )}
         {field.description && <small>{field.description}</small>}
-      </div>
+      </FieldRow>
     );
   }
 
   return (
-    <label className="settings__field">
+    <FieldRow>
       {field.label}
       <input
         type="text"
@@ -232,6 +219,166 @@ export function ConfigField({
         onChange={e => onChange(e.target.value)}
       />
       {field.description && <small>{field.description}</small>}
-    </label>
+    </FieldRow>
   );
 }
+
+const FieldRow = styled.label`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+
+  & input,
+  & select,
+  & textarea {
+    padding: 8px 10px;
+    background: ${({ theme }) => theme.bgElevated};
+    border: 1px solid ${({ theme }) => theme.border};
+  }
+
+  & small {
+    color: ${({ theme }) => theme.textMuted};
+    font-size: 0.75rem;
+  }
+`;
+
+const CheckboxRow = styled.label`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+`;
+
+const FieldLabel = styled.span`
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+`;
+
+const Mask = styled.span`
+  color: ${({ theme }) => theme.textMuted};
+  font-size: 0.75rem;
+`;
+
+const KeyBtn = styled.button`
+  align-self: flex-start;
+  padding: 5px 10px;
+  background: ${({ theme }) => theme.accentDim};
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.8rem;
+`;
+
+const UrlGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+`;
+
+const UrlCard = styled.div`
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  overflow: hidden;
+`;
+
+const UrlCardPreview = styled.div`
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme }) => theme.bg};
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+`;
+
+const Placeholder = styled.span`
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.textMuted};
+`;
+
+const UrlCardFooter = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+`;
+
+const UrlInput = styled.input`
+  flex: 1;
+  min-width: 0;
+`;
+
+const RemoveBtn = styled.button`
+  padding: 4px 8px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  cursor: pointer;
+  color: ${({ theme }) => theme.error};
+`;
+
+const AddCardBtn = styled.button`
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  cursor: pointer;
+  font-size: 0.8rem;
+`;
+
+const BulkToggle = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.accent};
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 4px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const BulkArea = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+`;
+
+const BulkTextarea = styled.textarea`
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  background: ${({ theme }) => theme.bg};
+  color: ${({ theme }) => theme.text};
+  border: 1px solid ${({ theme }) => theme.border};
+`;
+
+const BulkCount = styled.small`
+  color: ${({ theme }) => theme.textMuted};
+  font-size: 0.75rem;
+`;
+
+const BulkActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const AddBtn = styled.button`
+  padding: 6px 12px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  cursor: pointer;
+  font-size: 0.8rem;
+`;

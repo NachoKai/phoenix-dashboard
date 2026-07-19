@@ -19,6 +19,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import styled, { css } from "styled-components";
 import type { DashboardSection, WidgetInstance } from "../types";
 
 // ─── State ─────────────────────────────────────────────────────
@@ -52,7 +53,6 @@ export function useSectionDragDrop(
       const fromSection = widget.section;
 
       if (fromSection === toSection) {
-        // ── Within-section reorder ──
         const sectionWidgets = widgets
           .filter(w => w.section === fromSection)
           .sort((a, b) => a.position - b.position);
@@ -73,7 +73,6 @@ export function useSectionDragDrop(
         });
         onReorder(final);
       } else {
-        // ── Cross-section move ──
         const sourceWidgets = widgets
           .filter(w => w.section === fromSection && w.id !== widgetId)
           .sort((a, b) => a.position - b.position);
@@ -126,7 +125,6 @@ export function useSectionDragDrop(
         const activeId = String(active.id);
         const overId = String(over.id);
 
-        // ── Group reorder ──
         if (activeId.startsWith("group-btn-") && overId.startsWith("group-")) {
           const activeGroupNum = parseInt(activeId.replace("group-btn-", ""), 10);
           const overGroupNum = parseInt(overId.replace("group-", ""), 10);
@@ -134,17 +132,14 @@ export function useSectionDragDrop(
             onGroupsReorder?.(activeGroupNum, overGroupNum);
           }
         }
-        // ── Dropped on a group button (move widget to group) ──
         else if (overId.startsWith("group-") && activeRef.current) {
           const groupNum = parseInt(overId.replace("group-", ""), 10);
           onMoveWidgetToGroup?.(activeId, groupNum);
         }
-        // ── Dropped on an empty section area ──
         else if (overId.startsWith("section-") && activeRef.current) {
           const sectionId = overId.replace("section-", "");
           moveWidget(activeId, sectionId, -1);
         }
-        // ── Dropped on another widget ──
         else if (activeRef.current) {
           const overWidget = widgets.find(w => w.id === overId);
           const activeWidget = widgets.find(w => w.id === activeId);
@@ -177,38 +172,25 @@ export function useSectionDragDrop(
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
-      // By default, PointerSensor prevents drag on interactive elements
-      // (buttons, inputs, selects, textareas). We override that here so
-      // widgets with buttons/inputs can still be dragged. The distance: 5
-      // constraint ensures a simple click/tap still triggers the element's
-      // native behavior without starting a drag.
       preventActivation: () => false,
     }),
     useSensor(KeyboardSensor),
   );
 
-  // Pure collision detection — no side effects
   const groupAwareCollisionDetection: CollisionDetection = useCallback(args => {
-    // 1. Check pointer collisions first (for small targets like group buttons)
     const pointerCollisions = pointerWithin(args);
     const groupCollision = pointerCollisions.find(c => String(c.id).startsWith("group-"));
     if (groupCollision) return [groupCollision];
 
-    // 2. Use rectIntersection to find all overlapping droppables
     const rectCollisions = rectIntersection(args);
 
-    // 3. Prefer sortable items (widgets) over section droppables.
-    //    This prevents a section droppable from "stealing" the collision
-    //    from the actual widget underneath the pointer.
     const widgetCollision = rectCollisions.find(
       c => !String(c.id).startsWith("section-") && !String(c.id).startsWith("group-"),
     );
     if (widgetCollision) return [widgetCollision];
 
-    // 4. Fall back to section droppables (empty area / no widget under pointer)
     if (rectCollisions.length > 0) return [rectCollisions[0]];
 
-    // 5. If rect intersection found nothing, use pointer position to find droppable
     const pointerSectionCollision = pointerCollisions.find(c =>
       String(c.id).startsWith("section-"),
     );
@@ -227,6 +209,23 @@ export function useSectionDragDrop(
   };
 }
 
+// ─── Styled components ──────────────────────────────────────────
+
+const sectionOverCss = css`
+  background: rgba(108, 140, 255, 0.04);
+`;
+
+export const SectionDiv = styled.div<{ $isOver?: boolean }>`
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.2s ease;
+  ${({ $isOver }) => $isOver && sectionOverCss}
+`;
+
 // ─── DroppableSection ──────────────────────────────────────────
 
 export function DroppableSection({
@@ -244,27 +243,101 @@ export function DroppableSection({
     id: `section-${sectionId}`,
   });
 
-  const combinedClassName = `${className}${isOver ? " dashboard__section--over" : ""}`;
-
   return (
-    <div ref={setNodeRef} className={combinedClassName} style={style}>
+    <SectionDiv
+      ref={setNodeRef}
+      $isOver={isOver}
+      className={className}
+      style={style}
+    >
       {children}
-    </div>
+    </SectionDiv>
   );
 }
 
 // ─── DraggableGroupButton ──────────────────────────────────────
 
+const GroupBtn = styled.button<{
+  $active?: boolean;
+  $hasContent?: boolean;
+  $isOver?: boolean;
+  $isDragging?: boolean;
+}>`
+  flex: 1;
+  min-width: 35px;
+  min-height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ $active, theme }) => ($active ? theme.accent : "transparent")};
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: ${({ $active, theme }) => ($active ? "#fff" : theme.textMuted)};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+
+  @media (orientation: landscape) and (max-height: 500px) {
+    min-height: 0;
+    flex: 1;
+  }
+
+  @media (orientation: landscape) and (max-height: 400px) {
+    min-height: 0;
+    flex: 1;
+    font-size: 0.7rem;
+  }
+
+  &:hover {
+    color: ${({ $active }) => ($active ? "#fff" : undefined)};
+  }
+
+  ${({ $hasContent, theme }) =>
+    $hasContent &&
+    css`
+      &::after {
+        content: "";
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 4px;
+        background: ${theme.textMuted};
+      }
+    `}
+
+  ${({ $active, $hasContent }) =>
+    $active &&
+    $hasContent &&
+    css`
+      &::after {
+        background: rgba(255, 255, 255, 0.6);
+      }
+    `}
+
+  ${({ $isOver }) =>
+    $isOver &&
+    css`
+      background: rgba(108, 140, 255, 0.15);
+      transform: scale(1.08);
+      box-shadow: 0 0 12px rgba(108, 140, 255, 0.3);
+    `}
+`;
+
 export function DraggableGroupButton({
   group,
   children,
-  className = "",
+  $active,
+  $hasContent,
   ...buttonProps
 }: {
   group: number;
   children: React.ReactNode;
-  className?: string;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "className">) {
+  $active?: boolean;
+  $hasContent?: boolean;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children">) {
   const {
     attributes,
     listeners,
@@ -294,19 +367,20 @@ export function DraggableGroupButton({
     touchAction: "none",
   };
 
-  const combinedClassName = `${className}${isOver ? " group-sidebar__item--over" : ""}${isDragging ? " group-sidebar__item--dragging" : ""}`;
-
   return (
-    <button
+    <GroupBtn
       ref={setNodeRef}
       style={style}
-      className={combinedClassName}
+      $active={$active}
+      $hasContent={$hasContent}
+      $isOver={isOver}
+      $isDragging={isDragging}
       {...attributes}
       {...listeners}
       {...buttonProps}
     >
       {children}
-    </button>
+    </GroupBtn>
   );
 }
 
@@ -326,29 +400,125 @@ export function useSortableHandle() {
 
 // ─── DragHandle ────────────────────────────────────────────────
 
-export function DragHandle({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+const HandleWrapper = styled.div`
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &::after {
+    content: "⠿";
+    margin-left: auto;
+    font-size: 1.2em;
+    color: ${({ theme }) => theme.textMuted};
+    opacity: 0.5;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+`;
+
+export function DragHandle({ children }: { children: React.ReactNode }) {
   const ctx = useSortableHandle();
-  if (!ctx) return <div className={className}>{children}</div>;
+  if (!ctx) return <div>{children}</div>;
 
   return (
-    <div
+    <HandleWrapper
       ref={ctx.setActivatorNodeRef}
       {...ctx.listeners}
       {...ctx.attributes}
-      className={`drag-handle ${className}`.trim()}
     >
       {children}
-    </div>
+    </HandleWrapper>
   );
 }
 
 // ─── SortableWidgetItem ────────────────────────────────────────
+
+const SortableItem = styled.div<{ $isDragging?: boolean; $hasHandle?: boolean }>`
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  touch-action: none;
+  position: relative;
+  ${({ $isDragging }) =>
+    $isDragging &&
+    css`
+      opacity: 0.2;
+      transform: scale(0.95);
+    `}
+  ${({ $hasHandle }) =>
+    $hasHandle
+      ? css`
+          cursor: default;
+          &:active {
+            cursor: default;
+          }
+        `
+      : css`
+          cursor: grab;
+          &:active {
+            cursor: grabbing;
+          }
+        `}
+
+  & .widget-card__body,
+  & .widget-card__body *,
+  & button,
+  & input,
+  & select,
+  & textarea,
+  & [role="button"] {
+    touch-action: none;
+  }
+
+  ${({ $hasHandle }) =>
+    $hasHandle &&
+    css`
+      & .widget-card__body,
+      & .widget-card__body * {
+        touch-action: auto;
+      }
+    `}
+
+  & > article {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+    height: 100%;
+  }
+`;
+
+export const DragOverlayItem = styled.div`
+  opacity: 0.92;
+  transform: scale(1.03);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  border-radius: 14px;
+  pointer-events: none;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  cursor: grab;
+  touch-action: none;
+  position: relative;
+
+  & > .widget-card,
+  & > article {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+    height: 100%;
+  }
+`;
 
 export function SortableWidgetItem({
   widgetId,
@@ -378,37 +548,36 @@ export function SortableWidgetItem({
 
   if (dragHandle) {
     return (
-      <div
+      <SortableItem
         ref={setNodeRef}
         style={style}
-        className={`drag-item drag-item--has-handle${isDragging ? " drag-item--dragging" : ""}`}
+        $isDragging={isDragging}
+        $hasHandle={true}
       >
         <SortableHandleContext.Provider
           value={{ setActivatorNodeRef, listeners, attributes }}
         >
           {children}
         </SortableHandleContext.Provider>
-      </div>
+      </SortableItem>
     );
   }
 
-  const className = `drag-item${isDragging ? " drag-item--dragging" : ""}`;
-
   return (
-    <div
+    <SortableItem
       ref={setNodeRef}
       style={style}
-      className={className}
+      $isDragging={isDragging}
+      $hasHandle={false}
       {...attributes}
       {...listeners}
     >
       {children}
-    </div>
+    </SortableItem>
   );
 }
 
 // ─── WidgetSortableContext ─────────────────────────────────────
-// Wraps a list of widgets within a section with SortableContext
 
 export function WidgetSortableContext({
   widgetIds,

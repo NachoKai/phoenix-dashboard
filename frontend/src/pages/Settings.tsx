@@ -1,5 +1,6 @@
-import { useRef } from "react";
+import { useContext, useRef } from "react";
 import { Link } from "react-router-dom";
+import styled, { css, keyframes } from "styled-components";
 import { ConfigField } from "../components/ConfigField";
 import { NumberInput } from "../components/NumberInput";
 import { useAutoDismiss } from "../hooks/useAutoDismiss";
@@ -7,6 +8,7 @@ import { useDashboardQuery } from "../hooks/useDashboardQuery";
 import { useScrollToTop } from "../hooks/useScrollToTop";
 import { useSettingsState } from "../hooks/useSettingsState";
 import { useAuthStore } from "../stores/authStore";
+import { ThemeModeContext } from "../styles/theme";
 import type { SectionLayout } from "../types";
 
 export function Settings() {
@@ -15,55 +17,49 @@ export function Settings() {
   const settings = useSettingsState(dashboardState, updateState);
   const scrollRef = useRef<HTMLDivElement>(null);
   const showScrollTop = useScrollToTop(scrollRef);
+  const { setThemeMode } = useContext(ThemeModeContext);
   useAutoDismiss(settings.message, () => settings.setMessage(null));
 
   const { state } = settings;
 
   if (!state) {
-    return <div className="settings settings--loading">Loading…</div>;
+    return <LoadingWrapper>Loading…</LoadingWrapper>;
   }
+
+  const handleThemeChange = (theme: "dark" | "light") => {
+    setThemeMode(theme);
+    settings.setState({
+      ...state,
+      globalSettings: { ...state.globalSettings, theme },
+    });
+  };
 
   return (
     <>
-      <div ref={scrollRef} className={`settings theme-${state.globalSettings.theme}`}>
-        <header className="settings__header">
+      <Scroller ref={scrollRef}>
+        <Header>
           <h1>Settings</h1>
-          <div className="settings__header-actions">
-            <Link to="/" className="settings__back">
-              ← Back
-            </Link>
-            <button
-              type="button"
-              className="settings__logout"
-              aria-label="Logout"
-              onClick={() => logout()}
-            >
+          <HeaderActions>
+            <BackLink to="/">← Back</BackLink>
+            <LogoutBtn type="button" aria-label="Logout" onClick={() => logout()}>
               Logout
-            </button>
-          </div>
-        </header>
+            </LogoutBtn>
+          </HeaderActions>
+        </Header>
 
-        <section className="settings__section">
+        <Section>
           <h2>Global</h2>
-          <label className="settings__field">
+          <FieldRow>
             Theme
             <select
               value={state.globalSettings.theme}
-              onChange={e =>
-                settings.setState({
-                  ...state,
-                  globalSettings: {
-                    ...state.globalSettings,
-                    theme: e.target.value as "dark" | "light",
-                  },
-                })
-              }
+              onChange={e => handleThemeChange(e.target.value as "dark" | "light")}
             >
               <option value="dark">Dark</option>
               <option value="light">Light</option>
             </select>
-          </label>
-          <label className="settings__field">
+          </FieldRow>
+          <FieldRow>
             Default refresh (seconds)
             <NumberInput
               min={10}
@@ -78,8 +74,8 @@ export function Settings() {
                 })
               }
             />
-          </label>
-          <label className="settings__field">
+          </FieldRow>
+          <FieldRow>
             Orientation
             <select
               value={state.globalSettings.orientation ?? "auto"}
@@ -97,8 +93,8 @@ export function Settings() {
               <option value="portrait">Portrait</option>
               <option value="landscape">Landscape</option>
             </select>
-          </label>
-          <label className="settings__field">
+          </FieldRow>
+          <FieldRow>
             Auto-rotate groups (seconds)
             <NumberInput
               min={0}
@@ -115,10 +111,10 @@ export function Settings() {
               }
             />
             <small>0 = disabled. Cycles through groups with widgets automatically.</small>
-          </label>
+          </FieldRow>
 
           <h2>Sleep Time</h2>
-          <label className="settings__field settings__field--checkbox">
+          <CheckboxRow>
             <input
               type="checkbox"
               checked={state.globalSettings.sleepTimeEnabled}
@@ -133,13 +129,13 @@ export function Settings() {
               }
             />
             Enable sleep time (black screen, pauses all activity)
-          </label>
+          </CheckboxRow>
 
           {state.globalSettings.sleepTimeEnabled && (
-            <div className="settings__sleep-row">
-              <label className="settings__field">
+            <SleepRow>
+              <FieldRow>
                 Start
-                <div className="settings__sleep-time">
+                <SleepTime>
                   <NumberInput
                     min={0}
                     max={23}
@@ -169,11 +165,11 @@ export function Settings() {
                       })
                     }
                   />
-                </div>
-              </label>
-              <label className="settings__field">
+                </SleepTime>
+              </FieldRow>
+              <FieldRow>
                 End
-                <div className="settings__sleep-time">
+                <SleepTime>
                   <NumberInput
                     min={0}
                     max={23}
@@ -203,21 +199,20 @@ export function Settings() {
                       })
                     }
                   />
-                </div>
-              </label>
-            </div>
+                </SleepTime>
+              </FieldRow>
+            </SleepRow>
           )}
-        </section>
+        </Section>
 
-        <section className="settings__section">
+        <Section>
           <h2>Sections</h2>
-          <div className="settings__sections-list">
+          <SectionsList>
             {state.sections.map(section => (
-              <div key={section.id} className="settings__section-item">
-                <div className="settings__section-item-left">
-                  <span className="settings__section-name">{section.name}</span>
-                  <select
-                    className="settings__layout-select"
+              <SectionItem key={section.id}>
+                <SectionItemLeft>
+                  <SectionName>{section.name}</SectionName>
+                  <LayoutSelect
                     value={section.layout ?? "full-width"}
                     onChange={e =>
                       void settings.handleSetLayout(
@@ -231,9 +226,8 @@ export function Settings() {
                     <option value="right">Right</option>
                     <option value="left-full-height">Left + Full height</option>
                     <option value="right-full-height">Right + Full height</option>
-                  </select>
-                  <select
-                    className="settings__layout-select"
+                  </LayoutSelect>
+                  <LayoutSelect
                     value={section.group ?? ""}
                     onChange={e =>
                       void settings.handleSetSectionGroup(
@@ -251,58 +245,44 @@ export function Settings() {
                     <option value="6">Group 6</option>
                     <option value="7">Group 7</option>
                     <option value="8">Group 8</option>
-                  </select>
-                </div>
-                <button
-                  type="button"
-                  className="settings__remove-btn"
-                  onClick={() => void settings.handleDeleteSection(section.id)}
-                >
+                  </LayoutSelect>
+                </SectionItemLeft>
+                <RemoveBtn type="button" onClick={() => void settings.handleDeleteSection(section.id)}>
                   Remove
-                </button>
-              </div>
+                </RemoveBtn>
+              </SectionItem>
             ))}
-            <button
-              type="button"
-              className="settings__add-btn"
-              onClick={() => void settings.handleAddSection()}
-            >
+            <AddBtn type="button" onClick={() => void settings.handleAddSection()}>
               + Section
-            </button>
-          </div>
-        </section>
+            </AddBtn>
+          </SectionsList>
+        </Section>
 
-        <section className="settings__section">
+        <Section>
           <h2>Widgets</h2>
-          <div className="settings__add-widgets">
+          <AddWidgetsRow>
             {settings.registry.map(def => (
-              <button
-                key={def.type}
-                type="button"
-                className="settings__add-btn"
-                onClick={() => settings.addWidget(def.type)}
-              >
+              <AddBtn key={def.type} type="button" onClick={() => settings.addWidget(def.type)}>
                 + {def.name}
-              </button>
+              </AddBtn>
             ))}
-          </div>
+          </AddWidgetsRow>
 
           {state.sections.map(section => {
             const sectionWidgets = state.widgets.filter(w => w.section === section.id);
             if (sectionWidgets.length === 0) return null;
             return (
-              <div key={section.id} className="settings__section-group">
-                <h3 className="settings__section-group-title">{section.name}</h3>
+              <SectionGroup key={section.id}>
+                <SectionGroupTitle>{section.name}</SectionGroupTitle>
                 {sectionWidgets.map(widget => {
                   const def = settings.registry.find(r => r.type === widget.type);
                   return (
-                    <div key={widget.id} className="settings__widget-card">
-                      <div className="settings__widget-header">
+                    <WidgetCard key={widget.id}>
+                      <WidgetHeader>
                         <h3>{def?.name ?? widget.type}</h3>
-                        <div className="settings__widget-actions">
+                        <WidgetActions>
                           {state.sections.length > 1 && (
-                            <select
-                              className="settings__section-select"
+                            <SectionSelect
                               value={widget.section}
                               onChange={e =>
                                 settings.changeWidgetSection(widget.id, e.target.value)
@@ -313,7 +293,7 @@ export function Settings() {
                                   {s.name}
                                 </option>
                               ))}
-                            </select>
+                            </SectionSelect>
                           )}
                           <button
                             type="button"
@@ -329,15 +309,11 @@ export function Settings() {
                           >
                             ↓
                           </button>
-                          <button
-                            type="button"
-                            className="settings__remove-btn"
-                            onClick={() => settings.removeWidget(widget.id)}
-                          >
+                          <RemoveBtn type="button" onClick={() => settings.removeWidget(widget.id)}>
                             Remove
-                          </button>
-                        </div>
-                      </div>
+                          </RemoveBtn>
+                        </WidgetActions>
+                      </WidgetHeader>
                       {def?.configSchema.map(field => (
                         <ConfigField
                           key={field.key}
@@ -352,40 +328,359 @@ export function Settings() {
                           }
                         />
                       ))}
-                    </div>
+                    </WidgetCard>
                   );
                 })}
-              </div>
+              </SectionGroup>
             );
           })}
-        </section>
-      </div>
+        </Section>
+      </Scroller>
 
-      <div className="settings__bottom-bar">
-        <button
+      <BottomBar>
+        <SaveBtn
           type="button"
-          className="settings__save-btn"
           onClick={() => void settings.handleSave()}
           disabled={settings.saving}
         >
           {settings.saving ? "Saving…" : "Save"}
-        </button>
+        </SaveBtn>
         {settings.message && (
-          <div
-            className={`settings__toast ${settings.message.includes("fail") || settings.message.includes("Invalid") ? "settings__toast--error" : ""}`}
-          >
+          <Toast $error={settings.message.includes("fail") || settings.message.includes("Invalid")}>
             {settings.message}
-          </div>
+          </Toast>
         )}
-        <button
+        <ScrollTopBtn
           type="button"
-          className={`settings__scroll-top${showScrollTop ? "" : " settings__scroll-top--hidden"}`}
+          $hidden={!showScrollTop}
           aria-label="Scroll to top"
           onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
         >
           ↑
-        </button>
-      </div>
+        </ScrollTopBtn>
+      </BottomBar>
     </>
   );
 }
+
+const toastIn = keyframes`
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const toastOut = keyframes`
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(10px); }
+`;
+
+const LoadingWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+`;
+
+const Scroller = styled.div`
+  height: 100%;
+  padding: 10px calc(16px + env(safe-area-inset-right, 0px)) calc(72px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+`;
+
+const Header = styled.header`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+
+  & h1 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+const BackLink = styled(Link)`
+  width: 90px;
+  text-decoration: none;
+  padding: 6px 14px;
+  border: 1px solid ${({ theme }) => theme.accent};
+  background: transparent;
+  color: ${({ theme }) => theme.accent};
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: inline-block;
+  text-align: center;
+
+  &:hover {
+    background: ${({ theme }) => theme.accent};
+    color: #fff;
+  }
+`;
+
+const LogoutBtn = styled.button`
+  padding: 6px 14px;
+  border: 1px solid ${({ theme }) => theme.error};
+  background: transparent;
+  color: ${({ theme }) => theme.error};
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    background: ${({ theme }) => theme.error};
+    color: #fff;
+  }
+`;
+
+const Section = styled.section`
+  margin-bottom: 20px;
+
+  & h2 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: ${({ theme }) => theme.textMuted};
+    margin: 0 0 12px;
+  }
+`;
+
+const FieldRow = styled.label`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+
+  & input,
+  & select,
+  & textarea {
+    padding: 8px 10px;
+    background: ${({ theme }) => theme.bgElevated};
+    border: 1px solid ${({ theme }) => theme.border};
+  }
+
+  & small {
+    color: ${({ theme }) => theme.textMuted};
+    font-size: 0.75rem;
+  }
+`;
+
+const CheckboxRow = styled.label`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+`;
+
+const SleepRow = styled.div`
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+
+  & ${FieldRow} {
+    flex: 1;
+  }
+`;
+
+const SleepTime = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  & input {
+    width: 56px;
+    text-align: center;
+  }
+`;
+
+const SectionsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+`;
+
+const SectionItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: ${({ theme }) => theme.bgCard};
+  border: 1px solid ${({ theme }) => theme.border};
+  padding: 8px 12px;
+`;
+
+const SectionItemLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const SectionName = styled.span`
+  font-size: 0.85rem;
+  cursor: default;
+
+  &:hover {
+    text-decoration: underline dotted;
+  }
+`;
+
+const LayoutSelect = styled.select`
+  font-size: 0.7rem;
+  padding: 2px 4px;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.bg};
+  color: ${({ theme }) => theme.textMuted};
+  cursor: pointer;
+`;
+
+const SectionGroup = styled.div`
+  margin-bottom: 16px;
+`;
+
+const SectionGroupTitle = styled.h3`
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: ${({ theme }) => theme.accent};
+  margin: 0 0 8px;
+  font-weight: 600;
+`;
+
+const SectionSelect = styled.select`
+  padding: 3px 6px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.text};
+`;
+
+const AddWidgetsRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+`;
+
+const AddBtn = styled.button`
+  padding: 6px 12px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  cursor: pointer;
+  font-size: 0.8rem;
+`;
+
+const WidgetCard = styled.div`
+  background: ${({ theme }) => theme.bgCard};
+  border: 1px solid ${({ theme }) => theme.border};
+  padding: 12px;
+  margin-bottom: 10px;
+`;
+
+const WidgetHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+
+  & h3 {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+`;
+
+const WidgetActions = styled.div`
+  display: flex;
+  gap: 4px;
+
+  & button {
+    padding: 4px 8px;
+    background: ${({ theme }) => theme.bgElevated};
+    border: 1px solid ${({ theme }) => theme.border};
+    cursor: pointer;
+  }
+`;
+
+const RemoveBtn = styled.button`
+  padding: 4px 8px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  cursor: pointer;
+  color: ${({ theme }) => theme.error};
+`;
+
+const BottomBar = styled.div`
+  position: fixed;
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  display: flex;
+  gap: 8px;
+  z-index: 20;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const SaveBtn = styled.button`
+  width: 90px;
+  padding: 6px 14px;
+  background: ${({ theme }) => theme.accent};
+  color: #fff;
+  border: 1px solid ${({ theme }) => theme.accent};
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:disabled {
+    opacity: 0.6;
+  }
+`;
+
+const Toast = styled.div<{ $error: boolean }>`
+  flex: 1;
+  margin: 0 8px;
+  padding: 10px 16px;
+  background: ${({ $error, theme }) => ($error ? theme.error : theme.success)};
+  color: ${({ $error }) => ($error ? "#fff" : "#0a0a0f")};
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  animation: ${toastIn} 0.25s ease, ${toastOut} 0.5s ease 3.5s forwards;
+`;
+
+const ScrollTopBtn = styled.button<{ $hidden: boolean }>`
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border: 1px solid ${({ theme }) => theme.accent};
+  background: ${({ theme }) => theme.accent};
+  color: #fff;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:active {
+    opacity: 0.8;
+  }
+
+  ${({ $hidden }) =>
+    $hidden &&
+    css`
+      visibility: hidden;
+      pointer-events: none;
+    `}
+`;
