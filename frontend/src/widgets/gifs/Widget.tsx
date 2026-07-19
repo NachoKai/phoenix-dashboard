@@ -78,6 +78,7 @@ const Wrapper = styled.div`
   background: ${({ theme }) => theme.bgElevated};
   min-height: 100px;
   height: 100%;
+  width: 100%;
   flex: 1;
   display: flex;
   align-items: center;
