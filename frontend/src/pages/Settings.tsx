@@ -144,7 +144,7 @@ export function Settings() {
 
           {state.globalSettings.sleepTimeEnabled && (
             <>
-              <SleepRow>
+              <DefaultSleepCard>
                 <FieldRow>
                   Start
                   <SleepTime>
@@ -213,7 +213,7 @@ export function Settings() {
                     />
                   </SleepTime>
                 </FieldRow>
-              </SleepRow>
+              </DefaultSleepCard>
 
               <DayOverridesSection>
                 <DayOverridesTitle>Day Overrides</DayOverridesTitle>
@@ -676,16 +676,6 @@ const CheckboxRow = styled.label`
   font-size: 0.85rem;
 `;
 
-const SleepRow = styled.div`
-  display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
-
-  & ${FieldRow} {
-    flex: 1;
-  }
-`;
-
 const SleepTime = styled.div`
   display: flex;
   align-items: center;
@@ -694,6 +684,20 @@ const SleepTime = styled.div`
   & input {
     width: 56px;
     text-align: center;
+  }
+`;
+
+const DefaultSleepCard = styled.div`
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  background: ${({ theme }) => theme.bgCard};
+  border: 1px solid ${({ theme }) => theme.border};
+  padding: 8px 10px;
+
+  & ${FieldRow} {
+    margin-bottom: 0;
+    flex: 1;
   }
 `;
 
