@@ -100,6 +100,7 @@ export function ConfigField({
     const removeItem = (index: number) => {
       onChange(list.filter((_, i) => i !== index));
     };
+
     return (
       <FieldRow>
         <FieldLabel>{field.label}</FieldLabel>
@@ -111,7 +112,7 @@ export function ConfigField({
                   <img
                     src={url}
                     alt={`GIF ${i + 1}`}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
                     onError={e => {
                       (e.target as HTMLImageElement).style.display = "none";
                     }}
@@ -127,10 +128,7 @@ export function ConfigField({
                   onChange={e => updateItem(i, e.target.value)}
                   placeholder="Paste GIF URL"
                 />
-                <RemoveBtn
-                  type="button"
-                  onClick={() => removeItem(i)}
-                >
+                <RemoveBtn type="button" onClick={() => removeItem(i)}>
                   ✕
                 </RemoveBtn>
               </UrlCardFooter>
