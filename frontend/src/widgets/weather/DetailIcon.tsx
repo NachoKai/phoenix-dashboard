@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import styled from "styled-components";
 
 const OWM = "https://openweathermap.org/img/widget_icons";
 
@@ -60,8 +61,30 @@ const SVG_ICONS: Record<string, ReactNode> = {
 
 export function DetailIcon({ name }: { name: string }) {
   const src = OWM_ICONS[name];
-  if (src) return <img src={src} alt="" className="weather-widget__detail-icon" />;
+  if (src) return <IconImg src={src} alt="" />;
   const svg = SVG_ICONS[name];
-  if (svg) return <span className="weather-widget__detail-icon">{svg}</span>;
+  if (svg) return <IconWrap>{svg}</IconWrap>;
   return null;
 }
+
+const IconImg = styled.img`
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+`;
+
+const IconWrap = styled.span`
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+`;

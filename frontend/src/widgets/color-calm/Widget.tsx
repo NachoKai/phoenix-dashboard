@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -34,9 +35,8 @@ export function ColorCalmWidget({}: WidgetProps) {
 
   return (
     <WidgetCard title="Color Calm" status="success" error={null} dragHandle={true}>
-      <div className="color-calm">
-        <div
-          className="color-calm__gradient"
+      <Wrapper>
+        <Gradient
           style={{
             background: `linear-gradient(
               ${45 + phase * 360}deg,
@@ -46,15 +46,15 @@ export function ColorCalmWidget({}: WidgetProps) {
             )`,
           }}
         >
-          <div className="color-calm__inner">
-            <div className="color-calm__name">{palette.name}</div>
-          </div>
-        </div>
-        <div className="color-calm__palettes">
+          <Inner>
+            <Name>{palette.name}</Name>
+          </Inner>
+        </Gradient>
+        <Palettes>
           {PALETTES.map(p => (
-            <button
+            <Swatch
               key={p.name}
-              className={`color-calm__swatch ${palette === p ? "color-calm__swatch--active" : ""}`}
+              $active={palette === p}
               style={{
                 background: `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[p.colors.length - 1]})`,
               }}
@@ -63,8 +63,8 @@ export function ColorCalmWidget({}: WidgetProps) {
               type="button"
             />
           ))}
-        </div>
-      </div>
+        </Palettes>
+      </Wrapper>
     </WidgetCard>
   );
 }
@@ -83,3 +83,61 @@ function lerpColor(a: string, b: string, t: number): string {
   const rb = Math.round(ab + (bb - ab) * t);
   return `rgb(${rr},${rg},${rb})`;
 }
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+`;
+
+const Gradient = styled.div`
+  flex: 1;
+  width: 100%;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+`;
+
+const Inner = styled.div`
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  padding: 4px 16px;
+  border-radius: 20px;
+`;
+
+const Name = styled.div`
+  font-size: clamp(0.6rem, 3.5cqw, 0.85rem);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+`;
+
+const Palettes = styled.div`
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+const Swatch = styled.button<{ $active: boolean }>`
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid ${({ theme }) => theme.border};
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, border-color 0.15s;
+  border-color: ${({ $active, theme }) =>
+    $active ? theme.text : theme.border};
+  transform: ${({ $active }) => ($active ? "scale(1.2)" : "scale(1)")};
+
+  &:hover {
+    transform: scale(1.2);
+  }
+`;

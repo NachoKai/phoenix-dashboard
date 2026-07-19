@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -165,7 +166,14 @@ export function TouchRippleWidget({}: WidgetProps) {
 
   return (
     <WidgetCard title="Touch Ripple" status="success" error={null} dragHandle={true}>
-      <canvas ref={canvasRef} className="touch-ripple" />
+      <Canvas ref={canvasRef} />
     </WidgetCard>
   );
 }
+
+const Canvas = styled.canvas`
+  flex: 1;
+  width: 100%;
+  display: block;
+  touch-action: none;
+`;

@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -124,7 +125,14 @@ export function LavaLampWidget({}: WidgetProps) {
 
   return (
     <WidgetCard title="Lava Lamp" status="success" error={null} dragHandle={true}>
-      <canvas ref={canvasRef} className="lava-lamp" />
+      <Canvas ref={canvasRef} />
     </WidgetCard>
   );
 }
+
+const Canvas = styled.canvas`
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  display: block;
+`;

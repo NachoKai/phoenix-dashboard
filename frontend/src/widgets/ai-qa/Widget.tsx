@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import styled, { keyframes } from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -128,10 +129,9 @@ export function AiQaWidget({ instance }: WidgetProps) {
 
   return (
     <WidgetCard title="AI Q&A" status="success" error={null} dragHandle={true}>
-      <div className="ai-qa-widget">
-        <div className="ai-qa-widget__toolbar">
-          <select
-            className="ai-qa-widget__model-select"
+      <Wrapper>
+        <Toolbar>
+          <ModelSelect
             value={selectedModel}
             onChange={e => setSelectedModel(e.target.value)}
           >
@@ -140,62 +140,235 @@ export function AiQaWidget({ instance }: WidgetProps) {
                 {m.label}
               </option>
             ))}
-          </select>
+          </ModelSelect>
           {messages.length > 0 && (
-            <button
-              type="button"
-              className="ai-qa-widget__clear-btn"
-              onClick={clearChat}
-              title="Clear chat"
-            >
+            <ClearBtn type="button" onClick={clearChat} title="Clear chat">
               ✕
-            </button>
+            </ClearBtn>
           )}
-        </div>
+        </Toolbar>
 
-        <div className="ai-qa-widget__messages">
-          {messages.length === 0 && !loading && (
-            <p className="ai-qa-widget__empty">Ask anything…</p>
-          )}
+        <Messages>
+          {messages.length === 0 && !loading && <Empty>Ask anything…</Empty>}
           {messages.map((msg, i) => (
-            <div key={i} className={`ai-qa-widget__msg ai-qa-widget__msg--${msg.role}`}>
-              <div className="ai-qa-widget__msg-content">{msg.content}</div>
-            </div>
+            <Msg key={i} $role={msg.role}>
+              <MsgContent $role={msg.role}>{msg.content}</MsgContent>
+            </Msg>
           ))}
           {loading && (
-            <div className="ai-qa-widget__msg ai-qa-widget__msg--assistant">
-              <div className="ai-qa-widget__msg-content ai-qa-widget__typing">
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
+            <Msg $role="assistant">
+              <MsgContent $role="assistant" as={TypingWrapper}>
+                <TypingDot />
+                <TypingDot />
+                <TypingDot />
+              </MsgContent>
+            </Msg>
           )}
-          {error && <div className="ai-qa-widget__error">{error}</div>}
+          {error && <ErrorMsg>{error}</ErrorMsg>}
           <div ref={messagesEndRef} />
-        </div>
+        </Messages>
 
-        <div className="ai-qa-widget__input-row">
-          <input
+        <InputRow>
+          <Input
             ref={inputRef}
             type="text"
-            className="ai-qa-widget__input"
             placeholder="Ask anything…"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
           />
-          <button
+          <SendBtn
             type="button"
-            className="ai-qa-widget__send-btn"
             onClick={() => void send()}
             disabled={loading || !input.trim()}
           >
             {loading ? "…" : "↑"}
-          </button>
-        </div>
-      </div>
+          </SendBtn>
+        </InputRow>
+      </Wrapper>
     </WidgetCard>
   );
 }
+
+const typingAnim = keyframes`
+  0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+  30% { opacity: 1; transform: scale(1); }
+`;
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+`;
+
+const Toolbar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 6px;
+  flex-shrink: 0;
+`;
+
+const ModelSelect = styled.select`
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 6px;
+  font-size: 0.65rem;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  appearance: auto;
+`;
+
+const ClearBtn = styled.button`
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 6px;
+  color: ${({ theme }) => theme.textMuted};
+  font-size: 0.6rem;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+
+  &:hover {
+    color: ${({ theme }) => theme.error};
+    border-color: ${({ theme }) => theme.error};
+  }
+`;
+
+const Messages = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  scroll-behavior: smooth;
+  background: ${({ theme }) => theme.bgElevated};
+  border-radius: 8px;
+`;
+
+const Empty = styled.p`
+  margin: auto;
+  text-align: center;
+  color: ${({ theme }) => theme.textMuted};
+  font-size: 0.75rem;
+  opacity: 0.6;
+`;
+
+const Msg = styled.div<{ $role: "user" | "assistant" }>`
+  display: flex;
+  justify-content: ${({ $role }) => ($role === "user" ? "flex-end" : "flex-start")};
+`;
+
+const MsgContent = styled.div<{ $role: "user" | "assistant" }>`
+  max-width: 85%;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: ${({ $role, theme }) =>
+    $role === "user" ? theme.accent : theme.bgElevated};
+  color: ${({ $role }) => ($role === "user" ? "#fff" : "inherit")};
+  ${({ $role }) =>
+    $role === "user"
+      ? "border-bottom-right-radius: 3px;"
+      : "border-bottom-left-radius: 3px;"}
+`;
+
+const TypingWrapper = styled(MsgContent)`
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 8px 12px;
+`;
+
+const TypingDot = styled.span`
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.textMuted};
+  animation: ${typingAnim} 1.2s infinite ease-in-out;
+
+  &:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  &:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+`;
+
+const ErrorMsg = styled.div`
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.error};
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.25);
+  border-radius: 8px;
+  padding: 5px 8px;
+  margin-top: 4px;
+`;
+
+const InputRow = styled.div`
+  display: flex;
+  gap: 6px;
+  padding: 6px 0 0;
+  flex-shrink: 0;
+`;
+
+const Input = styled.input`
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 8px;
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.text};
+  outline: none;
+  transition: border-color 0.15s;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.accent};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+`;
+
+const SendBtn = styled.button`
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme }) => theme.accent};
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+`;

@@ -49,9 +49,7 @@ export function WidgetCard({
         ) : (
           children
         )}
-        {status === "error" && children && (
-          <StaleBanner>{error}</StaleBanner>
-        )}
+        {status === "error" && children && <StaleBanner>{error}</StaleBanner>}
       </Body>
     </Card>
   );
@@ -99,42 +97,7 @@ const Title = styled.h2`
 const Body = styled.div`
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-
-  &:has(.weather-widget),
-  &:has(.weather-forecast-widget),
-  &:has(.weather-weekly-widget),
-  &:has(.gifs-widget),
-  &:has(.clock-widget-card),
-  &:has(.moon-widget),
-  &:has(.lava-lamp),
-  &:has(.aquarium),
-  &:has(.bubble-level),
-  &:has(.rolling-ball) {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  &:has(.touch-ripple) {
-    display: flex;
-  }
-
-  &:has(.bubble-wrap),
-  &:has(.fidget-spinner),
-  &:has(.bubble-pop),
-  &:has(.ambient-soundboard),
-  &:has(.tonal-drone),
-  &:has(.gradient-shift),
-  &:has(.zen-bell),
-  &:has(.color-calm),
-  &:has(.lights-widget),
-  &:has(.vacuum-widget),
-  &:has(.ai-qa-widget) {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  display: flex;
 `;
 
 const LoadingWrap = styled.div`

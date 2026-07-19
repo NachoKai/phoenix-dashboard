@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import { useGifsQuery } from "../../hooks/useGifsQuery";
 import type { WidgetProps } from "../../types";
@@ -58,16 +59,34 @@ export function GifsWidget({ instance, sleeping }: WidgetProps) {
       onRetry={() => refetch()}
     >
       {gifUrls.length > 0 && (
-        <div className="gifs-widget">
-          <img
+        <Wrapper>
+          <Image
             key={gifUrls[index]}
             src={gifUrls[index]}
             alt="Animated GIF"
-            className="gifs-widget__image"
             loading="lazy"
           />
-        </div>
+        </Wrapper>
       )}
     </WidgetCard>
   );
 }
+
+const Wrapper = styled.div`
+  position: relative;
+  overflow: hidden;
+  background: ${({ theme }) => theme.bgElevated};
+  min-height: 100px;
+  height: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const Image = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+`;

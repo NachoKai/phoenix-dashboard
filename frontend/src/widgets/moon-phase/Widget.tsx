@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -36,19 +37,62 @@ export function MoonPhaseWidget({}: WidgetProps) {
 
   return (
     <WidgetCard title="" status="success" error={null}>
-      <div className="moon-widget">
-        <span className="moon-widget__emoji">{phase.emoji}</span>
-        <div className="moon-widget__info">
-          <p className="moon-widget__name">{phase.name}</p>
-          <div className="moon-widget__bar-track">
-            <div
-              className="moon-widget__bar-fill"
-              style={{ width: `${phase.illumination}%` }}
-            />
-          </div>
-          <p className="moon-widget__illumination">{phase.illumination}% illuminated</p>
-        </div>
-      </div>
+      <Wrapper>
+        <Emoji>{phase.emoji}</Emoji>
+        <Info>
+          <Name>{phase.name}</Name>
+          <BarTrack>
+            <BarFill style={{ width: `${phase.illumination}%` }} />
+          </BarTrack>
+          <Illumination>{phase.illumination}% illuminated</Illumination>
+        </Info>
+      </Wrapper>
     </WidgetCard>
   );
 }
+
+const Wrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 14px;
+`;
+
+const Emoji = styled.span`
+  font-size: clamp(2.5rem, 20cqw, 6rem);
+  line-height: 1;
+  flex-shrink: 0;
+`;
+
+const Info = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const Name = styled.p`
+  margin: 0;
+  font-size: clamp(0.75rem, 4.5cqw, 1.3rem);
+  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+`;
+
+const BarTrack = styled.div`
+  width: 100%;
+  height: 6px;
+  background: ${({ theme }) => theme.bgElevated};
+  overflow: hidden;
+`;
+
+const BarFill = styled.div`
+  height: 100%;
+  background: linear-gradient(90deg, #5c6bc0, #ffd54f);
+  transition: width 0.3s ease;
+`;
+
+const Illumination = styled.p`
+  margin: 0;
+  font-size: clamp(0.6rem, 3.5cqw, 1rem);
+  color: ${({ theme }) => theme.textMuted};
+  font-variant-numeric: tabular-nums;
+`;

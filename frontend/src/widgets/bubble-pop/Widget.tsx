@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -103,12 +104,11 @@ export function BubblePopWidget({}: WidgetProps) {
 
   return (
     <WidgetCard title="Bubble Pop" status="success" error={null} dragHandle={true}>
-      <div ref={areaRef} className="bubble-pop" onClick={() => setPopped(0)}>
-        <div className="bubble-pop__canvas">
+      <Wrapper ref={areaRef} onClick={() => setPopped(0)}>
+        <Canvas>
           {bubbles.map(b => (
-            <button
+            <BubbleBtn
               key={b.id}
-              className="bubble-pop__bubble"
               style={{
                 left: b.x,
                 top: b.y,
@@ -124,12 +124,65 @@ export function BubblePopWidget({}: WidgetProps) {
               aria-label="Pop bubble"
             />
           ))}
-        </div>
-        <div className="bubble-pop__footer">
-          <span className="bubble-pop__count">{popped} popped</span>
-          {popped > 0 && <span className="bubble-pop__hint">Tap counter to reset</span>}
-        </div>
-      </div>
+        </Canvas>
+        <Footer>
+          <Count>{popped} popped</Count>
+          {popped > 0 && <Hint>Tap counter to reset</Hint>}
+        </Footer>
+      </Wrapper>
     </WidgetCard>
   );
 }
+
+const Wrapper = styled.div`
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+`;
+
+const Canvas = styled.div`
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+`;
+
+const BubbleBtn = styled.button`
+  position: absolute;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  padding: 0;
+
+  &:active {
+    transform: scale(1.25) !important;
+  }
+`;
+
+const Footer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px;
+  flex-shrink: 0;
+`;
+
+const Count = styled.span`
+  font-size: clamp(0.5rem, 2.8cqw, 0.75rem);
+  color: ${({ theme }) => theme.textMuted};
+  font-variant-numeric: tabular-nums;
+`;
+
+const Hint = styled.span`
+  font-size: clamp(0.45rem, 2.5cqw, 0.65rem);
+  color: ${({ theme }) => theme.textMuted};
+  opacity: 0.5;
+`;

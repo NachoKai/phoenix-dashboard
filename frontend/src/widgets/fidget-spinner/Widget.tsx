@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -57,18 +58,13 @@ export function FidgetSpinnerWidget({}: WidgetProps) {
 
   return (
     <WidgetCard title="Fidget Spinner" status="success" error={null} dragHandle={true}>
-      <div
-        className="fidget-spinner"
+      <Wrapper
         onPointerDown={startFlick}
         onPointerMove={moveFlick}
         onPointerUp={endFlick}
         onPointerLeave={endFlick}
       >
-        <svg
-          viewBox="-120 -120 240 240"
-          className="fidget-spinner__svg"
-          onClick={tapSpin}
-        >
+        <Svg viewBox="-120 -120 240 240" onClick={tapSpin}>
           <g transform={`rotate(${displayRot})`}>
             <circle
               r="14"
@@ -101,9 +97,33 @@ export function FidgetSpinnerWidget({}: WidgetProps) {
               </g>
             ))}
           </g>
-        </svg>
-        <div className="fidget-spinner__hint">{spinning ? "" : "Flick or tap"}</div>
-      </div>
+        </Svg>
+        <Hint>{spinning ? "" : "Flick or tap"}</Hint>
+      </Wrapper>
     </WidgetCard>
   );
 }
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+`;
+
+const Svg = styled.svg`
+  width: min(160px, 70%);
+  height: auto;
+  transition: transform 0.05s linear;
+`;
+
+const Hint = styled.div`
+  font-size: clamp(0.5rem, 2.8cqw, 0.75rem);
+  color: ${({ theme }) => theme.textMuted};
+  opacity: 0.6;
+`;

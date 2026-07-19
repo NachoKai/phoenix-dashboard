@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import styled, { keyframes } from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -113,31 +114,113 @@ export function TonalDroneWidget({}: WidgetProps) {
 
   return (
     <WidgetCard title="Tonal Drone" status="success" error={null} dragHandle={true}>
-      <div className="tonal-drone">
-        <div className="tonal-drone__grid">
+      <Wrapper>
+        <Grid>
           {NOTES.map(n => (
-            <button
+            <NoteBtn
               key={n.name}
-              className={`tonal-drone__note ${activeNote === n.name ? "tonal-drone__note--active" : ""}`}
+              $active={activeNote === n.name}
               onClick={() => toggle(n.freq, n.name)}
               type="button"
             >
-              <span className="tonal-drone__name">{n.name}</span>
-              <span className="tonal-drone__freq">{n.freq.toFixed(1)} Hz</span>
-            </button>
+              <Name>{n.name}</Name>
+              <Freq>{n.freq.toFixed(1)} Hz</Freq>
+            </NoteBtn>
           ))}
-        </div>
-        <div className="tonal-drone__visualizer">
-          <div
-            className={`tonal-drone__ring ${activeNote ? "tonal-drone__ring--active" : ""}`}
-          >
-            <div className="tonal-drone__pulse" />
-          </div>
-        </div>
-        <div className="tonal-drone__hint">
+        </Grid>
+        <Visualizer>
+          <Ring $active={!!activeNote}>
+            <Pulse />
+          </Ring>
+        </Visualizer>
+        <Hint>
           {activeNote ? `Playing ${activeNote} — bends slowly` : "Tap a note to drone"}
-        </div>
-      </div>
+        </Hint>
+      </Wrapper>
     </WidgetCard>
   );
 }
+
+const dronePulse = keyframes`
+  0%, 100% { box-shadow: 0 0 4px rgba(78, 205, 196, 0.2); }
+  50% { box-shadow: 0 0 16px rgba(78, 205, 196, 0.5); }
+`;
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0 4px;
+`;
+
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  width: 100%;
+  max-width: 240px;
+`;
+
+const NoteBtn = styled.button<{ $active: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 4px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid
+    ${({ $active, theme }) => ($active ? theme.success : theme.border)};
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: ${({ $active }) =>
+    $active ? "0 0 8px rgba(78, 205, 196, 0.3)" : "none"};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.accent};
+  }
+`;
+
+const Name = styled.span`
+  font-size: clamp(0.65rem, 3.5cqw, 0.9rem);
+  font-weight: 600;
+`;
+
+const Freq = styled.span`
+  font-size: clamp(0.45rem, 2.5cqw, 0.65rem);
+  color: ${({ theme }) => theme.textMuted};
+`;
+
+const Visualizer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const Ring = styled.div<{ $active: boolean }>`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid
+    ${({ $active, theme }) => ($active ? theme.success : theme.border)};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.5s;
+  animation: ${({ $active }) => ($active ? dronePulse : "none")} 3s ease-in-out infinite;
+`;
+
+const Pulse = styled.div`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.success};
+  opacity: 0.6;
+`;
+
+const Hint = styled.div`
+  font-size: clamp(0.45rem, 2.5cqw, 0.65rem);
+  color: ${({ theme }) => theme.textMuted};
+  opacity: 0.5;
+`;

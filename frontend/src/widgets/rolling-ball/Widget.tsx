@@ -1,6 +1,8 @@
 import { useRef, useEffect, useState } from "react";
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
+import { UnsupportedMsg } from "../components/UnsupportedMsg";
 
 export function RollingBallWidget({}: WidgetProps) {
   const [supported, setSupported] = useState(true);
@@ -148,13 +150,19 @@ export function RollingBallWidget({}: WidgetProps) {
   return (
     <WidgetCard title="Rolling Ball" status="success" error={null} dragHandle={true}>
       {supported ? (
-        <canvas ref={canvasRef} className="rolling-ball" />
+        <Canvas ref={canvasRef} />
       ) : (
-        <div className="bubble-level__unsupported">
-          <p>Device orientation not available</p>
-          <p className="bubble-level__sub">Try on a mobile device with Safari/Chrome</p>
-        </div>
+        <UnsupportedMsg>Device orientation not available</UnsupportedMsg>
       )}
     </WidgetCard>
   );
 }
+
+const Canvas = styled.canvas`
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  display: block;
+  touch-action: none;
+`;
+

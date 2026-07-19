@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -182,24 +183,73 @@ export function AmbientSoundboardWidget({}: WidgetProps) {
 
   return (
     <WidgetCard title="Soundboard" status="success" error={null} dragHandle={true}>
-      <div className="ambient-soundboard">
-        <div className="ambient-soundboard__grid">
+      <Wrapper>
+        <Grid>
           {SOUNDS.map(s => (
-            <button
+            <Btn
               key={s.id}
-              className={`ambient-soundboard__btn ${active.has(s.id) ? "ambient-soundboard__btn--active" : ""}`}
+              $active={active.has(s.id)}
               onClick={() => toggle(s.id)}
               type="button"
             >
-              <span className="ambient-soundboard__icon">{s.icon}</span>
-              <span className="ambient-soundboard__label">{s.label}</span>
-            </button>
+              <Icon>{s.icon}</Icon>
+              <Label>{s.label}</Label>
+            </Btn>
           ))}
-        </div>
-        <div className="ambient-soundboard__hint">
-          {active.size === 0 ? "Tap a sound to play" : `${active.size} active`}
-        </div>
-      </div>
+        </Grid>
+        <Hint>{active.size === 0 ? "Tap a sound to play" : `${active.size} active`}</Hint>
+      </Wrapper>
     </WidgetCard>
   );
 }
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0 4px;
+`;
+
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  width: 100%;
+  max-width: 240px;
+`;
+
+const Btn = styled.button<{ $active: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  background: ${({ $active, theme }) => ($active ? theme.accent : theme.bgElevated)};
+  border: 1px solid ${({ $active, theme }) => ($active ? theme.accent : theme.border)};
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.accent};
+  }
+`;
+
+const Icon = styled.span`
+  font-size: clamp(1rem, 6cqw, 1.5rem);
+  line-height: 1;
+`;
+
+const Label = styled.span<{ $active?: boolean }>`
+  font-size: clamp(0.5rem, 2.8cqw, 0.75rem);
+  color: ${({ $active, theme }) => ($active ? "#fff" : theme.text)};
+  font-weight: 500;
+`;
+
+const Hint = styled.div`
+  font-size: clamp(0.45rem, 2.5cqw, 0.65rem);
+  color: ${({ theme }) => theme.textMuted};
+  opacity: 0.5;
+`;

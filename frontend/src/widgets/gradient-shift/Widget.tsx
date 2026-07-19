@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -56,13 +57,11 @@ export function GradientShiftWidget({}: WidgetProps) {
     return () => window.removeEventListener("deviceorientation", handler);
   }, []);
 
-  // Fallback: allow mouse/touch to control gradient
   const [isDragging, setIsDragging] = useState(false);
 
   return (
     <WidgetCard title="Gradient Shift" status="success" error={null} dragHandle={true}>
-      <div
-        className="gradient-shift"
+      <Wrapper
         style={{
           background: `linear-gradient(${angleRef.current}deg, ${palette.a}, ${palette.b})`,
         }}
@@ -79,25 +78,83 @@ export function GradientShiftWidget({}: WidgetProps) {
           }
         }}
       >
-        <div className="gradient-shift__info">
-          <p className="gradient-shift__label">{palette.label}</p>
-          <p className="gradient-shift__hint">
+        <Info>
+          <Label>{palette.label}</Label>
+          <Hint>
             {supported ? "Tilt phone to shift" : "Drag to shift"}
-          </p>
-        </div>
-        <div className="gradient-shift__palettes">
+          </Hint>
+        </Info>
+        <Palettes>
           {PALETTES.map(p => (
-            <button
+            <Swatch
               key={p.label}
-              className={`gradient-shift__swatch ${palette === p ? "gradient-shift__swatch--active" : ""}`}
+              $active={palette === p}
               style={{ background: `linear-gradient(135deg, ${p.a}, ${p.b})` }}
               onClick={() => setPalette(p)}
               aria-label={p.label}
               type="button"
             />
           ))}
-        </div>
-      </div>
+        </Palettes>
+      </Wrapper>
     </WidgetCard>
   );
 }
+
+const Wrapper = styled.div`
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.3s ease;
+  position: relative;
+  touch-action: none;
+`;
+
+const Info = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+`;
+
+const Label = styled.p`
+  margin: 0;
+  font-size: clamp(0.65rem, 3.5cqw, 0.9rem);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+`;
+
+const Hint = styled.p`
+  margin: 0;
+  font-size: clamp(0.45rem, 2.5cqw, 0.65rem);
+  color: rgba(255, 255, 255, 0.6);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+`;
+
+const Palettes = styled.div`
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+`;
+
+const Swatch = styled.button<{ $active: boolean }>`
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid ${({ $active }) => ($active ? "#fff" : "rgba(255,255,255,0.3)")};
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, border-color 0.15s;
+  transform: ${({ $active }) => ($active ? "scale(1.2)" : "scale(1)")};
+
+  &:hover {
+    transform: scale(1.2);
+  }
+`;

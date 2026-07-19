@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
+import styled, { keyframes } from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
 
@@ -102,14 +103,13 @@ export function ZenBellWidget({}: WidgetProps) {
 
   return (
     <WidgetCard title="Zen Bell" status="success" error={null} dragHandle={true}>
-      <div
-        className="zen-bell"
+      <Wrapper
         onClick={() => {
           if (!ringing) ring();
         }}
       >
-        <div className={`zen-bell__bell ${ringing ? "zen-bell__bell--ringing" : ""}`}>
-          <svg viewBox="-60 -60 120 120" className="zen-bell__svg">
+        <Bell $ringing={ringing}>
+          <Svg viewBox="-60 -60 120 120">
             <g>
               <path
                 d="M-8,-40 Q0,-45 8,-40 L12,-10 Q0,-5 -12,-10 Z"
@@ -154,23 +154,89 @@ export function ZenBellWidget({}: WidgetProps) {
                 strokeLinecap="round"
               />
             </g>
-          </svg>
+          </Svg>
           {ringing && (
-            <div className="zen-bell__waves">
+            <Waves>
               {[0, 1, 2].map(i => (
-                <div
-                  key={i}
-                  className="zen-bell__wave"
-                  style={{ animationDelay: `${i * 0.15}s` }}
-                />
+                <Wave key={i} style={{ animationDelay: `${i * 0.15}s` }} />
               ))}
-            </div>
+            </Waves>
           )}
-        </div>
-        <div className="zen-bell__hint">
+        </Bell>
+        <Hint>
           {supported ? "Shake phone or tap to ring" : "Tap to ring"}
-        </div>
-      </div>
+        </Hint>
+      </Wrapper>
     </WidgetCard>
   );
 }
+
+const zenRing = keyframes`
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+`;
+
+const zenWave = keyframes`
+  to { width: 120px; height: 120px; opacity: 0; }
+`;
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+`;
+
+const Bell = styled.div<{ $ringing: boolean }>`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+  animation: ${({ $ringing }) => ($ringing ? zenRing : "none")} 0.15s ease-in-out 3;
+
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const Svg = styled.svg`
+  width: min(80px, 50%);
+  height: auto;
+  position: relative;
+  z-index: 1;
+`;
+
+const Waves = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+`;
+
+const Wave = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  transform: translate(-50%, -50%);
+  animation: ${zenWave} 0.8s ease-out forwards;
+`;
+
+const Hint = styled.div`
+  font-size: clamp(0.45rem, 2.5cqw, 0.65rem);
+  color: ${({ theme }) => theme.textMuted};
+  opacity: 0.5;
+`;

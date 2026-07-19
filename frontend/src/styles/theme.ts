@@ -67,6 +67,34 @@ declare module "styled-components" {
 }
 
 export const GlobalStyle = createGlobalStyle`
+  :root {
+    --bg: ${({ theme }) => theme.bg};
+    --bg-card: ${({ theme }) => theme.bgCard};
+    --bg-elevated: ${({ theme }) => theme.bgElevated};
+    --text: ${({ theme }) => theme.text};
+    --text-muted: ${({ theme }) => theme.textMuted};
+    --accent: ${({ theme }) => theme.accent};
+    --accent-dim: ${({ theme }) => theme.accentDim};
+    --error: ${({ theme }) => theme.error};
+    --warning: ${({ theme }) => theme.warning};
+    --success: ${({ theme }) => theme.success};
+    --border: ${({ theme }) => theme.border};
+    --radius: ${({ theme }) => theme.radius};
+    --safe-top: ${({ theme }) => theme.safeTop};
+    --safe-bottom: ${({ theme }) => theme.safeBottom};
+    --safe-left: ${({ theme }) => theme.safeLeft};
+    --safe-right: ${({ theme }) => theme.safeRight};
+  }
+
+  .theme-light {
+    --bg: #f0f0f5;
+    --bg-card: #ffffff;
+    --bg-elevated: #e8e8f0;
+    --text: #1a1a2e;
+    --text-muted: #666680;
+    --border: #d0d0e0;
+  }
+
   *, *::before, *::after {
     box-sizing: border-box;
     border-radius: 4px;

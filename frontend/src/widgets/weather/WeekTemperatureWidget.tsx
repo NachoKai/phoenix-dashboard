@@ -1,3 +1,4 @@
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import { useWeeklyWeatherQuery } from "../../hooks/useWeeklyWeatherQuery";
 import type { WidgetProps } from "../../types";
@@ -30,32 +31,108 @@ export function WeatherWeeklyWidget({ instance, sleeping }: WidgetProps) {
       onRetry={() => refetch()}
     >
       {data && data.daily.length > 0 && (
-        <div className="weather-weekly-widget">
-          <div className="weather-weekly-widget__location">{data.location}</div>
-          <div className="weather-weekly-widget__grid">
+        <Wrapper>
+          <LocationLabel>{data.location}</LocationLabel>
+          <Grid>
             {data.daily.map(day => (
-              <div key={day.date} className="weather-weekly-widget__item">
-                <span className="weather-weekly-widget__day">{day.dayName}</span>
-                <span className="weather-weekly-widget__icon">
+              <Item key={day.date}>
+                <DayName>{day.dayName}</DayName>
+                <ItemIcon>
                   {WEATHER_ICONS[day.icon] ?? "·"}
-                </span>
-                <div className="weather-weekly-widget__temps">
-                  <span className="weather-weekly-widget__temp-min">
+                </ItemIcon>
+                <Temps>
+                  <TempMin>
                     {day.tempMin}
                     {unitSymbol}
-                  </span>
-                  <span className="weather-weekly-widget__temp-sep">/</span>
-                  <span className="weather-weekly-widget__temp-max">
+                  </TempMin>
+                  <TempSep>/</TempSep>
+                  <TempMax>
                     {day.tempMax}
                     {unitSymbol}
-                  </span>
-                </div>
-                <span className="weather-weekly-widget__desc">{day.description}</span>
-              </div>
+                  </TempMax>
+                </Temps>
+                <ItemDesc>{day.description}</ItemDesc>
+              </Item>
             ))}
-          </div>
-        </div>
+          </Grid>
+        </Wrapper>
       )}
     </WidgetCard>
   );
 }
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+`;
+
+const LocationLabel = styled.div`
+  font-size: clamp(0.6rem, 3.5cqw, 1rem);
+  color: ${({ theme }) => theme.textMuted};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const Grid = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+`;
+
+const Item = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  background: ${({ theme }) => theme.bgElevated};
+  padding: 8px 4px;
+`;
+
+const DayName = styled.span`
+  font-size: clamp(0.6rem, 3.5cqw, 1rem);
+  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+`;
+
+const ItemIcon = styled.span`
+  font-size: clamp(1.1rem, 8cqw, 2.5rem);
+  line-height: 1;
+`;
+
+const Temps = styled.div`
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+`;
+
+const TempMin = styled.span`
+  font-size: clamp(0.6rem, 4cqw, 1.1rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme }) => theme.text};
+`;
+
+const TempSep = styled.span`
+  font-size: clamp(0.6rem, 4cqw, 1.1rem);
+  font-weight: 700;
+  color: ${({ theme }) => theme.textMuted};
+`;
+
+const TempMax = styled.span`
+  font-size: clamp(0.6rem, 4cqw, 1.1rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme }) => theme.text};
+`;
+
+const ItemDesc = styled.span`
+  font-size: clamp(0.5rem, 2.8cqw, 0.85rem);
+  color: ${({ theme }) => theme.textMuted};
+  text-transform: capitalize;
+  text-align: center;
+  line-height: 1.2;
+`;

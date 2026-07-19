@@ -1,3 +1,4 @@
+import styled from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import { useWeatherQuery } from "../../hooks/useWeatherQuery";
 import type { WidgetProps } from "../../types";
@@ -30,25 +31,82 @@ export function WeatherForecastWidget({ instance, sleeping }: WidgetProps) {
       onRetry={() => refetch()}
     >
       {data && data.forecast.length > 0 && (
-        <div className="weather-forecast-widget">
-          <div className="weather-forecast-widget__location">{data.location}</div>
-          <div className="weather-forecast-widget__grid">
+        <Wrapper>
+          <LocationLabel>{data.location}</LocationLabel>
+          <Grid>
             {data.forecast.map(f => (
-              <div key={f.time} className="weather-forecast-widget__item">
-                <span className="weather-forecast-widget__time">{f.time}</span>
-                <span className="weather-forecast-widget__icon">
+              <Item key={f.time}>
+                <Time>{f.time}</Time>
+                <ItemIcon>
                   {WEATHER_ICONS[f.icon] ?? "·"}
-                </span>
-                <span className="weather-forecast-widget__temp">
+                </ItemIcon>
+                <ItemTemp>
                   {f.temp}
                   {unitSymbol}
-                </span>
-                <span className="weather-forecast-widget__desc">{f.description}</span>
-              </div>
+                </ItemTemp>
+                <ItemDesc>{f.description}</ItemDesc>
+              </Item>
             ))}
-          </div>
-        </div>
+          </Grid>
+        </Wrapper>
       )}
     </WidgetCard>
   );
 }
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+`;
+
+const LocationLabel = styled.div`
+  font-size: clamp(0.6rem, 3.5cqw, 1rem);
+  color: ${({ theme }) => theme.textMuted};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const Grid = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+`;
+
+const Item = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  background: ${({ theme }) => theme.bgElevated};
+  padding: 8px 4px;
+`;
+
+const Time = styled.span`
+  font-size: clamp(0.6rem, 3.5cqw, 1rem);
+  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+`;
+
+const ItemIcon = styled.span`
+  font-size: clamp(1.1rem, 8cqw, 2.5rem);
+  line-height: 1;
+`;
+
+const ItemTemp = styled.span`
+  font-size: clamp(0.75rem, 5cqw, 1.4rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme }) => theme.text};
+`;
+
+const ItemDesc = styled.span`
+  font-size: clamp(0.5rem, 2.8cqw, 0.85rem);
+  color: ${({ theme }) => theme.textMuted};
+  text-transform: capitalize;
+  text-align: center;
+  line-height: 1.2;
+`;
