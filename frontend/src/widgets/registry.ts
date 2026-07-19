@@ -63,6 +63,110 @@ export const widgetRegistry: FrontendWidgetEntry[] = [
       import("./vacuum/Widget").then(m => ({ default: m.VacuumWidget })),
     ),
   },
+  {
+    type: "bubble-wrap",
+    component: lazy(() =>
+      import("./bubble-wrap/Widget").then(m => ({
+        default: m.BubbleWrapWidget,
+      })),
+    ),
+  },
+  {
+    type: "touch-ripple",
+    component: lazy(() =>
+      import("./touch-ripple/Widget").then(m => ({
+        default: m.TouchRippleWidget,
+      })),
+    ),
+  },
+  {
+    type: "fidget-spinner",
+    component: lazy(() =>
+      import("./fidget-spinner/Widget").then(m => ({
+        default: m.FidgetSpinnerWidget,
+      })),
+    ),
+  },
+  {
+    type: "bubble-pop",
+    component: lazy(() =>
+      import("./bubble-pop/Widget").then(m => ({
+        default: m.BubblePopWidget,
+      })),
+    ),
+  },
+  {
+    type: "ambient-soundboard",
+    component: lazy(() =>
+      import("./ambient-soundboard/Widget").then(m => ({
+        default: m.AmbientSoundboardWidget,
+      })),
+    ),
+  },
+  {
+    type: "tonal-drone",
+    component: lazy(() =>
+      import("./tonal-drone/Widget").then(m => ({
+        default: m.TonalDroneWidget,
+      })),
+    ),
+  },
+  {
+    type: "bubble-level",
+    component: lazy(() =>
+      import("./bubble-level/Widget").then(m => ({
+        default: m.BubbleLevelWidget,
+      })),
+    ),
+  },
+  {
+    type: "rolling-ball",
+    component: lazy(() =>
+      import("./rolling-ball/Widget").then(m => ({
+        default: m.RollingBallWidget,
+      })),
+    ),
+  },
+  {
+    type: "gradient-shift",
+    component: lazy(() =>
+      import("./gradient-shift/Widget").then(m => ({
+        default: m.GradientShiftWidget,
+      })),
+    ),
+  },
+  {
+    type: "zen-bell",
+    component: lazy(() =>
+      import("./zen-bell/Widget").then(m => ({
+        default: m.ZenBellWidget,
+      })),
+    ),
+  },
+  {
+    type: "lava-lamp",
+    component: lazy(() =>
+      import("./lava-lamp/Widget").then(m => ({
+        default: m.LavaLampWidget,
+      })),
+    ),
+  },
+  {
+    type: "color-calm",
+    component: lazy(() =>
+      import("./color-calm/Widget").then(m => ({
+        default: m.ColorCalmWidget,
+      })),
+    ),
+  },
+  {
+    type: "aquarium",
+    component: lazy(() =>
+      import("./aquarium/Widget").then(m => ({
+        default: m.AquariumWidget,
+      })),
+    ),
+  },
 ];
 
 const widgetMap = new Map(widgetRegistry.map(e => [e.type, e.component]));

@@ -1,5 +1,5 @@
-import type { WidgetDefinition } from "../types.js";
-import { DEFAULT_SYSTEM_PROMPT } from "../constants.js";export const clockWidget: WidgetDefinition = {
+import type { WidgetDefinition } from "../types.js";import { DEFAULT_SYSTEM_PROMPT } from "../constants.js";
+export const clockWidget: WidgetDefinition = {
   type: "clock",
   name: "Clock",
   description: "Current time and date",
@@ -392,6 +392,123 @@ export const vacuumWidget: WidgetDefinition = {
   ],
 };
 
+export const bubbleWrapWidget: WidgetDefinition = {
+  type: "bubble-wrap",
+  name: "Bubble Wrap",
+  description: "Pop virtual bubble wrap for stress relief",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const touchRippleWidget: WidgetDefinition = {
+  type: "touch-ripple",
+  name: "Touch Ripple",
+  description: "Rain window with touch ripples",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const fidgetSpinnerWidget: WidgetDefinition = {
+  type: "fidget-spinner",
+  name: "Fidget Spinner",
+  description: "Flick to spin with momentum",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const bubblePopWidget: WidgetDefinition = {
+  type: "bubble-pop",
+  name: "Bubble Pop",
+  description: "Floating bubbles to tap and pop",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const ambientSoundboardWidget: WidgetDefinition = {
+  type: "ambient-soundboard",
+  name: "Ambient Soundboard",
+  description: "Rain, ocean, forest, white/pink/brown noise",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const tonalDroneWidget: WidgetDefinition = {
+  type: "tonal-drone",
+  name: "Tonal Drone",
+  description: "Sustained notes that slowly bend",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const bubbleLevelWidget: WidgetDefinition = {
+  type: "bubble-level",
+  name: "Bubble Level",
+  description: "Phone tilt shows a virtual level bubble",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const rollingBallWidget: WidgetDefinition = {
+  type: "rolling-ball",
+  name: "Rolling Ball",
+  description: "A ball that rolls with gravity as you tilt",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const gradientShiftWidget: WidgetDefinition = {
+  type: "gradient-shift",
+  name: "Gradient Shift",
+  description: "Phone tilt changes gradient colors",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const zenBellWidget: WidgetDefinition = {
+  type: "zen-bell",
+  name: "Zen Bell",
+  description: "Shake or tap to ring a singing bowl",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const lavaLampWidget: WidgetDefinition = {
+  type: "lava-lamp",
+  name: "Lava Lamp",
+  description: "Smooth blobby animation",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const colorCalmWidget: WidgetDefinition = {
+  type: "color-calm",
+  name: "Color Calm",
+  description: "Slowly shifting pastel gradients",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
+export const aquariumWidget: WidgetDefinition = {
+  type: "aquarium",
+  name: "Aquarium",
+  description: "Swimming fish with seaweed",
+  hasBackendRoute: false,
+  defaultConfig: {},
+  configSchema: [],
+};
+
 export const widgetRegistry: WidgetDefinition[] = [
   clockWidget,
   weatherWidget,
@@ -402,6 +519,19 @@ export const widgetRegistry: WidgetDefinition[] = [
   aiQaWidget,
   lightsWidget,
   vacuumWidget,
+  bubbleWrapWidget,
+  touchRippleWidget,
+  fidgetSpinnerWidget,
+  bubblePopWidget,
+  ambientSoundboardWidget,
+  tonalDroneWidget,
+  bubbleLevelWidget,
+  rollingBallWidget,
+  gradientShiftWidget,
+  zenBellWidget,
+  lavaLampWidget,
+  colorCalmWidget,
+  aquariumWidget,
 ];
 
 export function getWidgetDefinition(type: string): WidgetDefinition | undefined {

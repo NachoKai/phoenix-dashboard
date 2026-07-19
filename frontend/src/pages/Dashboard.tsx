@@ -226,7 +226,22 @@ export function Dashboard() {
                   <SortableWidgetItem
                     key={widget.id}
                     widgetId={widget.id}
-                    dragHandle={widget.type === "ai-qa"}
+                    dragHandle={[
+                      "ai-qa",
+                      "bubble-wrap",
+                      "touch-ripple",
+                      "fidget-spinner",
+                      "bubble-pop",
+                      "ambient-soundboard",
+                      "tonal-drone",
+                      "gradient-shift",
+                      "zen-bell",
+                      "color-calm",
+                      "lava-lamp",
+                      "aquarium",
+                      "bubble-level",
+                      "rolling-ball",
+                    ].includes(widget.type)}
                   >
                     <Suspense
                       fallback={
