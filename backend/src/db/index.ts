@@ -155,9 +155,8 @@ export async function addSection(deviceId: string): Promise<DashboardSection> {
   return section;
 }
 
-export async function deleteSection(deviceId: string, id: string): Promise<boolean> {
+export async function deleteSection(deviceId: string, id: string): Promise<void> {
   const data = await getOrCreateDeviceData(deviceId);
-  if (data.sections.length <= 1) return false;
   data.widgets = data.widgets.filter(w => w.section !== id);
   data.sections = data.sections.filter(s => s.id !== id);
   data.sections.forEach((s, i) => {
@@ -173,7 +172,6 @@ export async function deleteSection(deviceId: string, id: string): Promise<boole
       deviceId,
     ],
   });
-  return true;
 }
 
 export async function getWidgets(deviceId: string): Promise<WidgetInstance[]> {

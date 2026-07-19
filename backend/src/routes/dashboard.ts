@@ -140,11 +140,7 @@ dashboardRouter.delete(
       res.status(400).json({ error: "deviceId required" });
       return;
     }
-    const ok = await deleteSection(deviceId, String(req.params.id));
-    if (!ok) {
-      res.status(400).json({ error: "Cannot delete last section" });
-      return;
-    }
+    await deleteSection(deviceId, String(req.params.id));
     res.json({ ok: true });
   }),
 );

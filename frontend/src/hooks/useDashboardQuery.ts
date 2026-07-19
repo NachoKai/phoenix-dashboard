@@ -1,11 +1,6 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchDashboard,
-  saveDashboardState,
-  saveWidgets as apiSaveWidgets,
-  saveGlobalSettings as apiSaveGlobalSettings,
-} from "../api";
+import { fetchDashboard, saveDashboardState } from "../api";
 import {
   loadDashboardCache,
   migrateLegacyCache,
@@ -55,9 +50,23 @@ export function useDashboardQuery() {
 
   const saveMutation = useMutation({
     mutationFn: (state: DashboardState) => saveDashboardState(deviceId, state),
-    onSuccess: (_data, variables) => {
-      saveDashboardCache(deviceId, variables);
-      queryClient.setQueryData<DashboardState>(deviceKey, variables);
+    onMutate: async state => {
+      await queryClient.cancelQueries({ queryKey: deviceKey });
+      const previous = queryClient.getQueryData<DashboardState>(deviceKey);
+      queryClient.setQueryData<DashboardState>(deviceKey, state);
+      saveDashboardCache(deviceId, state);
+      return { previous };
+    },
+    onError: (_err, _state, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(deviceKey, context.previous);
+        saveDashboardCache(deviceId, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: deviceKey });
+      const current = queryClient.getQueryData<DashboardState>(deviceKey);
+      if (current) saveDashboardCache(deviceId, current);
     },
   });
 
@@ -74,17 +83,6 @@ export function useDashboardQuery() {
     saveMutation.mutate(clean);
   };
 
-  const saveAll = async (state: DashboardState) => {
-    const clean = deduplicateWidgets(state);
-    await Promise.all([
-      apiSaveWidgets(deviceId, clean.widgets),
-      apiSaveGlobalSettings(deviceId, clean.globalSettings),
-      saveDashboardState(deviceId, clean),
-    ]);
-    saveDashboardCache(deviceId, clean);
-    queryClient.setQueryData(deviceKey, clean);
-  };
-
   return {
     state: query.data ?? null,
     isLoading: query.isPending,
@@ -92,7 +90,7 @@ export function useDashboardQuery() {
     refetch: query.refetch,
     updateState,
     persistState,
-    saveAll,
+    saveMutation,
     isSaving: saveMutation.isPending,
   };
 }

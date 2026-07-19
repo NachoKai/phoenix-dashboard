@@ -39,6 +39,8 @@ async function sendLightControl(
   }
 }
 
+const LIGHTS_KEY = ["lights"] as const;
+
 export function useLightsQuery({
   refreshInterval,
   enabled = true,
@@ -49,7 +51,7 @@ export function useLightsQuery({
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["lights"],
+    queryKey: LIGHTS_KEY,
     queryFn: fetchLights,
     refetchInterval: enabled ? refreshInterval : false,
     staleTime: refreshInterval * 2,
@@ -66,8 +68,38 @@ export function useLightsQuery({
       action: string;
       value?: unknown;
     }) => sendLightControl(deviceId, action, value),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lights"] });
+    onMutate: async ({ deviceId, action, value }) => {
+      await queryClient.cancelQueries({ queryKey: LIGHTS_KEY });
+      const previous = queryClient.getQueryData<LightDevice[]>(LIGHTS_KEY);
+      queryClient.setQueryData<LightDevice[]>(LIGHTS_KEY, old => {
+        if (!old) return old;
+        return old.map(light => {
+          if (light.id !== deviceId) return light;
+          if (action === "toggle" || action === "on" || action === "off") {
+            const newOn = action === "toggle" ? !light.isOn : action === "on";
+            return { ...light, isOn: newOn };
+          }
+          if (action === "setBrightness" && typeof value === "number") {
+            return { ...light, brightness: value };
+          }
+          if (action === "setColorTemp" && typeof value === "number") {
+            return { ...light, colorTemp: value };
+          }
+          if (action === "setColor" && typeof value === "string") {
+            return { ...light, color: value };
+          }
+          return light;
+        });
+      });
+      return { previous };
+    },
+    onError: (_err, _params, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(LIGHTS_KEY, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: LIGHTS_KEY });
     },
   });
 

@@ -104,23 +104,7 @@ export async function createSection(
   return res.json();
 }
 
-export async function renameSection(
-  deviceId: string,
-  id: string,
-  name: string,
-): Promise<void> {
-  const res = await fetch(`${API_BASE}/dashboard/sections/${id}${qp(deviceId)}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name }),
-  });
-  if (!res.ok) throw new Error("Failed to rename section");
-}
-
-export async function deleteSection(
-  deviceId: string,
-  id: string,
-): Promise<void> {
+export async function deleteSection(deviceId: string, id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/dashboard/sections/${id}${qp(deviceId)}`, {
     method: "DELETE",
   });

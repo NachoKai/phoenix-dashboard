@@ -37,6 +37,8 @@ async function sendVacuumControl(deviceId: string, action: string): Promise<void
   }
 }
 
+const VACUUM_KEY = ["vacuum"] as const;
+
 export function useVacuumQuery({
   refreshInterval,
   enabled = true,
@@ -47,7 +49,7 @@ export function useVacuumQuery({
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["vacuum"],
+    queryKey: VACUUM_KEY,
     queryFn: fetchVacuum,
     refetchInterval: enabled ? refreshInterval : false,
     staleTime: refreshInterval * 3,
@@ -57,8 +59,30 @@ export function useVacuumQuery({
   const controlMutation = useMutation({
     mutationFn: ({ action }: { action: string }) =>
       sendVacuumControl(query.data?.id ?? "", action),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vacuum"] });
+    onMutate: async ({ action }) => {
+      await queryClient.cancelQueries({ queryKey: VACUUM_KEY });
+      const previous = queryClient.getQueryData<VacuumData>(VACUUM_KEY);
+      if (action === "start" || action === "stop") {
+        queryClient.setQueryData<VacuumData>(VACUUM_KEY, old => {
+          if (!old) return old;
+          const isCleaning = action === "start";
+          return {
+            ...old,
+            isOn: isCleaning,
+            isCleaning,
+            status: isCleaning ? "cleaning" : "idle",
+          };
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _action, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(VACUUM_KEY, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: VACUUM_KEY });
     },
   });
 

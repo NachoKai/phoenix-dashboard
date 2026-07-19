@@ -1,15 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { checkStoredKey, fetchWidgetRegistry } from "../api";
 import {
-  checkStoredKey,
-  createSection,
-  deleteSection as apiDeleteSection,
-  fetchWidgetRegistry,
-  reorderSections,
-  saveApiKey,
-  saveDashboardState,
-  saveGlobalSettings,
-  saveWidgets,
-} from "../api";
+  useCreateSectionMutation,
+  useDeleteSectionMutation,
+  useSaveDashboardStateMutation,
+  useSaveGlobalSettingsMutation,
+  useSaveWidgetsMutation,
+  useReorderSectionsMutation,
+  useSaveApiKeyMutation,
+} from "./useDashboardMutations";
 import type {
   DashboardState,
   SectionLayout,
@@ -19,7 +18,6 @@ import type {
 import { v4 as uuid } from "../utils/id";
 
 export function useSettingsState(
-  deviceId: string,
   dashboardState: DashboardState | null,
   updateState: (updater: (prev: DashboardState) => DashboardState) => void,
 ) {
@@ -28,6 +26,15 @@ export function useSettingsState(
   const [keyMasks, setKeyMasks] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const addingSection = useRef(false);
+
+  const createSectionMutation = useCreateSectionMutation();
+  const deleteSectionMutation = useDeleteSectionMutation();
+  const saveWidgetsMutation = useSaveWidgetsMutation();
+  const saveGlobalSettingsMutation = useSaveGlobalSettingsMutation();
+  const saveDashboardStateMutation = useSaveDashboardStateMutation();
+  const reorderSectionsMutation = useReorderSectionsMutation();
+  const saveApiKeyMutation = useSaveApiKeyMutation();
 
   useEffect(() => {
     if (dashboardState && !state) {
@@ -91,13 +98,38 @@ export function useSettingsState(
     let targetSectionId = emptySection?.id;
 
     if (!targetSectionId) {
+      if (addingSection.current) return;
+      addingSection.current = true;
+      const tempId = `temp-${uuid()}`;
+      const tempSection = {
+        id: tempId,
+        name: `Section ${state.sections.length + 1}`,
+        position: state.sections.length,
+      };
+      setState({ ...state, sections: [...state.sections, tempSection] });
       try {
-        const { section } = await createSection(deviceId);
-        setState({ ...state, sections: [...state.sections, section] });
+        const { section } = await createSectionMutation.mutateAsync();
+        setState(prev =>
+          prev
+            ? {
+                ...prev,
+                sections: prev.sections.map(sec =>
+                  sec.id === tempId ? { ...section, name: sec.name } : sec,
+                ),
+              }
+            : prev,
+        );
         targetSectionId = section.id;
       } catch {
+        setState(prev =>
+          prev
+            ? { ...prev, sections: prev.sections.filter(sec => sec.id !== tempId) }
+            : prev,
+        );
         console.error("[dashboard] Failed to create section for new widget");
         return;
+      } finally {
+        addingSection.current = false;
       }
     }
     const newWidget: WidgetInstance = {
@@ -107,7 +139,7 @@ export function useSettingsState(
       section: targetSectionId,
       config: { ...def.defaultConfig },
     };
-    setState(s => (s ? { ...s, widgets: [...s.widgets, newWidget] } : s));
+    setState(prev => (prev ? { ...prev, widgets: [...prev.widgets, newWidget] } : prev));
   };
 
   const removeWidget = (id: string) => {
@@ -134,25 +166,49 @@ export function useSettingsState(
   };
 
   const handleAddSection = async () => {
-    if (!state) return;
+    if (!state || addingSection.current) return;
+    addingSection.current = true;
+    const tempId = `temp-${uuid()}`;
+    const tempSection = {
+      id: tempId,
+      name: `Section ${state.sections.length + 1}`,
+      position: state.sections.length,
+    };
+    setState({ ...state, sections: [...state.sections, tempSection] });
     try {
-      const { section } = await createSection(deviceId);
-      setState({ ...state, sections: [...state.sections, section] });
+      const { section } = await createSectionMutation.mutateAsync();
+      setState(prev =>
+        prev
+          ? {
+              ...prev,
+              sections: prev.sections.map(sec =>
+                sec.id === tempId ? { ...section, name: sec.name } : sec,
+              ),
+            }
+          : prev,
+      );
     } catch {
+      setState(prev =>
+        prev ? { ...prev, sections: prev.sections.filter(s => s.id !== tempId) } : prev,
+      );
       console.error("[dashboard] Failed to create section");
+    } finally {
+      addingSection.current = false;
     }
   };
 
   const handleDeleteSection = async (sectionId: string) => {
     if (!state) return;
+    const previous = state;
+    setState({
+      ...state,
+      sections: state.sections.filter(s => s.id !== sectionId),
+      widgets: state.widgets.filter(w => w.section !== sectionId),
+    });
     try {
-      await apiDeleteSection(deviceId, sectionId);
-      setState({
-        ...state,
-        sections: state.sections.filter(s => s.id !== sectionId),
-        widgets: state.widgets.filter(w => w.section !== sectionId),
-      });
+      await deleteSectionMutation.mutateAsync(sectionId);
     } catch {
+      setState(previous);
       console.error("[dashboard] Failed to delete section");
     }
   };
@@ -191,13 +247,12 @@ export function useSettingsState(
       );
       const cleaned = { ...state, widgets: cleanedWidgets };
       await Promise.all([
-        saveWidgets(deviceId, cleanedWidgets),
-        saveGlobalSettings(deviceId, state.globalSettings),
-        reorderSections(
-          deviceId,
+        saveWidgetsMutation.mutateAsync(cleanedWidgets),
+        saveGlobalSettingsMutation.mutateAsync(state.globalSettings),
+        reorderSectionsMutation.mutateAsync(
           state.sections.map((s, i) => ({ ...s, position: i, name: `Section ${i + 1}` })),
         ),
-        saveDashboardState(deviceId, cleaned),
+        saveDashboardStateMutation.mutateAsync(cleaned),
       ]);
       setState(cleaned);
       updateState(() => cleaned);
@@ -212,7 +267,7 @@ export function useSettingsState(
   const handleSecretSave = async (widgetId: string, keyName: string, value: string) => {
     if (!value.trim()) return;
     try {
-      const result = await saveApiKey(deviceId, widgetId, keyName, value);
+      const result = await saveApiKeyMutation.mutateAsync({ widgetId, keyName, value });
       setKeyMasks(m => ({ ...m, [`${widgetId}:${keyName}`]: result.masked }));
       setMessage("API key saved");
     } catch (err) {

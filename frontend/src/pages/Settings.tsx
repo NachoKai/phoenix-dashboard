@@ -8,13 +8,11 @@ import { useScrollToTop } from "../hooks/useScrollToTop";
 import { useSettingsState } from "../hooks/useSettingsState";
 import { useAuthStore } from "../stores/authStore";
 import type { SectionLayout } from "../types";
-import { getDeviceId } from "../utils/deviceId";
 
 export function Settings() {
-  const deviceId = getDeviceId();
   const logout = useAuthStore(s => s.logout);
   const { state: dashboardState, updateState } = useDashboardQuery();
-  const settings = useSettingsState(deviceId, dashboardState, updateState);
+  const settings = useSettingsState(dashboardState, updateState);
   const scrollRef = useRef<HTMLDivElement>(null);
   const showScrollTop = useScrollToTop(scrollRef);
   useAutoDismiss(settings.message, () => settings.setMessage(null));

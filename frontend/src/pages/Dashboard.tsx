@@ -1,6 +1,5 @@
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Suspense, useCallback, useEffect } from "react";
-import { createSection, saveDashboardState, saveWidgets } from "../api";
 import { DashboardError } from "../components/DashboardError";
 import { DashboardLoading } from "../components/DashboardLoading";
 import { GroupSidebar } from "../components/GroupSidebar";
@@ -8,6 +7,11 @@ import { SleepOverlay } from "../components/SleepOverlay";
 import { useAutoRotate } from "../hooks/useAutoRotate";
 import { useDashboardDerivedState } from "../hooks/useDashboardDerivedState";
 import { useDashboardQuery } from "../hooks/useDashboardQuery";
+import {
+  useCreateSectionMutation,
+  useSaveDashboardStateMutation,
+  useSaveWidgetsMutation,
+} from "../hooks/useDashboardMutations";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { useOrientationLock } from "../hooks/useOrientationLock";
 import {
@@ -31,6 +35,10 @@ export function Dashboard() {
   const setActiveGroup = useUiStore(s => s.setActiveGroup);
   const setSleeping = useUiStore(s => s.setSleeping);
   const setOnline = useUiStore(s => s.setOnline);
+
+  const createSectionMutation = useCreateSectionMutation();
+  const saveWidgetsMutation = useSaveWidgetsMutation();
+  const saveDashboardStateMutation = useSaveDashboardStateMutation();
 
   useOnlineStatus(online, setOnline);
   useSleepMode(state?.globalSettings, setSleeping);
@@ -78,7 +86,7 @@ export function Dashboard() {
       let targetSection = state.sections.find(s => s.group === toGroup);
       if (!targetSection) {
         try {
-          const { section } = await createSection(deviceId);
+          const { section } = await createSectionMutation.mutateAsync();
           targetSection = { ...section, group: toGroup };
         } catch {
           console.error("[dashboard] Failed to create section");
@@ -121,12 +129,18 @@ export function Dashboard() {
 
       const updated = { ...state, widgets: reordered, sections: updatedSections };
       updateState(() => updated);
-      void saveWidgets(deviceId, reordered).catch(() => {});
+      saveWidgetsMutation.mutate(reordered);
       if (needsNewSection) {
-        void saveDashboardState(deviceId, updated).catch(() => {});
+        saveDashboardStateMutation.mutate(updated);
       }
     },
-    [state, updateState, deviceId],
+    [
+      state,
+      updateState,
+      createSectionMutation,
+      saveWidgetsMutation,
+      saveDashboardStateMutation,
+    ],
   );
 
   const handleGroupsReorder = useCallback(
@@ -170,9 +184,9 @@ export function Dashboard() {
     (reordered: WidgetInstance[]) => {
       if (!state) return;
       updateState(() => ({ ...state, widgets: reordered }));
-      void saveWidgets(deviceId, reordered).catch(() => {});
+      saveWidgetsMutation.mutate(reordered);
     },
-    [state, updateState, deviceId],
+    [state, updateState, saveWidgetsMutation],
   );
 
   const {
