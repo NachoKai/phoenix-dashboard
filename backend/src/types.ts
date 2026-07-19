@@ -1,5 +1,4 @@
-export type ConfigFieldType =
-  | "string"
+export type ConfigFieldType =  | "string"
   | "number"
   | "boolean"
   | "select"
@@ -48,6 +47,13 @@ export interface DashboardSection {
   group?: number;
 }
 
+export interface DaySleepOverride {
+  sleepStartHour: number;
+  sleepStartMinute: number;
+  sleepEndHour: number;
+  sleepEndMinute: number;
+}
+
 export interface GlobalSettings {
   theme: "dark" | "light";
   defaultRefreshInterval: number;
@@ -59,6 +65,7 @@ export interface GlobalSettings {
   sleepStartMinute: number;
   sleepEndHour: number;
   sleepEndMinute: number;
+  sleepTimeDayOverrides?: Record<number, DaySleepOverride>;
 }
 
 export interface DashboardState {

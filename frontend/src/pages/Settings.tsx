@@ -22,6 +22,17 @@ export function Settings() {
 
   const { state } = settings;
 
+  const DAY_NAMES = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  const AVAILABLE_DAYS = [0, 1, 2, 3, 4, 5, 6];
+
   if (!state) {
     return <LoadingWrapper>Loading…</LoadingWrapper>;
   }
@@ -132,76 +143,237 @@ export function Settings() {
           </CheckboxRow>
 
           {state.globalSettings.sleepTimeEnabled && (
-            <SleepRow>
-              <FieldRow>
-                Start
-                <SleepTime>
-                  <NumberInput
-                    min={0}
-                    max={23}
-                    value={state.globalSettings.sleepStartHour}
-                    onChange={n =>
-                      settings.setState({
-                        ...state,
-                        globalSettings: {
-                          ...state.globalSettings,
-                          sleepStartHour: Math.max(0, Math.min(23, n)),
-                        },
-                      })
-                    }
-                  />
-                  <span>:</span>
-                  <NumberInput
-                    min={0}
-                    max={59}
-                    value={state.globalSettings.sleepStartMinute}
-                    onChange={n =>
-                      settings.setState({
-                        ...state,
-                        globalSettings: {
-                          ...state.globalSettings,
-                          sleepStartMinute: Math.max(0, Math.min(59, n)),
-                        },
-                      })
-                    }
-                  />
-                </SleepTime>
-              </FieldRow>
-              <FieldRow>
-                End
-                <SleepTime>
-                  <NumberInput
-                    min={0}
-                    max={23}
-                    value={state.globalSettings.sleepEndHour}
-                    onChange={n =>
-                      settings.setState({
-                        ...state,
-                        globalSettings: {
-                          ...state.globalSettings,
-                          sleepEndHour: Math.max(0, Math.min(23, n)),
-                        },
-                      })
-                    }
-                  />
-                  <span>:</span>
-                  <NumberInput
-                    min={0}
-                    max={59}
-                    value={state.globalSettings.sleepEndMinute}
-                    onChange={n =>
-                      settings.setState({
-                        ...state,
-                        globalSettings: {
-                          ...state.globalSettings,
-                          sleepEndMinute: Math.max(0, Math.min(59, n)),
-                        },
-                      })
-                    }
-                  />
-                </SleepTime>
-              </FieldRow>
-            </SleepRow>
+            <>
+              <SleepRow>
+                <FieldRow>
+                  Start
+                  <SleepTime>
+                    <NumberInput
+                      min={0}
+                      max={23}
+                      value={state.globalSettings.sleepStartHour}
+                      onChange={n =>
+                        settings.setState({
+                          ...state,
+                          globalSettings: {
+                            ...state.globalSettings,
+                            sleepStartHour: Math.max(0, Math.min(23, n)),
+                          },
+                        })
+                      }
+                    />
+                    <span>:</span>
+                    <NumberInput
+                      min={0}
+                      max={59}
+                      value={state.globalSettings.sleepStartMinute}
+                      onChange={n =>
+                        settings.setState({
+                          ...state,
+                          globalSettings: {
+                            ...state.globalSettings,
+                            sleepStartMinute: Math.max(0, Math.min(59, n)),
+                          },
+                        })
+                      }
+                    />
+                  </SleepTime>
+                </FieldRow>
+                <FieldRow>
+                  End
+                  <SleepTime>
+                    <NumberInput
+                      min={0}
+                      max={23}
+                      value={state.globalSettings.sleepEndHour}
+                      onChange={n =>
+                        settings.setState({
+                          ...state,
+                          globalSettings: {
+                            ...state.globalSettings,
+                            sleepEndHour: Math.max(0, Math.min(23, n)),
+                          },
+                        })
+                      }
+                    />
+                    <span>:</span>
+                    <NumberInput
+                      min={0}
+                      max={59}
+                      value={state.globalSettings.sleepEndMinute}
+                      onChange={n =>
+                        settings.setState({
+                          ...state,
+                          globalSettings: {
+                            ...state.globalSettings,
+                            sleepEndMinute: Math.max(0, Math.min(59, n)),
+                          },
+                        })
+                      }
+                    />
+                  </SleepTime>
+                </FieldRow>
+              </SleepRow>
+
+              <DayOverridesSection>
+                <DayOverridesTitle>Day Overrides</DayOverridesTitle>
+                {Object.entries(state.globalSettings.sleepTimeDayOverrides ?? {}).map(
+                  ([day, override]) => {
+                    const dayNum = Number(day);
+                    return (
+                      <DayOverrideRow key={day}>
+                        <DayLabel>{DAY_NAMES[dayNum]}</DayLabel>
+                        <FieldRow>
+                          Start
+                          <SleepTime>
+                            <NumberInput
+                              min={0}
+                              max={23}
+                              value={override.sleepStartHour}
+                              onChange={n =>
+                                settings.setState({
+                                  ...state,
+                                  globalSettings: {
+                                    ...state.globalSettings,
+                                    sleepTimeDayOverrides: {
+                                      ...state.globalSettings.sleepTimeDayOverrides,
+                                      [dayNum]: {
+                                        ...override,
+                                        sleepStartHour: Math.max(0, Math.min(23, n)),
+                                      },
+                                    },
+                                  },
+                                })
+                              }
+                            />
+                            <span>:</span>
+                            <NumberInput
+                              min={0}
+                              max={59}
+                              value={override.sleepStartMinute}
+                              onChange={n =>
+                                settings.setState({
+                                  ...state,
+                                  globalSettings: {
+                                    ...state.globalSettings,
+                                    sleepTimeDayOverrides: {
+                                      ...state.globalSettings.sleepTimeDayOverrides,
+                                      [dayNum]: {
+                                        ...override,
+                                        sleepStartMinute: Math.max(0, Math.min(59, n)),
+                                      },
+                                    },
+                                  },
+                                })
+                              }
+                            />
+                          </SleepTime>
+                        </FieldRow>
+                        <FieldRow>
+                          End
+                          <SleepTime>
+                            <NumberInput
+                              min={0}
+                              max={23}
+                              value={override.sleepEndHour}
+                              onChange={n =>
+                                settings.setState({
+                                  ...state,
+                                  globalSettings: {
+                                    ...state.globalSettings,
+                                    sleepTimeDayOverrides: {
+                                      ...state.globalSettings.sleepTimeDayOverrides,
+                                      [dayNum]: {
+                                        ...override,
+                                        sleepEndHour: Math.max(0, Math.min(23, n)),
+                                      },
+                                    },
+                                  },
+                                })
+                              }
+                            />
+                            <span>:</span>
+                            <NumberInput
+                              min={0}
+                              max={59}
+                              value={override.sleepEndMinute}
+                              onChange={n =>
+                                settings.setState({
+                                  ...state,
+                                  globalSettings: {
+                                    ...state.globalSettings,
+                                    sleepTimeDayOverrides: {
+                                      ...state.globalSettings.sleepTimeDayOverrides,
+                                      [dayNum]: {
+                                        ...override,
+                                        sleepEndMinute: Math.max(0, Math.min(59, n)),
+                                      },
+                                    },
+                                  },
+                                })
+                              }
+                            />
+                          </SleepTime>
+                        </FieldRow>
+                        <RemoveBtn
+                          type="button"
+                          onClick={() => {
+                            const { [dayNum]: _, ...rest } =
+                              state.globalSettings.sleepTimeDayOverrides ?? {};
+                            settings.setState({
+                              ...state,
+                              globalSettings: {
+                                ...state.globalSettings,
+                                sleepTimeDayOverrides: rest,
+                              },
+                            });
+                          }}
+                        >
+                          Remove
+                        </RemoveBtn>
+                      </DayOverrideRow>
+                    );
+                  },
+                )}
+                {AVAILABLE_DAYS.filter(
+                  d => !(state.globalSettings.sleepTimeDayOverrides ?? {})[d],
+                ).length > 0 && (
+                  <AddDayBtnWrap>
+                    <DaySelect
+                      value=""
+                      onChange={e => {
+                        const dayNum = Number(e.target.value);
+                        if (isNaN(dayNum)) return;
+                        settings.setState({
+                          ...state,
+                          globalSettings: {
+                            ...state.globalSettings,
+                            sleepTimeDayOverrides: {
+                              ...state.globalSettings.sleepTimeDayOverrides,
+                              [dayNum]: {
+                                sleepStartHour: state.globalSettings.sleepStartHour,
+                                sleepStartMinute: state.globalSettings.sleepStartMinute,
+                                sleepEndHour: state.globalSettings.sleepEndHour,
+                                sleepEndMinute: state.globalSettings.sleepEndMinute,
+                              },
+                            },
+                          },
+                        });
+                      }}
+                    >
+                      <option value="">+ Add day override</option>
+                      {AVAILABLE_DAYS.filter(
+                        d => !(state.globalSettings.sleepTimeDayOverrides ?? {})[d],
+                      ).map(d => (
+                        <option key={d} value={d}>
+                          {DAY_NAMES[d]}
+                        </option>
+                      ))}
+                    </DaySelect>
+                  </AddDayBtnWrap>
+                )}
+              </DayOverridesSection>
+            </>
           )}
         </Section>
 
@@ -247,7 +419,10 @@ export function Settings() {
                     <option value="8">Group 8</option>
                   </LayoutSelect>
                 </SectionItemLeft>
-                <RemoveBtn type="button" onClick={() => void settings.handleDeleteSection(section.id)}>
+                <RemoveBtn
+                  type="button"
+                  onClick={() => void settings.handleDeleteSection(section.id)}
+                >
                   Remove
                 </RemoveBtn>
               </SectionItem>
@@ -262,7 +437,11 @@ export function Settings() {
           <h2>Widgets</h2>
           <AddWidgetsRow>
             {settings.registry.map(def => (
-              <AddBtn key={def.type} type="button" onClick={() => settings.addWidget(def.type)}>
+              <AddBtn
+                key={def.type}
+                type="button"
+                onClick={() => settings.addWidget(def.type)}
+              >
                 + {def.name}
               </AddBtn>
             ))}
@@ -309,7 +488,10 @@ export function Settings() {
                           >
                             ↓
                           </button>
-                          <RemoveBtn type="button" onClick={() => settings.removeWidget(widget.id)}>
+                          <RemoveBtn
+                            type="button"
+                            onClick={() => settings.removeWidget(widget.id)}
+                          >
                             Remove
                           </RemoveBtn>
                         </WidgetActions>
@@ -346,7 +528,11 @@ export function Settings() {
           {settings.saving ? "Saving…" : "Save"}
         </SaveBtn>
         {settings.message && (
-          <Toast $error={settings.message.includes("fail") || settings.message.includes("Invalid")}>
+          <Toast
+            $error={
+              settings.message.includes("fail") || settings.message.includes("Invalid")
+            }
+          >
             {settings.message}
           </Toast>
         )}
@@ -382,7 +568,9 @@ const LoadingWrapper = styled.div`
 
 const Scroller = styled.div`
   height: 100%;
-  padding: 10px calc(16px + env(safe-area-inset-right, 0px)) calc(72px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+  padding: 10px calc(16px + env(safe-area-inset-right, 0px))
+    calc(72px + env(safe-area-inset-bottom, 0px))
+    calc(16px + env(safe-area-inset-left, 0px));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 `;
@@ -416,7 +604,9 @@ const BackLink = styled(Link)`
   font-weight: 600;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
   display: inline-block;
   text-align: center;
 
@@ -434,7 +624,9 @@ const LogoutBtn = styled.button`
   font-weight: 600;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 
   &:hover {
     background: ${({ theme }) => theme.error};
@@ -503,6 +695,64 @@ const SleepTime = styled.div`
     width: 56px;
     text-align: center;
   }
+`;
+
+const RemoveBtn = styled.button`
+  padding: 4px 8px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  cursor: pointer;
+  color: ${({ theme }) => theme.error};
+`;
+
+const DayOverridesSection = styled.div``;
+
+const DayOverridesTitle = styled.h3`
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: ${({ theme }) => theme.textMuted};
+  margin: 0 0 8px;
+`;
+
+const DayOverrideRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  background: ${({ theme }) => theme.bgCard};
+  border: 1px solid ${({ theme }) => theme.border};
+  padding: 8px 10px;
+
+  & ${FieldRow} {
+    margin-bottom: 0;
+    flex: 1;
+  }
+
+  & ${RemoveBtn} {
+    flex-shrink: 0;
+  }
+`;
+
+const DayLabel = styled.span`
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 70px;
+  flex-shrink: 0;
+`;
+
+const AddDayBtnWrap = styled.div`
+  display: flex;
+  margin-top: 4px;
+`;
+
+const DaySelect = styled.select`
+  padding: 6px 10px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  color: ${({ theme }) => theme.text};
+  font-size: 0.8rem;
+  cursor: pointer;
 `;
 
 const SectionsList = styled.div`
@@ -612,14 +862,6 @@ const WidgetActions = styled.div`
   }
 `;
 
-const RemoveBtn = styled.button`
-  padding: 4px 8px;
-  background: ${({ theme }) => theme.bgElevated};
-  border: 1px solid ${({ theme }) => theme.border};
-  cursor: pointer;
-  color: ${({ theme }) => theme.error};
-`;
-
 const BottomBar = styled.div`
   position: fixed;
   bottom: calc(8px + env(safe-area-inset-bottom, 0px));
@@ -659,7 +901,9 @@ const Toast = styled.div<{ $error: boolean }>`
   text-align: center;
   border-radius: 6px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-  animation: ${toastIn} 0.25s ease, ${toastOut} 0.5s ease 3.5s forwards;
+  animation:
+    ${toastIn} 0.25s ease,
+    ${toastOut} 0.5s ease 3.5s forwards;
 `;
 
 const ScrollTopBtn = styled.button<{ $hidden: boolean }>`

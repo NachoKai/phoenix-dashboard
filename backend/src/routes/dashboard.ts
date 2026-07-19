@@ -158,12 +158,36 @@ dashboardRouter.put(
       res.status(400).json({ error: "Invalid settings" });
       return;
     }
+    const overrides = settings.sleepTimeDayOverrides;
+    const sanitizedOverrides: Record<
+      string,
+      {
+        sleepStartHour: number;
+        sleepStartMinute: number;
+        sleepEndHour: number;
+        sleepEndMinute: number;
+      }
+    > = {};
+    if (overrides && typeof overrides === "object") {
+      for (const [day, o] of Object.entries(overrides)) {
+        if (o && typeof o === "object") {
+          sanitizedOverrides[day] = {
+            sleepStartHour: Math.max(0, Math.min(23, (o as any).sleepStartHour ?? 23)),
+            sleepStartMinute: Math.max(0, Math.min(59, (o as any).sleepStartMinute ?? 0)),
+            sleepEndHour: Math.max(0, Math.min(23, (o as any).sleepEndHour ?? 7)),
+            sleepEndMinute: Math.max(0, Math.min(59, (o as any).sleepEndMinute ?? 0)),
+          };
+        }
+      }
+    }
+
     await saveGlobalSettings(deviceId, {
       ...settings,
       sleepStartHour: Math.max(0, Math.min(23, settings.sleepStartHour ?? 23)),
       sleepStartMinute: Math.max(0, Math.min(59, settings.sleepStartMinute ?? 0)),
       sleepEndHour: Math.max(0, Math.min(23, settings.sleepEndHour ?? 7)),
       sleepEndMinute: Math.max(0, Math.min(59, settings.sleepEndMinute ?? 0)),
+      sleepTimeDayOverrides: sanitizedOverrides,
     });
     res.json({ ok: true, settings });
   }),
