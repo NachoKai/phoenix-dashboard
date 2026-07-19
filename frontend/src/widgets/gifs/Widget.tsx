@@ -75,7 +75,7 @@ export function GifsWidget({ instance, sleeping }: WidgetProps) {
 const Wrapper = styled.div`
   position: relative;
   overflow: hidden;
-  background: ${({ theme }) => theme.bgElevated};
+  background: ${({ theme }) => theme.bg};
   min-height: 100px;
   height: 100%;
   width: 100%;
