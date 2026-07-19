@@ -134,6 +134,7 @@ const ErrorWrap = styled.div`
   display: flex;
   justify-content: center;
   flex-direction: column;
+  width: 100%;
 `;
 
 const RetryBtn = styled.button`
@@ -142,7 +143,7 @@ const RetryBtn = styled.button`
   background: ${({ theme }) => theme.bgElevated};
   border: 1px solid ${({ theme }) => theme.border};
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 `;
 
 const StaleBanner = styled.div`
