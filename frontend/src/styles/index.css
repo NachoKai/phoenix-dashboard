@@ -385,14 +385,16 @@ Interactive elements (buttons, inputs, selects) are also covered. */
 .widget-card__body:has(.gifs-widget),
 .widget-card__body:has(.clock-widget-card),
 .widget-card__body:has(.moon-widget),
-.widget-card__body:has(.touch-ripple),
 .widget-card__body:has(.lava-lamp),
 .widget-card__body:has(.aquarium),
 .widget-card__body:has(.bubble-level),
 .widget-card__body:has(.rolling-ball) {
   display: flex;
   align-items: center;
-  justify-content: center;
+}
+
+.widget-card__body:has(.touch-ripple) {
+  display: flex;
 }
 
 .widget-card__body:has(.bubble-wrap),
@@ -2075,6 +2077,8 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   flex-direction: column;
   gap: 6px;
   width: 100%;
+  flex: 1;
+  height: 100%;
   align-items: center;
   padding: 0 4px;
 }
@@ -2084,7 +2088,8 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   grid-template-columns: repeat(8, 1fr);
   gap: 4px;
   width: 100%;
-  max-width: 280px;
+  flex: 1;
+  align-content: center;
 }
 
 .bubble-wrap__bubble {
@@ -2096,13 +2101,17 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   padding: 0;
   min-width: 0;
   min-height: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   transition: transform 0.1s ease, opacity 0.15s ease, background 0.15s ease;
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.15), 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.bubble-wrap__bubble:hover:not(:disabled) {
-  transform: scale(1.12);
-  filter: brightness(1.2);
+@media (hover: hover) {
+  .bubble-wrap__bubble:hover:not(:disabled) {
+    transform: scale(1.12);
+    filter: brightness(1.2);
+  }
 }
 
 .bubble-wrap__bubble:active:not(:disabled) {
@@ -2123,10 +2132,12 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   0% {
     transform: scale(1);
   }
+
   40% {
     transform: scale(1.25);
     opacity: 0.8;
   }
+
   100% {
     transform: scale(0.85);
     opacity: 0.4;
@@ -2138,7 +2149,6 @@ Interactive elements (buttons, inputs, selects) are also covered. */
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: 280px;
   min-height: 22px;
 }
 
@@ -2169,9 +2179,8 @@ Interactive elements (buttons, inputs, selects) are also covered. */
    ============================================= */
 
 .touch-ripple {
+  flex: 1;
   width: 100%;
-  height: 100%;
-  min-height: 120px;
   display: block;
   touch-action: none;
 }
@@ -2400,8 +2409,15 @@ Interactive elements (buttons, inputs, selects) are also covered. */
 }
 
 @keyframes drone-pulse {
-  0%, 100% { box-shadow: 0 0 4px rgba(78, 205, 196, 0.2); }
-  50% { box-shadow: 0 0 16px rgba(78, 205, 196, 0.5); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(78, 205, 196, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 16px rgba(78, 205, 196, 0.5);
+  }
 }
 
 .tonal-drone__pulse {
@@ -2561,9 +2577,19 @@ Interactive elements (buttons, inputs, selects) are also covered. */
 }
 
 @keyframes zen-ring {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-8deg); }
-  75% { transform: rotate(8deg); }
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(-8deg);
+  }
+
+  75% {
+    transform: rotate(8deg);
+  }
 }
 
 .zen-bell__svg {

@@ -23,6 +23,10 @@ export function TouchRippleWidget({}: WidgetProps) {
     let drops: { x: number; y: number; speed: number; len: number; opacity: number }[] =
       [];
     let animId = 0;
+    let pointerDown = false;
+    let pointerX = 0;
+    let pointerY = 0;
+    let holdInterval: ReturnType<typeof setInterval> | null = null;
 
     const resize = () => {
       canvas.width = canvas.clientWidth * devicePixelRatio;
@@ -96,31 +100,65 @@ export function TouchRippleWidget({}: WidgetProps) {
       });
     };
 
-    const onPointerDown = (e: PointerEvent) => {
+    const getCoords = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
-      addRipple(
-        (e.clientX - rect.left) * devicePixelRatio,
-        (e.clientY - rect.top) * devicePixelRatio,
-      );
+      return {
+        x: (e.clientX - rect.left) * devicePixelRatio,
+        y: (e.clientY - rect.top) * devicePixelRatio,
+      };
     };
+
+    const onPointerDown = (e: PointerEvent) => {
+      const { x, y } = getCoords(e);
+      pointerX = x;
+      pointerY = y;
+      pointerDown = true;
+      addRipple(x, y);
+      canvas.setPointerCapture(e.pointerId);
+
+      if (holdInterval) clearInterval(holdInterval);
+      holdInterval = setInterval(() => {
+        if (pointerDown) {
+          addRipple(
+            pointerX + (Math.random() - 0.5) * 20,
+            pointerY + (Math.random() - 0.5) * 20,
+          );
+        }
+      }, 80);
+    };
+
     const onPointerMove = (e: PointerEvent) => {
       if (e.buttons > 0) {
-        const rect = canvas.getBoundingClientRect();
-        addRipple(
-          (e.clientX - rect.left) * devicePixelRatio,
-          (e.clientY - rect.top) * devicePixelRatio,
-        );
+        const { x, y } = getCoords(e);
+        pointerX = x;
+        pointerY = y;
+        addRipple(x, y);
+      }
+    };
+
+    const onPointerUp = () => {
+      pointerDown = false;
+      if (holdInterval) {
+        clearInterval(holdInterval);
+        holdInterval = null;
       }
     };
 
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointerleave", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerUp);
     window.addEventListener("resize", resize);
 
     return () => {
       cancelAnimationFrame(animId);
+      if (holdInterval) clearInterval(holdInterval);
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointerleave", onPointerUp);
+      canvas.removeEventListener("pointercancel", onPointerUp);
       window.removeEventListener("resize", resize);
     };
   }, []);
