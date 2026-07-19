@@ -201,6 +201,7 @@ const Wrapper = styled.div`
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  width: 100%;
 `;
 
 const Toolbar = styled.div`
