@@ -80,14 +80,6 @@ export const widgetRegistry: FrontendWidgetEntry[] = [
     ),
   },
   {
-    type: "fidget-spinner",
-    component: lazy(() =>
-      import("./fidget-spinner/Widget").then(m => ({
-        default: m.FidgetSpinnerWidget,
-      })),
-    ),
-  },
-  {
     type: "bubble-pop",
     component: lazy(() =>
       import("./bubble-pop/Widget").then(m => ({
@@ -96,34 +88,10 @@ export const widgetRegistry: FrontendWidgetEntry[] = [
     ),
   },
   {
-    type: "ambient-soundboard",
-    component: lazy(() =>
-      import("./ambient-soundboard/Widget").then(m => ({
-        default: m.AmbientSoundboardWidget,
-      })),
-    ),
-  },
-  {
     type: "tonal-drone",
     component: lazy(() =>
       import("./tonal-drone/Widget").then(m => ({
         default: m.TonalDroneWidget,
-      })),
-    ),
-  },
-  {
-    type: "bubble-level",
-    component: lazy(() =>
-      import("./bubble-level/Widget").then(m => ({
-        default: m.BubbleLevelWidget,
-      })),
-    ),
-  },
-  {
-    type: "rolling-ball",
-    component: lazy(() =>
-      import("./rolling-ball/Widget").then(m => ({
-        default: m.RollingBallWidget,
       })),
     ),
   },

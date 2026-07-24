@@ -252,17 +252,13 @@ export function Dashboard() {
                       "ai-qa",
                       "bubble-wrap",
                       "touch-ripple",
-                      "fidget-spinner",
                       "bubble-pop",
-                      "ambient-soundboard",
                       "tonal-drone",
                       "gradient-shift",
                       "zen-bell",
                       "color-calm",
                       "lava-lamp",
                       "aquarium",
-                      "bubble-level",
-                      "rolling-ball",
                     ].includes(widget.type)}
                   >
                     <Suspense

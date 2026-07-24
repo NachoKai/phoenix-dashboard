@@ -69,8 +69,8 @@ export function TouchRippleWidget({}: WidgetProps) {
 
       for (let i = ripples.length - 1; i >= 0; i--) {
         const r = ripples[i];
-        r.radius += 2.5;
-        r.alpha -= 0.012;
+        r.radius += 1.2;
+        r.alpha -= 0.005;
         if (r.alpha <= 0) {
           ripples.splice(i, 1);
           continue;

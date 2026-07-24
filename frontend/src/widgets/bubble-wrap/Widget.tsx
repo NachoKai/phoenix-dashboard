@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import { WidgetCard } from "../../components/WidgetCard";
 import type { WidgetProps } from "../../types";
@@ -22,12 +22,28 @@ function playPop() {
   osc.stop(popCtx.currentTime + 0.12);
 }
 
-const ROWS = 5;
-const COLS = 8;
+function getGridConfig() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+
+  if (isPortrait && vw <= 480) return { cols: 5, rows: 5 };
+  if (!isPortrait && vh <= 500) return { cols: 7, rows: 3 };
+  if (vw >= 600 && vw <= 767) return { cols: 8, rows: 4 };
+  if (vw >= 768) return { cols: 10, rows: 5 };
+  return { cols: 10, rows: 5 };
+}
 
 export function BubbleWrapWidget({}: WidgetProps) {
   const [popped, setPopped] = useState<Set<number>>(new Set());
-  const total = ROWS * COLS;
+  const [config, setConfig] = useState(() => getGridConfig());
+  const total = config.rows * config.cols;
+
+  useEffect(() => {
+    const onResize = () => setConfig(getGridConfig());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const pop = useCallback((index: number) => {
     playPop();
@@ -46,7 +62,7 @@ export function BubbleWrapWidget({}: WidgetProps) {
   return (
     <WidgetCard title="Bubble Wrap" status="success" error={null} dragHandle={true}>
       <Wrapper>
-        <Grid>
+        <Grid $cols={config.cols}>
           {Array.from({ length: total }, (_, i) => (
             <Bubble
               key={i}
@@ -87,15 +103,29 @@ const Wrapper = styled.div`
   height: 100%;
   align-items: center;
   padding: 0 4px;
+
+  @media (orientation: portrait) and (max-width: 480px) {
+    gap: 3px;
+    padding: 0 2px;
+  }
 `;
 
-const Grid = styled.div`
+const Grid = styled.div<{ $cols: number }>`
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(${({ $cols }) => $cols}, 1fr);
   gap: 4px;
   width: 100%;
   flex: 1;
+  min-height: 0;
   align-content: center;
+
+  @media (orientation: portrait) and (max-width: 480px) {
+    gap: 3px;
+  }
+
+  @media (orientation: landscape) and (max-height: 500px) {
+    gap: 3px;
+  }
 `;
 
 const Bubble = styled.button<{ $popped: boolean }>`
@@ -122,6 +152,10 @@ const Bubble = styled.button<{ $popped: boolean }>`
   transform: ${({ $popped }) => ($popped ? "scale(0.85)" : "scale(1)")};
   opacity: ${({ $popped }) => ($popped ? "0.4" : "1")};
   pointer-events: ${({ $popped }) => ($popped ? "none" : "auto")};
+
+  @media (orientation: portrait) and (max-width: 480px) {
+    border-width: 1px;
+  }
 
   @media (hover: hover) {
     &:hover:not(:disabled) {

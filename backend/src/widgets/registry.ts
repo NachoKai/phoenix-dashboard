@@ -410,15 +410,6 @@ export const touchRippleWidget: WidgetDefinition = {
   configSchema: [],
 };
 
-export const fidgetSpinnerWidget: WidgetDefinition = {
-  type: "fidget-spinner",
-  name: "Fidget Spinner",
-  description: "Flick to spin with momentum",
-  hasBackendRoute: false,
-  defaultConfig: {},
-  configSchema: [],
-};
-
 export const bubblePopWidget: WidgetDefinition = {
   type: "bubble-pop",
   name: "Bubble Pop",
@@ -428,37 +419,10 @@ export const bubblePopWidget: WidgetDefinition = {
   configSchema: [],
 };
 
-export const ambientSoundboardWidget: WidgetDefinition = {
-  type: "ambient-soundboard",
-  name: "Ambient Soundboard",
-  description: "Rain, ocean, forest, white/pink/brown noise",
-  hasBackendRoute: false,
-  defaultConfig: {},
-  configSchema: [],
-};
-
 export const tonalDroneWidget: WidgetDefinition = {
   type: "tonal-drone",
   name: "Tonal Drone",
   description: "Sustained notes that slowly bend",
-  hasBackendRoute: false,
-  defaultConfig: {},
-  configSchema: [],
-};
-
-export const bubbleLevelWidget: WidgetDefinition = {
-  type: "bubble-level",
-  name: "Bubble Level",
-  description: "Phone tilt shows a virtual level bubble",
-  hasBackendRoute: false,
-  defaultConfig: {},
-  configSchema: [],
-};
-
-export const rollingBallWidget: WidgetDefinition = {
-  type: "rolling-ball",
-  name: "Rolling Ball",
-  description: "A ball that rolls with gravity as you tilt",
   hasBackendRoute: false,
   defaultConfig: {},
   configSchema: [],
@@ -521,12 +485,8 @@ export const widgetRegistry: WidgetDefinition[] = [
   vacuumWidget,
   bubbleWrapWidget,
   touchRippleWidget,
-  fidgetSpinnerWidget,
   bubblePopWidget,
-  ambientSoundboardWidget,
   tonalDroneWidget,
-  bubbleLevelWidget,
-  rollingBallWidget,
   gradientShiftWidget,
   zenBellWidget,
   lavaLampWidget,
