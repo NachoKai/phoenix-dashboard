@@ -16,7 +16,7 @@
     "@tanstack/react-query-devtools": "^5.101.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.1.1",
+    "react-router-dom": "^7.18.2",
     "styled-components": "^6.4.4",
     "zustand": "^5.0.14"
   },
