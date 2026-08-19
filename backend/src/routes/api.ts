@@ -10,6 +10,7 @@ import { dashboardRouter } from "./dashboard.js";
 import { keysRouter } from "./keys.js";
 import { tuyaDebugRouter } from "./tuya-debug.js";
 import { getClient } from "../db/turso.js";
+import { getTokenInfo } from "../widgets/tuya/client.js";
 
 const SERVER_START = Date.now();
 const VERSION = process.env.npm_package_version ?? "0.1.0";
@@ -73,13 +74,15 @@ apiRouter.get("/health/deep", async (_req, res) => {
   const uptimeMs = Date.now() - SERVER_START;
   const mem = process.memoryUsage();
 
-  // DB check
+  // DB check with latency
+  const dbStart = Date.now();
   let dbOk = true;
   try {
     await getClient().execute("SELECT 1");
   } catch {
     dbOk = false;
   }
+  const dbLatency = Date.now() - dbStart;
 
   // Check which external API keys are configured
   const weatherKey = process.env.OPENWEATHER_API_KEY;
@@ -90,7 +93,7 @@ apiRouter.get("/health/deep", async (_req, res) => {
 
   // Build dependency checks — only ping services whose keys are configured
   const checks: DependencyCheck[] = [
-    { name: "database", configured: true, reachable: dbOk },
+    { name: "database", configured: true, reachable: dbOk, latencyMs: dbLatency },
   ];
 
   if (weatherKey) {
@@ -112,7 +115,13 @@ apiRouter.get("/health/deep", async (_req, res) => {
   }
 
   if (tuyaId && tuyaSecret) {
-    checks.push({ name: "tuya", configured: true });
+    const tuyaStart = Date.now();
+    try {
+      await getTokenInfo();
+      checks.push({ name: "tuya", configured: true, reachable: true, latencyMs: Date.now() - tuyaStart });
+    } catch (err) {
+      checks.push({ name: "tuya", configured: true, reachable: false, latencyMs: Date.now() - tuyaStart, error: (err as Error).message });
+    }
   } else {
     checks.push({ name: "tuya", configured: false });
   }
