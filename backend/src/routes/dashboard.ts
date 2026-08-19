@@ -17,7 +17,7 @@ import type {
   WidgetInstance,
 } from "../types.js";
 
-export const dashboardRouter = Router();
+export const dashboardRouter: import("express").Router = Router();
 
 type AsyncHandler = (req: Request, res: Response) => void | Promise<void>;
 

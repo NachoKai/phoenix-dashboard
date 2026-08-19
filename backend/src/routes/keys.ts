@@ -8,7 +8,7 @@ import {
 } from "../db/index.js";
 import { getWidgetDefinition } from "../widgets/registry.js";
 
-export const keysRouter = Router();
+export const keysRouter: import("express").Router = Router();
 
 type AsyncHandler = (req: Request, res: Response) => void | Promise<void>;
 

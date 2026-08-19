@@ -135,6 +135,14 @@ export const widgetRegistry: FrontendWidgetEntry[] = [
       })),
     ),
   },
+  {
+    type: "health-check",
+    component: lazy(() =>
+      import("./health-check/Widget").then(m => ({
+        default: m.HealthCheckWidget,
+      })),
+    ),
+  },
 ];
 
 const widgetMap = new Map(widgetRegistry.map(e => [e.type, e.component]));

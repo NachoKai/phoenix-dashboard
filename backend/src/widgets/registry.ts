@@ -473,6 +473,24 @@ export const aquariumWidget: WidgetDefinition = {
   configSchema: [],
 };
 
+export const healthCheckWidget: WidgetDefinition = {
+  type: "health-check",
+  name: "Server Health",
+  description: "Backend health, uptime, and memory stats",
+  hasBackendRoute: true,
+  defaultConfig: {
+    refreshInterval: 30,
+  },
+  configSchema: [
+    {
+      key: "refreshInterval",
+      label: "Refresh interval (seconds)",
+      type: "number",
+      default: 30,
+    },
+  ],
+};
+
 export const widgetRegistry: WidgetDefinition[] = [
   clockWidget,
   weatherWidget,
@@ -492,6 +510,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   lavaLampWidget,
   colorCalmWidget,
   aquariumWidget,
+  healthCheckWidget,
 ];
 
 export function getWidgetDefinition(type: string): WidgetDefinition | undefined {

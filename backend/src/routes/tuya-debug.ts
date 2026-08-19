@@ -6,7 +6,7 @@ import {
   tuyaGet,
 } from "../widgets/tuya/client.js";
 
-export const tuyaDebugRouter = Router();
+export const tuyaDebugRouter: import("express").Router = Router();
 
 type AsyncHandler = (req: Request, res: Response) => void | Promise<void>;
 
