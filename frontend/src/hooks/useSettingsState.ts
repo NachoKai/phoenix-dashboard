@@ -27,6 +27,9 @@ export function useSettingsState(
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const addingSection = useRef(false);
+  const hasLocalEdits = useRef(false);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   const createSectionMutation = useCreateSectionMutation();
   const deleteSectionMutation = useDeleteSectionMutation();
@@ -37,10 +40,10 @@ export function useSettingsState(
   const saveApiKeyMutation = useSaveApiKeyMutation();
 
   useEffect(() => {
-    if (dashboardState && !state) {
+    if (dashboardState && !hasLocalEdits.current) {
       setState(dashboardState);
     }
-  }, [dashboardState, state]);
+  }, [dashboardState]);
 
   const load = useCallback(async () => {
     const reg = await fetchWidgetRegistry();
@@ -90,35 +93,51 @@ export function useSettingsState(
   }, []);
 
   const addWidget = async (type: string) => {
-    if (!state) return;
     const def = registry.find(r => r.type === type);
     if (!def) return;
-    const sorted = [...state.sections].sort((a, b) => a.position - b.position);
-    const emptySection = sorted.find(s => !state.widgets.some(w => w.section === s.id));
+
+    // Dedup check against the latest state via ref
+    const current = stateRef.current;
+    if (!current) return;
+    if (current.widgets.some(w => w.type === type)) return;
+    hasLocalEdits.current = true;
+
+    // Find an empty section
+    const sorted = [...current.sections].sort((a, b) => a.position - b.position);
+    const emptySection = sorted.find(s => !current.widgets.some(w => w.section === s.id));
+
     let targetSectionId = emptySection?.id;
 
     if (!targetSectionId) {
+      // No empty section — create one
       if (addingSection.current) return;
       addingSection.current = true;
       const tempId = `temp-${uuid()}`;
-      const tempSection = {
-        id: tempId,
-        name: `Section ${state.sections.length + 1}`,
-        position: state.sections.length,
-      };
-      setState({ ...state, sections: [...state.sections, tempSection] });
+      setState(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          sections: [
+            ...prev.sections,
+            {
+              id: tempId,
+              name: `Section ${prev.sections.length + 1}`,
+              position: prev.sections.length,
+            },
+          ],
+        };
+      });
       try {
         const { section } = await createSectionMutation.mutateAsync();
-        setState(prev =>
-          prev
-            ? {
-                ...prev,
-                sections: prev.sections.map(sec =>
-                  sec.id === tempId ? { ...section, name: sec.name } : sec,
-                ),
-              }
-            : prev,
-        );
+        setState(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            sections: prev.sections.map(sec =>
+              sec.id === tempId ? { ...section, name: sec.name } : sec,
+            ),
+          };
+        });
         targetSectionId = section.id;
       } catch {
         setState(prev =>
@@ -132,14 +151,21 @@ export function useSettingsState(
         addingSection.current = false;
       }
     }
+
+    // Add the widget to the section (single setState call)
     const newWidget: WidgetInstance = {
       id: `${type}-${uuid()}`,
       type,
-      position: state.widgets.filter(w => w.section === targetSectionId).length,
+      position: current.widgets.filter(w => w.section === targetSectionId).length,
       section: targetSectionId,
       config: { ...def.defaultConfig },
     };
-    setState(prev => (prev ? { ...prev, widgets: [...prev.widgets, newWidget] } : prev));
+    setState(prev => {
+      if (!prev) return prev;
+      // Double-check dedup inside updater as safety net
+      if (prev.widgets.some(w => w.type === type)) return prev;
+      return { ...prev, widgets: [...prev.widgets, newWidget] };
+    });
   };
 
   const removeWidget = (id: string) => {
@@ -233,6 +259,7 @@ export function useSettingsState(
     if (!state) return;
     setSaving(true);
     setMessage(null);
+    hasLocalEdits.current = false;
     try {
       const cleanedWidgets = state.widgets.map(w =>
         w.type === "gifs" && Array.isArray(w.config.urls)
@@ -275,6 +302,9 @@ export function useSettingsState(
     }
   };
 
+  const hasWidgetType = (type: string) =>
+    state?.widgets.some(w => w.type === type) ?? false;
+
   return {
     state,
     setState,
@@ -285,6 +315,7 @@ export function useSettingsState(
     setMessage,
     updateWidgetConfig,
     addWidget,
+    hasWidgetType,
     removeWidget,
     moveWidget,
     changeWidgetSection,

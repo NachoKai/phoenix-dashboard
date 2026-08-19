@@ -436,15 +436,20 @@ export function Settings() {
         <Section>
           <h2>Widgets</h2>
           <AddWidgetsRow>
-            {settings.registry.map(def => (
-              <AddBtn
-                key={def.type}
-                type="button"
-                onClick={() => settings.addWidget(def.type)}
-              >
-                + {def.name}
-              </AddBtn>
-            ))}
+            {settings.registry.map(def => {
+              const exists = settings.hasWidgetType(def.type);
+              return (
+                <AddBtn
+                  key={def.type}
+                  type="button"
+                  $added={exists}
+                  disabled={exists}
+                  onClick={() => settings.addWidget(def.type)}
+                >
+                  {exists ? def.name : `+ ${def.name}`}
+                </AddBtn>
+              );
+            })}
           </AddWidgetsRow>
 
           {state.sections.map(section => {
@@ -827,12 +832,14 @@ const AddWidgetsRow = styled.div`
   margin-bottom: 12px;
 `;
 
-const AddBtn = styled.button`
+const AddBtn = styled.button<{ $added?: boolean }>`
   padding: 6px 12px;
-  background: ${({ theme }) => theme.bgElevated};
-  border: 1px solid ${({ theme }) => theme.border};
-  cursor: pointer;
+  background: ${({ $added, theme }) => ($added ? theme.bgCard : theme.bgElevated)};
+  border: 1px solid ${({ $added, theme }) => ($added ? theme.border : theme.border)};
+  cursor: ${({ $added }) => ($added ? "default" : "pointer")};
   font-size: 0.8rem;
+  opacity: ${({ $added }) => ($added ? 0.5 : 1)};
+  color: ${({ $added, theme }) => ($added ? theme.textMuted : theme.text)};
 `;
 
 const WidgetCard = styled.div`
