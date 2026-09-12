@@ -679,7 +679,7 @@ export function buildSystemPrompt(
 Create `frontend/src/widgets/ai-qa/useAiChatCore.ts`:
 
 ```ts
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   API_BASE,
   AUTO_VALUE,
