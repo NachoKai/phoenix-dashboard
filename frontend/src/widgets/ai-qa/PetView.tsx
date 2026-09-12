@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { RobotFace, type ActivityState, type EmotionState } from "./RobotFace";
 import { useTTS } from "./useTTS";
@@ -38,21 +38,37 @@ export function PetView({ messages, loading, error, send }: PetViewProps) {
     },
   });
 
-  const lastAssistant = useMemo(
-    () => messages.filter(m => m.role === "assistant").at(-1),
-    [messages],
-  );
+  const lastSpokenIndexRef = useRef(-1);
 
   useEffect(() => {
     if (activity !== "thinking") return;
-    if (!lastAssistant || tts.isSpeaking) return;
-    setSubtitle(lastAssistant.content);
+    const last = messages.filter(m => m.role === "assistant").at(-1);
+    if (!last) return;
+    if (!last.content.trim()) {
+      setActivity("idle");
+      return;
+    }
+    const idx = messages.lastIndexOf(last);
+    if (idx <= lastSpokenIndexRef.current) return;
+    lastSpokenIndexRef.current = idx;
+    setSubtitle(last.content);
     if (tts.isMuted) {
       setActivity("idle");
     } else {
-      tts.speak(lastAssistant.content);
+      tts.speak(last.content);
     }
-  }, [activity, lastAssistant, tts]);
+  }, [activity, messages, tts]);
+
+  useEffect(() => {
+    if (error) setActivity("idle");
+  }, [error]);
+
+  useEffect(() => {
+    if (voice.error && activity === "listening") {
+      setSubtitle(voice.error);
+      setActivity("idle");
+    }
+  }, [voice.error, activity]);
 
   const handleMic = useCallback(() => {
     if (voice.isRecording) {
