@@ -1,5 +1,5 @@
 import type { WidgetDefinition } from "../types.js";
-import { DEFAULT_SYSTEM_PROMPT } from "../constants.js";
+import { DEFAULT_PET_PROMPT, DEFAULT_SYSTEM_PROMPT } from "../constants.js";
 import { DEFAULT_LOCAL_BASE, PROVIDER_LIST } from "./ai-qa/providers.js";
 
 const MODEL_SEPARATOR = "::";
@@ -287,6 +287,7 @@ export const aiQaWidget: WidgetDefinition = {
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
     autoProviders: ["groq", "gemini", "llm7", "local"],
     localBaseUrl: DEFAULT_LOCAL_BASE,
+    petSystemPrompt: DEFAULT_PET_PROMPT,
   },
   configSchema: [
     {
@@ -302,6 +303,14 @@ export const aiQaWidget: WidgetDefinition = {
       type: "string",
       default: DEFAULT_SYSTEM_PROMPT,
       description: "Instructions for the AI's behavior",
+    },
+    {
+      key: "petSystemPrompt",
+      label: "Pet mode prompt",
+      type: "string",
+      default: DEFAULT_PET_PROMPT,
+      description:
+        "Persona used in Pet mode. Empty falls back to the default pet persona.",
     },
     {
       key: "autoProviders",
