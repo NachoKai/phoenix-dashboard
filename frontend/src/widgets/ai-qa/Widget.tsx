@@ -9,24 +9,91 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   model?: string;
+  provider?: string;
 }
 
-const MODELS = [
-  { value: "openrouter/free", label: "⚡ Auto (best free model)" },
-  { value: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B (free)" },
-  { value: "google/gemma-4-31b-it:free", label: "Gemma 4 31B (free)" },
-  { value: "qwen/qwen3-coder:free", label: "Qwen3 Coder 480B (free)" },
-  { value: "openai/gpt-oss-20b:free", label: "GPT-OSS 20B (free)" },
-  { value: "nousresearch/hermes-3-llama-3.1-405b:free", label: "Hermes 3 405B (free)" },
-  { value: "google/gemini-flash-1.5", label: "Gemini 1.5 Flash" },
-  { value: "openai/gpt-4o-mini", label: "GPT-4o Mini" },
-  { value: "anthropic/claude-3.5-haiku", label: "Claude 3.5 Haiku" },
-  { value: "openai/gpt-4o", label: "GPT-4o" },
-  { value: "anthropic/claude-3-opus", label: "Claude 3 Opus" },
+const AUTO_VALUE = "auto";
+const MODEL_SEPARATOR = "::";
+
+const MODEL_GROUPS: {
+  id: string;
+  label: string;
+  options: { id: string; label: string }[];
+}[] = [
+  {
+    id: "groq",
+    label: "Groq",
+    options: [
+      { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B" },
+      { id: "openai/gpt-oss-20b", label: "GPT-OSS 20B" },
+      { id: "qwen/qwen3-8b", label: "Qwen3 8B" },
+      { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B" },
+    ],
+  },
+  {
+    id: "gemini",
+    label: "Google AI Studio (Gemini)",
+    options: [
+      { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash" },
+      { id: "gemini-3.6-flash", label: "Gemini 3.6 Flash" },
+      { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash" },
+      { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite" },
+      { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    ],
+  },
+  {
+    id: "llm7",
+    label: "LLM7.io (free)",
+    options: [
+      { id: "codestral-latest", label: "Codestral (free)" },
+      { id: "minimax-m2.7", label: "MiniMax M2.7 (free)" },
+      { id: "mistral-Nemo-Instruct-2407", label: "Mistral Nemo (free)" },
+    ],
+  },
+  {
+    id: "local",
+    label: "Local (Ollama / LM Studio)",
+    options: [
+      { id: "llama3.3", label: "Llama 3.3" },
+      { id: "llama3.1", label: "Llama 3.1" },
+      { id: "gemma3", label: "Gemma 3" },
+      { id: "qwen3", label: "Qwen3" },
+      { id: "mistral", label: "Mistral" },
+    ],
+  },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    options: [
+      { id: "openrouter/free", label: "Auto router (best free)" },
+      { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B (free)" },
+      { id: "google/gemma-4-31b-it:free", label: "Gemma 4 31B (free)" },
+      { id: "qwen/qwen3-coder:free", label: "Qwen3 Coder 480B (free)" },
+      { id: "openai/gpt-oss-20b:free", label: "GPT-OSS 20B (free)" },
+      { id: "nousresearch/hermes-3-llama-3.1-405b:free", label: "Hermes 3 405B (free)" },
+    ],
+  },
 ];
 
+const PROVIDER_LABELS: Record<string, string> = {
+  groq: "Groq",
+  gemini: "Google AI Studio",
+  llm7: "LLM7.io",
+  local: "Local",
+  openrouter: "OpenRouter",
+};
+
+function modelOptionValue(group: string, model: string): string {
+  return `${group}${MODEL_SEPARATOR}${model}`;
+}
+
 export function AiQaWidget({ instance }: WidgetProps) {
-  const defaultModel = (instance.config.model as string) ?? MODELS[0]!.value;
+  const configuredModel = instance.config.model as string | undefined;
+  const defaultModel = MODEL_GROUPS.some(g =>
+    g.options.some(o => modelOptionValue(g.id, o.id) === configuredModel),
+  )
+    ? configuredModel!
+    : AUTO_VALUE;
   const systemPrompt = (instance.config.systemPrompt as string) ?? "";
 
   const storageKey = `ai-qa-${instance.id}`;
@@ -70,6 +137,17 @@ export function AiQaWidget({ instance }: WidgetProps) {
     setLoading(true);
     setError(null);
 
+    const isAuto = selectedModel === AUTO_VALUE;
+    let provider: string | undefined;
+    let model: string | undefined;
+    if (!isAuto) {
+      const idx = selectedModel.indexOf(MODEL_SEPARATOR);
+      if (idx >= 0) {
+        provider = selectedModel.slice(0, idx);
+        model = selectedModel.slice(idx + MODEL_SEPARATOR.length);
+      }
+    }
+
     try {
       const res = await fetch(
         `${API_BASE}/ask?widgetId=${encodeURIComponent(instance.id)}`,
@@ -78,9 +156,19 @@ export function AiQaWidget({ instance }: WidgetProps) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: text,
-            model: selectedModel,
+            provider,
+            model,
             systemPrompt: systemPrompt || undefined,
             history: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+            ...(isAuto
+              ? {
+                  autoProviders:
+                    (instance.config.autoProviders as string[] | undefined) ?? undefined,
+                }
+              : {}),
+            ...(instance.config.localBaseUrl
+              ? { localBaseUrl: instance.config.localBaseUrl as string }
+              : {}),
           }),
         },
       );
@@ -88,15 +176,23 @@ export function AiQaWidget({ instance }: WidgetProps) {
       const data = (await res.json()) as {
         reply?: string;
         model?: string;
+        provider?: string;
         error?: string;
+        message?: string;
       };
       if (!res.ok) {
-        throw new Error(data.error ?? `HTTP ${res.status}`);
+        const detail = data.message ? ` ${data.message}` : "";
+        throw new Error(`${data.error ?? `HTTP ${res.status}`}${detail}`);
       }
 
       setMessages(prev => [
         ...prev,
-        { role: "assistant", content: data.reply ?? "", model: data.model },
+        {
+          role: "assistant",
+          content: data.reply ?? "",
+          model: data.model,
+          provider: data.provider,
+        },
       ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Request failed");
@@ -135,10 +231,18 @@ export function AiQaWidget({ instance }: WidgetProps) {
             value={selectedModel}
             onChange={e => setSelectedModel(e.target.value)}
           >
-            {MODELS.map(m => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
+            <option value={AUTO_VALUE}>⚡ Auto (best free)</option>
+            {MODEL_GROUPS.map(g => (
+              <optgroup key={g.id} label={g.label}>
+                {g.options.map(o => (
+                  <option
+                    key={modelOptionValue(g.id, o.id)}
+                    value={modelOptionValue(g.id, o.id)}
+                  >
+                    {o.label}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </ModelSelect>
           {messages.length > 0 && (
@@ -152,7 +256,17 @@ export function AiQaWidget({ instance }: WidgetProps) {
           {messages.length === 0 && !loading && <Empty>Ask anything…</Empty>}
           {messages.map((msg, i) => (
             <Msg key={i} $role={msg.role}>
-              <MsgContent $role={msg.role}>{msg.content}</MsgContent>
+              {msg.role === "assistant" && (msg.provider || msg.model) ? (
+                <AssistantWrap>
+                  <MsgContent $role="assistant">{msg.content}</MsgContent>
+                  <ProviderBadge>
+                    via {PROVIDER_LABELS[msg.provider ?? ""] ?? msg.provider ?? "AI"}
+                    {msg.model ? ` · ${msg.model}` : ""}
+                  </ProviderBadge>
+                </AssistantWrap>
+              ) : (
+                <MsgContent $role={msg.role}>{msg.content}</MsgContent>
+              )}
             </Msg>
           ))}
           {loading && (
@@ -296,6 +410,21 @@ const TypingWrapper = styled(MsgContent)`
   gap: 4px;
   align-items: center;
   padding: 8px 12px;
+`;
+
+const AssistantWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  max-width: 100%;
+`;
+
+const ProviderBadge = styled.span`
+  font-size: 0.6rem;
+  color: ${({ theme }) => theme.textMuted};
+  opacity: 0.7;
+  padding: 0 2px;
 `;
 
 const TypingDot = styled.span`

@@ -13,6 +13,8 @@ export interface ConfigFieldSchema {
   default?: string | number | boolean | string[];
   options?: { value: string; label: string }[];
   description?: string;
+  /** For string-list fields: "urls" renders a GIF/image URL editor, "text" a plain list editor. */
+  stringList?: "urls" | "text";
 }
 
 export interface WidgetDefinition {

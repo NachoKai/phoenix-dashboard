@@ -1,4 +1,18 @@
-import type { WidgetDefinition } from "../types.js";import { DEFAULT_SYSTEM_PROMPT } from "../constants.js";
+import type { WidgetDefinition } from "../types.js";
+import { DEFAULT_SYSTEM_PROMPT } from "../constants.js";
+import { DEFAULT_LOCAL_BASE, PROVIDER_LIST } from "./ai-qa/providers.js";
+
+const MODEL_SEPARATOR = "::";
+
+const aiQaModelOptions = [
+  { value: "auto", label: "⚡ Auto (best free)" },
+  ...PROVIDER_LIST.flatMap(provider =>
+    provider.models.map(model => ({
+      value: `${provider.id}${MODEL_SEPARATOR}${model.id}`,
+      label: `${provider.label} · ${model.label}`,
+    })),
+  ),
+];
 export const clockWidget: WidgetDefinition = {
   type: "clock",
   name: "Clock",
@@ -236,6 +250,7 @@ export const gifsWidget: WidgetDefinition = {
       key: "urls",
       label: "GIF URLs",
       type: "string-list",
+      stringList: "urls",
       default: [],
       description: "One URL per line (static mode)",
     },
@@ -264,37 +279,22 @@ export const gifsWidget: WidgetDefinition = {
 export const aiQaWidget: WidgetDefinition = {
   type: "ai-qa",
   name: "AI Q&A",
-  description: "Multi-model chat via OpenRouter (GPT, Claude, Gemini, Llama, etc.)",
+  description:
+    "Multi-model chat across free AI providers (Groq, Gemini, LLM7, local, OpenRouter)",
   hasBackendRoute: true,
   defaultConfig: {
-    model: "openrouter/free",
+    model: "auto",
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
+    autoProviders: ["groq", "gemini", "llm7", "local"],
+    localBaseUrl: DEFAULT_LOCAL_BASE,
   },
   configSchema: [
     {
       key: "model",
       label: "Default model",
       type: "select",
-      default: "openrouter/free",
-      options: [
-        { value: "openrouter/free", label: "⚡ Auto (best free model)" },
-        {
-          value: "meta-llama/llama-3.3-70b-instruct:free",
-          label: "Llama 3.3 70B (free)",
-        },
-        { value: "google/gemma-4-31b-it:free", label: "Gemma 4 31B (free)" },
-        { value: "qwen/qwen3-coder:free", label: "Qwen3 Coder 480B (free)" },
-        { value: "openai/gpt-oss-20b:free", label: "GPT-OSS 20B (free)" },
-        {
-          value: "nousresearch/hermes-3-llama-3.1-405b:free",
-          label: "Hermes 3 405B (free)",
-        },
-        { value: "google/gemini-flash-1.5", label: "Gemini 1.5 Flash" },
-        { value: "openai/gpt-4o-mini", label: "GPT-4o Mini" },
-        { value: "anthropic/claude-3.5-haiku", label: "Claude 3.5 Haiku" },
-        { value: "openai/gpt-4o", label: "GPT-4o" },
-        { value: "anthropic/claude-3-opus", label: "Claude 3 Opus" },
-      ],
+      default: "auto",
+      options: aiQaModelOptions,
     },
     {
       key: "systemPrompt",
@@ -304,11 +304,42 @@ export const aiQaWidget: WidgetDefinition = {
       description: "Instructions for the AI's behavior",
     },
     {
+      key: "autoProviders",
+      label: "Auto provider priority",
+      type: "string-list",
+      stringList: "text",
+      default: ["groq", "gemini", "llm7", "local"],
+      description:
+        "Providers tried in Auto mode, in order. Unset keys are skipped. Available: groq, gemini, llm7, local, openrouter",
+    },
+    {
       key: "openrouterApiKey",
       label: "OpenRouter API Key",
       type: "secret",
       description:
         "Get a free key at openrouter.ai — falls back to server .env OPENROUTER_API_KEY",
+    },
+    {
+      key: "groqApiKey",
+      label: "Groq API Key",
+      type: "secret",
+      description:
+        "Get a free key at console.groq.com — falls back to server .env GROQ_API_KEY",
+    },
+    {
+      key: "geminiApiKey",
+      label: "Google AI Studio API Key",
+      type: "secret",
+      description:
+        "Get a free key at aistudio.google.com — falls back to server .env GEMINI_API_KEY",
+    },
+    {
+      key: "localBaseUrl",
+      label: "Local model base URL",
+      type: "string",
+      default: DEFAULT_LOCAL_BASE,
+      description:
+        "OpenAI-compatible endpoint for Ollama (http://localhost:11434/v1) or LM Studio (http://localhost:1234/v1)",
     },
   ],
 };

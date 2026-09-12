@@ -199,6 +199,33 @@ export function ConfigField({
       onChange(list.filter((_, i) => i !== index));
     };
 
+    if (field.stringList === "text") {
+      return (
+        <FieldRow>
+          <FieldLabel>{field.label}</FieldLabel>
+          <TextList>
+            {list.map((item, i) => (
+              <TextListRow key={i}>
+                <TextListInput
+                  type="text"
+                  value={item}
+                  onChange={e => updateItem(i, e.target.value)}
+                  placeholder="value"
+                />
+                <RemoveBtn type="button" onClick={() => removeItem(i)}>
+                  ✕
+                </RemoveBtn>
+              </TextListRow>
+            ))}
+            <TextListAddBtn type="button" onClick={addItem}>
+              + Item
+            </TextListAddBtn>
+          </TextList>
+          {field.description && <small>{field.description}</small>}
+        </FieldRow>
+      );
+    }
+
     return (
       <FieldRow>
         <FieldLabel>{field.label}</FieldLabel>
@@ -427,6 +454,32 @@ const UrlCardFooter = styled.div`
 const UrlInput = styled.input`
   flex: 1;
   min-width: 0;
+`;
+
+const TextList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const TextListRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const TextListInput = styled.input`
+  flex: 1;
+  min-width: 0;
+`;
+
+const TextListAddBtn = styled.button`
+  align-self: flex-start;
+  padding: 6px 12px;
+  background: ${({ theme }) => theme.bgElevated};
+  border: 1px solid ${({ theme }) => theme.border};
+  cursor: pointer;
+  font-size: 0.8rem;
 `;
 
 const RemoveBtn = styled.button`
