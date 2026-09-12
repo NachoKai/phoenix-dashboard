@@ -38,7 +38,12 @@ export function PetView({ messages, loading, error, send }: PetViewProps) {
     },
   });
 
-  const lastSpokenIndexRef = useRef(-1);
+  const lastSpokenIndexRef = useRef(
+    (() => {
+      const last = messages.filter(m => m.role === "assistant").at(-1);
+      return last ? messages.lastIndexOf(last) : -1;
+    })(),
+  );
 
   useEffect(() => {
     if (activity !== "thinking") return;
