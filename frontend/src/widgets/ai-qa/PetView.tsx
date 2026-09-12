@@ -12,7 +12,7 @@ interface PetViewProps {
   send: (text: string) => Promise<void>;
 }
 
-const HELLO = "Say hi â€” tap the mic to talk to PIXEL";
+const HELLO = "Say hi — tap the mic to talk to PIXEL";
 
 export function PetView({ messages, loading, error, send }: PetViewProps) {
   const [activity, setActivity] = useState<ActivityState>("idle");
@@ -26,7 +26,7 @@ export function PetView({ messages, loading, error, send }: PetViewProps) {
   });
 
   const voice = useVoiceInput({
-    onInterim: part => setSubtitle(`â€¦ ${part}`),
+    onInterim: part => setSubtitle(`… ${part}`),
     onResult: text => {
       setSubtitle(`You: ${text}`);
       setActivity("thinking");
@@ -60,7 +60,7 @@ export function PetView({ messages, loading, error, send }: PetViewProps) {
       setSubtitle(HELLO);
       setActivity("idle");
     } else {
-      setSubtitle("Listeningâ€¦");
+      setSubtitle("Listening…");
       tts.stop();
       setActivity("listening");
       voice.startRecording();
@@ -92,21 +92,21 @@ export function PetView({ messages, loading, error, send }: PetViewProps) {
           onClick={handleMic}
           title={voice.isRecording ? "Stop listening" : "Talk to PIXEL"}
         >
-          {voice.isRecording ? "â– " : "ðŸŽ™"}
+          {voice.isRecording ? "■" : "🎙"}
         </MicBtn>
         <MuteBtn
           $muted={tts.isMuted}
           onClick={tts.toggleMute}
           title={tts.isMuted ? "Unmute" : "Mute"}
         >
-          {tts.isMuted ? "ðŸ”‡" : "ðŸ”Š"}
+          {tts.isMuted ? "🔇" : "🔊"}
         </MuteBtn>
       </Controls>
       {!voice.isSupported && (
         <FallbackRow>
           <FallbackInput
             type="text"
-            placeholder="Type to PIXELâ€¦"
+            placeholder="Type to PIXEL…"
             value={fallbackText}
             onChange={e => setFallbackText(e.target.value)}
             onKeyDown={e => {
@@ -119,7 +119,7 @@ export function PetView({ messages, loading, error, send }: PetViewProps) {
             onClick={handleFallbackSend}
             disabled={loading || !fallbackText.trim()}
           >
-            {loading ? "â€¦" : "â†‘"}
+            {loading ? "…" : "↑"}
           </FallbackSendBtn>
         </FallbackRow>
       )}

@@ -39,7 +39,7 @@ export function AiQaWidget({ instance }: WidgetProps) {
             value={core.selectedModel}
             onChange={e => core.setSelectedModel(e.target.value)}
           >
-            <option value={AUTO_VALUE}>âš¡ Auto (best free)</option>
+            <option value={AUTO_VALUE}>⚡ Auto (best free)</option>
             {MODEL_GROUPS.map(g => (
               <optgroup key={g.id} label={g.label}>
                 {g.options.map(o => (
@@ -55,7 +55,7 @@ export function AiQaWidget({ instance }: WidgetProps) {
           </ModelSelect>
           {core.messages.length > 0 && (
             <ClearBtn type="button" onClick={core.clearChat} title="Clear chat">
-              âœ•
+              ✕
             </ClearBtn>
           )}
           <ModeToggle
@@ -64,7 +64,7 @@ export function AiQaWidget({ instance }: WidgetProps) {
             onClick={() => setMode(mode === "pet" ? "chat" : "pet")}
             title={mode === "pet" ? "Switch to chat" : "Switch to pet mode"}
           >
-            {mode === "pet" ? "ðŸ’¬" : "ðŸ¾"}
+            {mode === "pet" ? "💬" : "🐾"}
           </ModeToggle>
         </Toolbar>
 
